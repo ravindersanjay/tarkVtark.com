@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+	background: #f4f6f9;
+	font-family: 'Segoe UI', Arial, sans-serif;
+	color: #222;
+}
+.home-container, .contact-container {
+	max-width: 700px;
+	margin: 40px auto;
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+	padding: 32px 28px 40px 28px;
+}
+.header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 18px;
+}
+.brand {
+	font-size: 2.1rem;
+	font-weight: 700;
+	color: #2563eb;
+	letter-spacing: 1px;
+}
+.nav {
+	display: flex;
+	gap: 16px;
+}
+.nav-btn {
+	background: #2563eb;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	padding: 8px 18px;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+.nav-btn:hover {
+	background: #174ea6;
+}
+.breadcrumb {
+	font-size: 1rem;
+	color: #6b7280;
+	margin-bottom: 18px;
+}
+.breadcrumb-link {
+	color: #2563eb;
+	cursor: pointer;
+	text-decoration: underline;
+}
+.topics-section {
+	margin-top: 18px;
+}
+.topics-list {
+	list-style: none;
+	padding: 0;
+	margin: 0 0 18px 0;
+}
+.topic-btn {
+	background: #eef2ff;
+	color: #2563eb;
+	border: none;
+	border-radius: 6px;
+	padding: 10px 22px;
+	font-size: 1.1rem;
+	margin-bottom: 8px;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+.topic-btn:hover {
+	background: #dbeafe;
+}
+.add-topic-form {
+	display: flex;
+	gap: 10px;
+	margin-top: 10px;
+}
+.topic-input {
+	flex: 1;
+	padding: 8px;
+	border-radius: 6px;
+	border: 1px solid #cbd5e1;
+	font-size: 1rem;
+}
+.add-btn {
+	background: #2563eb;
+	color: #fff;
+	border: none;
+	border-radius: 6px;
+	padding: 8px 18px;
+	font-size: 1rem;
+	cursor: pointer;
+	transition: background 0.2s;
+}
+.add-btn:hover {
+	background: #174ea6;
+}
+.contact-section {
+	margin-top: 18px;
+}
+.contact-form {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 18px;
+}
+.contact-input, .contact-textarea {
+	padding: 8px;
+	border-radius: 6px;
+	border: 1px solid #cbd5e1;
+	font-size: 1rem;
+}
+.contact-textarea {
+	min-height: 80px;
+	resize: vertical;
+}
