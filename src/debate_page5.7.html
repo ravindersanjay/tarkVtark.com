@@ -1,0 +1,307 @@
+<!DOCTYPE html>  
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Debate</title>
+<style>
+  body {font-family: Arial, sans-serif; background:#f4f6f9; margin:20px;}
+  .container {max-width:1200px; margin:0 auto;}
+  .thread-row {display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:12px;}
+  .left-cell, .right-cell {min-height:60px;}
+  .left-card {background:#eef2ff; padding:12px; border-radius:8px; border:1px solid #cbd5e1;}
+  .right-card {background:#fff8ed; padding:12px; border-radius:8px; border:1px solid #ffe5d4;}
+  .meta {font-size:12px; color:#6b7280; margin-bottom:6px;}
+  .content {font-size:15px; line-height:1.4;}
+  .tag {font-size:12px; color:#2563eb; font-weight:500; margin-left:4px;}
+  .controls {margin-top:8px; display:flex; gap:8px; align-items:center;}
+  .btn {padding:5px 10px; border-radius:6px; cursor:pointer; border:none; background:#eef2ff; color:#2563eb;}
+  .btn.vote {background:#fff; border:1px solid #e5e7eb; color:#374151;}
+  .btn.primary {background:#2563eb; color:#fff;}
+  .reply-form {display:none; margin-top:8px; padding:8px; border-radius:6px; background:#fbfdff; border:1px solid #eef2ff;}
+  .reply-form textarea {width:100%; min-height:60px; padding:6px; border-radius:4px; border:1px solid #d1d5db;}
+  .reply-form input[type=file], .reply-form input[type=text] {margin-top:4px; padding:4px; width:100%;}
+  .add-question {margin-top:20px; padding:12px; border-radius:8px; background:#f6fffa; border:1px solid #ecfdf5;}
+  .add-question input, .add-question textarea {width:100%; padding:6px; border-radius:4px; border:1px solid #d1d5db; margin-top:6px;}
+  .copy-msg {font-size:11px; color:green; margin-left:6px;}
+  .highlight-reply {background: #fff7b2 !important; transition: background 0.5s;}
+  hr.reply-separator {border:none; border-top:1px solid #e5e7eb; margin:10px 0;}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Topic: Sanatan vs Islam</h2>
+  <input id="tagSearch" placeholder="Search by tag" oninput="filterByTag()" style="margin-bottom:12px; padding:6px; width:300px; border-radius:4px; border:1px solid #d1d5db;">
+  <div id="board"></div>
+
+  <div class="add-question">
+    <h3>Add New Question</h3>
+    <input id="newTag" placeholder="Tag">
+    <textarea id="newQuestionText" placeholder="Type your question"></textarea>
+    <button class="btn primary" onclick="addNewQuestion()" style="margin-top:8px;">Add Question</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY='debate_threads_Sanatan_vs_Islam2';
+const CURRENT_USER='CurrentUser';
+let debateData={topic:'Sanatan vs Islam',questions:[]};
+
+function generateUniqueId(prefix='id'){ return prefix + Date.now() + '-' + Math.floor(Math.random()*1000); }
+function escapeHtml(text=''){ if(text===null||text===undefined) return ''; return String(text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function loadData(){
+  const s = localStorage.getItem(STORAGE_KEY);
+  if(s){
+    try { debateData = JSON.parse(s); }
+    catch(e){ debateData = {topic:'Artificial Intelligence',questions:[]}; }
+  } else saveData();
+}
+function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(debateData)); }
+
+const board = document.getElementById('board');
+
+function renderBoard(){
+  board.innerHTML = '';
+  if(!Array.isArray(debateData.questions) || debateData.questions.length===0){
+    const msg = document.createElement('div');
+    msg.style.color = '#666';
+    msg.style.margin = '10px';
+    msg.innerHTML = '<i>No questions yet. Add one below to start a debate!</i>';
+    board.appendChild(msg);
+    return;
+  }
+  debateData.questions.forEach((q, idx) => {
+    renderQuestionRow(q);
+    if(idx < debateData.questions.length - 1) board.appendChild(document.createElement('hr'));
+  });
+}
+
+function renderQuestionRow(question){
+  question.replies = question.replies || [];
+  question.votes = question.votes || {up:0, down:0};
+  if(!question.uniqueId) question.uniqueId = generateUniqueId('q');
+
+  const row = document.createElement('div');
+  row.className = 'thread-row';
+  row.setAttribute('data-tag', question.tag || '');
+
+  const leftCardHtml = `
+    <div class="left-card">
+      <div class="meta">
+        Question • ${escapeHtml(question.author || '')} • ${escapeHtml(question.timestamp || '')} • 
+        <span style="cursor:pointer;" onclick="copyUniqueId(this,'${escapeHtml(question.uniqueId)}')">${question.uniqueId}</span> • ${question.replies.length} Replies
+        <span class="tag">[${escapeHtml(question.tag || '')}]</span>
+        <span class="copy-msg" style="display:none;">Copied</span>
+      </div>
+      <div class="content">${escapeHtml(question.text)}</div>
+      <div class="controls">
+        <button class="btn" onclick="toggleLeftReplyForm('${escapeHtml(question.id)}', this)">Reply this question</button>
+      </div>
+      <div class="reply-form" id="replyform-${escapeHtml(question.id)}">
+        <textarea placeholder="Reply..."></textarea>
+        <div class="evidence-row">
+          <input type="file" class="evidence-file">
+          <input type="text" class="evidence-link" placeholder="Paste URL evidence (optional)">
+        </div>
+        <button class="btn primary" onclick="postReply('${escapeHtml(question.id)}', this)" style="margin-top:6px;">Post Reply</button>
+      </div>
+    </div>
+  `;
+
+  const rightCardHtml = `<div class="right-card"></div>`;
+  row.innerHTML = `<div class="left-cell">${leftCardHtml}</div><div class="right-cell">${rightCardHtml}</div>`;
+  board.appendChild(row);
+
+  const rightCard = row.querySelector('.right-card');
+  question.replies.forEach((r, i) => {
+    renderReplyRow(r, rightCard);
+    if(i < question.replies.length - 1){
+      const hr = document.createElement('hr');
+      hr.className = 'reply-separator';
+      rightCard.appendChild(hr);
+    }
+  });
+}
+
+function renderReplyRow(reply, parentEl){
+  reply.replies = reply.replies || [];
+  reply.votes = reply.votes || {up:0, down:0};
+  if(!reply.uniqueId) reply.uniqueId = generateUniqueId('r');
+
+  const div = document.createElement('div');
+  div.className = 'reply-wrapper';
+  div.innerHTML = `
+    <div class="meta">
+      ${escapeHtml(reply.author || '')} replied • ${escapeHtml(reply.timestamp || '')} • 
+      <span style="cursor:pointer;" onclick="copyUniqueId(this,'${escapeHtml(reply.uniqueId)}')">${reply.uniqueId}</span> • ${reply.replies.length} Replies
+      <span class="copy-msg" style="display:none;">Copied</span>
+    </div>
+    <div class="content">${escapeHtml(reply.text)}</div>
+    <div class="controls">
+      <button class="btn vote" onclick="vote(this,'up','${escapeHtml(reply.id)}')">👍</button>
+      <span class="vote-count">${reply.votes.up || 0}</span>
+      <button class="btn vote" onclick="vote(this,'down','${escapeHtml(reply.id)}')">👎</button>
+      <span class="vote-count">${reply.votes.down || 0}</span>
+      <button class="btn" onclick="openReplyForm(this)">Reply this Answer</button>
+    </div>
+    <div class="reply-form">
+      <textarea placeholder="Reply..."></textarea>
+      <div class="evidence-row">
+        <input type="file" class="evidence-file">
+        <input type="text" class="evidence-link" placeholder="Paste URL evidence (optional)">
+      </div>
+      <button class="btn primary" onclick="postReply('${escapeHtml(reply.id)}', this)" style="margin-top:6px;">Post Reply</button>
+    </div>
+  `;
+  parentEl.appendChild(div);
+
+  if(reply.replies && reply.replies.length > 0){
+    const newRow = document.createElement('div');
+    newRow.className = 'thread-row';
+
+    const leftCopyHtml = `
+      <div class="left-card">
+        <div class="meta">
+          ${escapeHtml(reply.author || '')} replied • ${escapeHtml(reply.timestamp || '')} • 
+          <span style="cursor:pointer;" onclick="copyUniqueId(this,'${escapeHtml(reply.uniqueId)}')">${reply.uniqueId}</span> • ${reply.replies.length} Replies
+          <span class="copy-msg" style="display:none;">Copied</span>
+        </div>
+        <div class="content">${escapeHtml(reply.text)}</div>
+        <div class="controls">
+          <button class="btn" onclick="toggleLeftReplyForm('${escapeHtml(reply.id)}', this)">Reply this question</button>
+        </div>
+        <div class="reply-form" id="replyform-${escapeHtml(reply.id)}">
+          <textarea placeholder="Reply..."></textarea>
+          <div class="evidence-row">
+            <input type="file" class="evidence-file">
+            <input type="text" class="evidence-link" placeholder="Paste URL evidence (optional)">
+          </div>
+          <button class="btn primary" onclick="postReply('${escapeHtml(reply.id)}', this)" style="margin-top:6px;">Post Reply</button>
+        </div>
+      </div>
+    `;
+
+    const rightForChildrenHtml = `<div class="right-card"></div>`;
+    newRow.innerHTML = `<div class="left-cell">${leftCopyHtml}</div><div class="right-cell">${rightForChildrenHtml}</div>`;
+    board.appendChild(newRow);
+
+    const rightForChildren = newRow.querySelector('.right-card');
+    reply.replies.forEach((child, i) => {
+      renderReplyRow(child, rightForChildren);
+      if(i < reply.replies.length - 1){
+        const hr = document.createElement('hr');
+        hr.className = 'reply-separator';
+        rightForChildren.appendChild(hr);
+      }
+    });
+  }
+}
+
+function toggleLeftReplyForm(parentId){ 
+  const form = document.getElementById('replyform-' + parentId);
+  if(!form) return;
+  form.style.display = form.style.display === 'block' ? 'none' : 'block';
+}
+
+function openReplyForm(btn){
+  const form = btn.parentElement.nextElementSibling;
+  if(!form) return;
+  form.style.display = form.style.display === 'block' ? 'none' : 'block';
+}
+
+function findReplyById(id, arr){
+  if(!Array.isArray(arr)) return null;
+  for(const r of arr){
+    if(r.id === id) return r;
+    if(r.replies){
+      const found = findReplyById(id, r.replies);
+      if(found) return found;
+    }
+  }
+  return null;
+}
+
+function findPostById(id){
+  const q = debateData.questions.find(x => x.id === id);
+  if(q) return q;
+  return findReplyById(id, debateData.questions);
+}
+
+function postReply(parentId, btn){
+  const form = btn.closest('.reply-form');
+  if(!form) return;
+  const textEl = form.querySelector('textarea');
+  const text = textEl ? textEl.value.trim() : '';
+  if(!text) return alert('Enter reply');
+
+  const newReply = {
+    id: generateUniqueId('r'),
+    text,
+    author: CURRENT_USER,
+    timestamp: new Date().toLocaleString(),
+    votes: {up:0, down:0},
+    replies: []
+  };
+
+  const parent = findPostById(parentId);
+  if(!parent) return;
+  parent.replies = parent.replies || [];
+  parent.replies.push(newReply);
+  saveData();
+  renderBoard();
+}
+
+function addNewQuestion(){
+  const text = document.getElementById('newQuestionText').value.trim();
+  const tag = document.getElementById('newTag').value.trim();
+  if(!text) return alert('Enter question');
+  debateData.questions.push({
+    id: generateUniqueId('q'),
+    text,
+    tag,
+    author: CURRENT_USER,
+    timestamp: new Date().toLocaleString(),
+    replies: [],
+    votes: {up:0, down:0},
+    uniqueId: generateUniqueId('q')
+  });
+  saveData(); renderBoard();
+  document.getElementById('newQuestionText').value='';
+  document.getElementById('newTag').value='';
+}
+
+function filterByTag(){
+  const val=document.getElementById('tagSearch').value.toLowerCase();
+  document.querySelectorAll('.thread-row').forEach(r=>{
+    r.style.display = (r.querySelector('.left-card')?.innerText.toLowerCase().includes(val)) ? 'grid' : 'none';
+  });
+}
+
+const voteSet = new Set();
+function vote(btn,type,id){
+  const key = id + '-' + CURRENT_USER;
+  if(voteSet.has(key)) return alert('Already voted');
+  const target = findPostById(id);
+  if(!target) return;
+  target.votes = target.votes || {up:0, down:0};
+  if(type === 'up') target.votes.up++;
+  else if(type === 'down') target.votes.down++;
+  voteSet.add(key);
+  saveData(); renderBoard();
+}
+
+/* copy unique ID with inline "Copied" message */
+function copyUniqueId(el, id){
+  navigator.clipboard.writeText(id).then(()=>{
+    const msg = el.parentNode.querySelector('.copy-msg');
+    if(msg){ msg.style.display='inline'; setTimeout(()=>msg.style.display='none',2000); }
+  });
+}
+
+loadData();
+renderBoard();
+</script>
+</body>
+</html>
