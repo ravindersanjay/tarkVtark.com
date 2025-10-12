@@ -8,7 +8,16 @@ const getTopicFileName = (topic) => {
 };
 
 
-const DebateTopics = ({ onContact, onTopicClick }) => {
+/**
+ * DebateTopics - Home page for listing and adding debate topics
+ * @param {function} onTopicClick - callback when a topic is selected
+ */
+/**
+ * DebateTopics - Home page for listing and adding debate topics
+ * @param {function} onTopicClick - callback when a topic is selected
+ * @param {function} onContact - callback for Contact Us navigation (optional)
+ */
+const DebateTopics = ({ onTopicClick, onContact }) => {
   const [topics, setTopics] = useState(() => {
     const s = localStorage.getItem(TOPICS_KEY);
     if (s) {
@@ -18,6 +27,7 @@ const DebateTopics = ({ onContact, onTopicClick }) => {
   });
   const [newTopic, setNewTopic] = useState('');
 
+  // Add a new debate topic to the list
   const addTopic = () => {
     const t = newTopic.trim();
     if (!t || !/^.+ vs .+$/.test(t)) return alert('Enter topic as "x vs y"');
@@ -32,9 +42,11 @@ const DebateTopics = ({ onContact, onTopicClick }) => {
     <div className="home-container">
       <header className="header">
         <div className="brand">Debate Arena</div>
-        <nav className="nav">
-          <button className="nav-btn" onClick={onContact}>Contact Us</button>
-        </nav>
+        {onContact && (
+          <nav className="nav">
+            <button className="nav-btn" onClick={onContact}>Contact Us</button>
+          </nav>
+        )}
       </header>
       <div className="breadcrumb">Home</div>
       <div className="main-content">
@@ -43,7 +55,7 @@ const DebateTopics = ({ onContact, onTopicClick }) => {
           <ul className="topics-list">
             {topics.map((t) => (
               <li key={t}>
-                <button className="topic-btn" onClick={() => onTopicClick(t)}>{t}</button>
+                <button className="topic-btn" onClick={() => onTopicClick(t.trim())}>{t}</button>
               </li>
             ))}
           </ul>

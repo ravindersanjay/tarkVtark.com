@@ -1,3 +1,134 @@
+/* Guidelines page styles (Guidelines.jsx) */
+.guidelines-container {
+	max-width: 700px;
+	margin: 40px auto;
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+	padding: 32px 28px 40px 28px;
+}
+.guidelines-section {
+	margin-top: 18px;
+}
+.guidelines-list {
+	list-style: disc inside;
+	margin: 12px 0 18px 0;
+	padding-left: 18px;
+}
+.jump-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 18px;
+}
+.jump-input {
+	padding: 7px 10px;
+	border-radius: 6px;
+	border: 1px solid #cbd5e1;
+	font-size: 1rem;
+}
+.highlight-reply {
+	background: #fff7b2 !important;
+	transition: background 0.5s;
+}
+/* Import FAQ styles from FAQ component */
+@import './components/FAQ.css';
+/* Import Guidelines styles from Guidelines component */
+/* FAQ Styles */
+.faq-container {
+	max-width: 700px;
+	margin: 40px auto;
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+	padding: 32px 28px 40px 28px;
+}
+.faq-section {
+	margin-top: 18px;
+}
+.faq-list {
+	list-style: none;
+	padding: 0;
+	margin: 0 0 18px 0;
+}
+.faq-item {
+	margin-bottom: 14px;
+	border-bottom: 1px solid #e5e7eb;
+	padding-bottom: 8px;
+}
+.faq-q {
+	font-weight: 500;
+	font-size: 1.08rem;
+	color: #2563eb;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	user-select: none;
+}
+.faq-q:hover {
+	color: #174ea6;
+}
+.faq-toggle {
+	font-size: 1.1rem;
+	color: #888;
+}
+.faq-a {
+	margin-top: 6px;
+	font-size: 1rem;
+	color: #222;
+	background: #f4f6f9;
+	border-radius: 6px;
+	padding: 10px 14px;
+}
+/* Top Navigation Bar (used by TopNav.jsx) */
+.topnav {
+	width: 100vw;
+	min-width: 320px;
+	background: #2563eb;
+	display: flex;
+	align-items: center;
+	padding-left: 24px;
+	height: 54px;
+	box-shadow: 0 2px 8px rgba(37,99,235,0.07);
+	position: sticky;
+	top: 0;
+	z-index: 100;
+}
+.topnav-link {
+	color: #fff;
+	font-size: 1.08rem;
+	font-weight: 500;
+	padding: 0 22px;
+	height: 54px;
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	transition: background 0.18s, color 0.18s;
+	border: none;
+	background: none;
+	outline: none;
+}
+.topnav-link:hover, .topnav-link.active {
+	background: #174ea6;
+	color: #fffbe7;
+}
+.topnav-jump {
+	display: flex;
+	align-items: center;
+	margin-left: auto;
+	gap: 4px;
+}
+.topnav-jump .jump-input {
+	width: 170px;
+	padding: 6px 8px;
+	border-radius: 6px;
+	border: 1px solid #cbd5e1;
+	font-size: 1rem;
+	margin-right: 18px;
+}
+
+/* Tailwind base/components/utilities import */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,26 +138,34 @@ body {
 	font-family: 'Segoe UI', Arial, sans-serif;
 	color: #222;
 }
+/* Used by home and contact pages */
 .home-container, .contact-container {
 	max-width: 700px;
 	margin: 40px auto;
 	background: #fff;
 	border-radius: 12px;
+
+/* FAQ, Guidelines, and Contact styles are now modularized in src/styles/ and imported in their respective components. */
+
+/* Top Navigation Bar (used by TopNav.jsx) */
 	box-shadow: 0 2px 16px rgba(0,0,0,0.07);
 	padding: 32px 28px 40px 28px;
 }
+/* Used by header in home/contact */
 .header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 	margin-bottom: 18px;
 }
+/* Brand logo text */
 .brand {
 	font-size: 2.1rem;
 	font-weight: 700;
 	color: #2563eb;
 	letter-spacing: 1px;
 }
+/* Navigation buttons (legacy, not used in TopNav) */
 .nav {
 	display: flex;
 	gap: 16px;
@@ -44,6 +183,7 @@ body {
 .nav-btn:hover {
 	background: #174ea6;
 }
+/* Breadcrumb navigation */
 .breadcrumb {
 	font-size: 1rem;
 	color: #6b7280;
@@ -54,6 +194,7 @@ body {
 	cursor: pointer;
 	text-decoration: underline;
 }
+/* Topic list and add form (used by DebateTopics.jsx) */
 .topics-section {
 	margin-top: 18px;
 }
@@ -62,6 +203,9 @@ body {
 	padding: 0;
 	margin: 0 0 18px 0;
 }
+/* Import Guidelines styles from Guidelines component */
+@import './components/Guidelines.css';
+/* Import Contact styles from ContactUs component */
 .topic-btn {
 	background: #eef2ff;
 	color: #2563eb;
@@ -101,6 +245,7 @@ body {
 .add-btn:hover {
 	background: #174ea6;
 }
+/* Contact form styles (ContactUs.jsx) */
 .contact-section {
 	margin-top: 18px;
 }
@@ -120,3 +265,5 @@ body {
 	min-height: 80px;
 	resize: vertical;
 }
+/* Import Contact styles from ContactUs component */
+@import './components/ContactUs.css';

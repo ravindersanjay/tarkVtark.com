@@ -1,0 +1,1 @@
+D:\debate-app\debate-frontend>npm run dev

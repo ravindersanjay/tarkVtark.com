@@ -1,15 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
 
+
+import React, { useState, useEffect, useRef } from 'react';
+import { generateUniqueId, escapeHtml, deepCopy } from './utils/helpers.js';
 
 const CURRENT_USER = 'CurrentUser';
-
-const generateUniqueId = (prefix = 'id') => prefix + Date.now() + '-' + Math.floor(Math.random() * 1000);
-const escapeHtml = (text = '') => {
-  if (text === null || text === undefined) return '';
-  return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-};
-
-const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
 
 const findPostById = (id, questions) => {
   const q = questions.find(x => x.id === id);
@@ -140,19 +134,6 @@ const App = ({ topic }) => {
       };
       parent.replies = parent.replies || [];
       parent.replies.push(newReply);
-
-      // If parent is a reply (not a top-level question), also copy it as a new question with the new reply as its answer
-      const isTopLevel = newData.questions.some(q => q.id === parentId);
-      if (!isTopLevel) {
-        const promoted = {
-          ...deepCopy(parent),
-          id: generateUniqueId('q'),
-          uniqueId: generateUniqueId('q'),
-          tag: '',
-          replies: [deepCopy(newReply)] // Only the new reply as answer
-        };
-        newData.questions.push(promoted);
-      }
       return newData;
     });
     setDrafts(prev => ({ ...prev, [parentId]: '' }));
@@ -183,7 +164,7 @@ const App = ({ topic }) => {
       r.replies = r.replies || [];
       if (!r.uniqueId) r.uniqueId = generateUniqueId('r'); // Fallback, though should be set
       const replyJSX = (
-        <div key={`r-${r.id}`} className="reply-wrapper">
+        <div key={`r-${r.id}`} className="reply-wrapper" data-uniqueid={r.uniqueId}>
           <div className="meta">
             {escapeHtml(r.author || '')} replied • {escapeHtml(r.timestamp || '')} • 
             <span style={{ cursor: 'pointer' }} onClick={() => copyUniqueId(r.uniqueId)}>{r.uniqueId}</span> • {r.replies.length} Replies
@@ -196,6 +177,7 @@ const App = ({ topic }) => {
             <button className="btn vote" onClick={() => handleVote('down', r.id)}>👎</button>
             <span className="vote-count">{r.votes?.down || 0}</span>
             <button className="btn" onClick={() => toggleForm(r.id)}>Reply this Answer</button>
+            <button className="btn" onClick={() => alert('Thank you for reporting. Our moderators will review this answer.')}>Report</button>
             <button className="btn" onClick={() => {
               navigator.clipboard.writeText(r.text || '');
               setCopied(prev => ({ ...prev, [r.id + '-copy']: true }));
@@ -229,7 +211,7 @@ const App = ({ topic }) => {
         const subLeftText = getLeftText(r, false);
         const subDisplay = subLeftText.includes(filterTag.toLowerCase()) ? 'grid' : 'none';
         const subLeftJSX = (
-          <div className="left-card">
+          <div className="left-card" data-uniqueid={r.uniqueId}>
             <div className="meta">
               {escapeHtml(r.author || '')} replied • {escapeHtml(r.timestamp || '')} • 
               <span style={{ cursor: 'pointer' }} onClick={() => copyUniqueId(r.uniqueId)}>{r.uniqueId}</span> • {r.replies.length} Replies
@@ -238,6 +220,7 @@ const App = ({ topic }) => {
             <div className="content">{escapeHtml(r.text)}</div>
             <div className="controls">
               <button className="btn" onClick={() => toggleForm(r.id)}>Reply this question</button>
+              <button className="btn" onClick={() => alert('Thank you for reporting. Our moderators will review this question.')}>Report</button>
             </div>
             <div className="reply-form" id={`replyform-${r.id}`} style={{ display: openForms[r.id] ? 'block' : 'none' }}>
               <textarea
@@ -282,7 +265,7 @@ const App = ({ topic }) => {
       const leftText = getLeftText(q, true);
       const rowDisplay = leftText.includes(filterTag.toLowerCase()) ? 'grid' : 'none';
       const leftJSX = (
-        <div className="left-card">
+        <div className="left-card" data-uniqueid={q.uniqueId}>
           <div className="meta">
             Question • {escapeHtml(q.author || '')} • {escapeHtml(q.timestamp || '')} • 
             <span style={{ cursor: 'pointer' }} onClick={() => copyUniqueId(q.uniqueId)}>{q.uniqueId}</span> • {q.replies.length} Replies
@@ -292,6 +275,7 @@ const App = ({ topic }) => {
           <div className="content">{escapeHtml(q.text)}</div>
           <div className="controls">
             <button className="btn" onClick={() => toggleForm(q.id)}>Reply this question</button>
+            <button className="btn" onClick={() => alert('Thank you for reporting. Our moderators will review this question.')}>Report</button>
           </div>
           <div className="reply-form" id={`replyform-${q.id}`} style={{ display: openForms[q.id] ? 'block' : 'none' }}>
             <textarea

@@ -1,3 +1,6 @@
+
+// ContactUs component styles are now modularized in styles/contact.css
+import '../styles/contact.css';
 import React from 'react';
 
 const ContactUs = ({ onBack }) => (
