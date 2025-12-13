@@ -1,6 +1,6 @@
 /* Guidelines page styles (Guidelines.jsx) */
 .guidelines-container {
-	max-width: 1200px;
+	max-width: 1600px;
 	margin: 40px auto;
 	background: #fff;
 	border-radius: 12px;
@@ -36,7 +36,7 @@
 /* FAQ Styles */
 
 .faq-container {
-	max-width: 1200px;
+	max-width: 1600px;
 	margin: 40px auto;
 	background: #fff;
 	border-radius: 12px;
@@ -97,7 +97,7 @@
 }
 
 .topnav-inner {
-	max-width: 1200px;
+	max-width: 1600px;
 	margin: 0 auto;
 	height: 100%;
 	display: flex;
@@ -178,13 +178,13 @@ body {
 *, *:before, *:after { box-sizing: border-box; }
 /* Global page container used across the app (keeps nav and page content aligned) */
 .container {
-	max-width: 1200px;
+	max-width: 1600px;
     margin: 0 auto;
     padding: 0 24px;
 }
 /* Used by home and contact pages */
 .home-container {
-	max-width: 1200px;
+	max-width: 1600px;
 	margin: 40px auto;
 	background: #fff;
 	border-radius: 12px;
@@ -195,7 +195,7 @@ body {
 
 
 .contact-container {
-	max-width: 1200px;
+	max-width: 1600px;
 	margin: 40px auto;
 	background: #fff;
 	border-radius: 12px;
@@ -248,7 +248,7 @@ body {
 }
 /* Ensure breadcrumb aligns with the global container/nav */
 .breadcrumb {
-		max-width: 1200px;
+		max-width: 1600px;
   margin: 12px auto;
   padding: 0 24px;
   box-sizing: border-box;

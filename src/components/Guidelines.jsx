@@ -13,6 +13,16 @@ const Guidelines = ({ onBack }) => {
     } else {
       // Default guidelines
       setGuidelines([
+        'सवाल : आपने चोरी की है क्या?',
+            'सही जवाब : मैने चोरी नहीं की ✅',
+            'सही जवाब : हां मैने चोरी  की  है✅',
+            'सही जवाब : आपको लगता है मैंने चोरी की है तो सबूत दिखाओै✅',
+
+            'गलत जवाब : आप ने भी तो चोरी की है❌',
+            'गलत जवाब : नेता और अधिकारी भी तो चोरी करते है।❌',
+            'गलत जवाब : किसी भ्रष्ट धनवान से धन चुराकर किसी निर्धन की सहायता करने में क्या गलत है ❌',
+
+
         'Be respectful and constructive in your arguments.',
         'No hate speech, personal attacks, or discrimination.',
         'Support your points with evidence where possible.',
@@ -36,7 +46,6 @@ const Guidelines = ({ onBack }) => {
                 <li key={idx}>{guideline}</li>
               ))}
             </ul>
-            <button className="add-btn" onClick={onBack}>Back</button>
           </div>
         </div>
       </div>

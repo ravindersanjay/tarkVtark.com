@@ -2,7 +2,7 @@
 import '../styles/faq.css';
 import React, { useState, useEffect } from 'react';
 
-const FAQ = ({ onBack }) => {
+const FAQ = () => {
   const [open, setOpen] = useState({});
   const [faqList, setFaqList] = useState([]);
 
@@ -31,8 +31,8 @@ const FAQ = ({ onBack }) => {
           a: 'Replies to answers can be promoted to new questions, creating a branching debate structure.'
         },
         {
-          q: 'Is my data saved?',
-          a: 'All debates and topics are saved in your browser local storage.'
+          q: 'How many times i can vote a question or an answer?',
+          a: 'One question or one answer can be voted only once.'
         }
       ]);
     }
@@ -57,7 +57,6 @@ const FAQ = ({ onBack }) => {
                 </li>
               ))}
             </ul>
-            <button className="add-btn" onClick={onBack}>Back</button>
           </div>
         </div>
       </div>

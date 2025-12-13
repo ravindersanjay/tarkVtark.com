@@ -22,7 +22,7 @@ const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJum
       <div className="topnav-inner">
         {/* logo: prefers /tarkVtark_Logo.jpg in public, falls back to bundled asset */}
         <img
-          src="/tarkVtark_Logo.jpg"
+          src="/tarkVtark_Logo.png"
           alt="tarkVtark logo"
           className="nav-logo"
           onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = logoFallback; }}

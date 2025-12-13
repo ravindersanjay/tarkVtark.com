@@ -49,6 +49,9 @@ const Card = ({
   leftLabel,
   rightLabel
 }) => {
+  // Local state to track if the Copy button was clicked (separate from uniqueId copy)
+  const [textCopied, setTextCopied] = React.useState(false);
+
   // Determine if this is a top-level question (depth 0) or a reply (depth > 0)
   const isQuestion = depth === 0;
 
@@ -57,6 +60,13 @@ const Card = ({
   const metaText = isQuestion
     ? `Question • ${node.author || ''} • ${node.timestamp || ''} • `
     : `${node.author || ''} replied • ${node.timestamp || ''} • `;
+
+  // Handler for Copy button - copies text and shows confirmation message
+  const handleCopyText = () => {
+    navigator.clipboard.writeText(node.text || '');
+    setTextCopied(true);
+    setTimeout(() => setTextCopied(false), 2000); // Hide message after 2 seconds
+  };
 
   return (
     // Main card container - CSS class determines background color based on side
@@ -92,7 +102,7 @@ const Card = ({
         </button>
 
         {/* Report button - saves report to localStorage for admin review */}
-        <button className="btn" onClick={() => {
+        <button className="btn report" onClick={() => {
           const reason = prompt('Please provide a reason for reporting this post:');
           if (reason && reason.trim()) {
             const reports = JSON.parse(localStorage.getItem('reported_posts') || '[]');
@@ -119,9 +129,13 @@ const Card = ({
         <span className="vote-count">{node.votes?.down || 0}</span>
 
         {/* Copy button - copies the post text to clipboard */}
-        <button className="btn" onClick={() => { navigator.clipboard.writeText(node.text || ''); }}>
+        <button className="btn" onClick={handleCopyText}>
           Copy
         </button>
+        {/* "Copied!!" confirmation message - shown temporarily after copying text */}
+        <span className="copy-msg" style={{ display: textCopied ? 'inline' : 'none' }}>
+          Copied!!
+        </span>
       </div>
 
       {/*

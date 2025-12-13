@@ -719,14 +719,6 @@ const App = ({ topic }) => {
         <div className="add-question">
           <h3>Add New Question</h3>
 
-          {/* Tag input */}
-          <input
-            id="newTag"
-            placeholder="Tag"
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-          />
-
           {/* Side selector (left/right radio buttons) */}
           <div className="side-selector" style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
             <label
@@ -763,6 +755,14 @@ const App = ({ topic }) => {
             placeholder="Type your question"
             value={newQuestionText}
             onChange={(e) => setNewQuestionText(e.target.value)}
+          />
+
+          {/* Tag input */}
+          <input
+            id="newTag"
+            placeholder="Tag"
+            value={newTag}
+            onChange={(e) => setNewTag(e.target.value)}
           />
 
           {/* Submit button */}
