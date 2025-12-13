@@ -71,8 +71,9 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       const updated = topics.filter(t => t !== topic);
       setTopics(updated);
       localStorage.setItem(TOPICS_KEY, JSON.stringify(updated));
-      // Also delete the debate data
-      localStorage.removeItem(`debate_data_${topic}`);
+      // Also delete the debate data - use correct key format
+      const storageKey = `debate_threads_${topic.replace(/\s+/g, '_')}`;
+      localStorage.removeItem(storageKey);
     }
   };
 
@@ -81,11 +82,13 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     setTopics(updated);
     localStorage.setItem(TOPICS_KEY, JSON.stringify(updated));
 
-    // Move debate data to new key
-    const oldData = localStorage.getItem(`debate_data_${oldTopic}`);
+    // Move debate data to new key - use correct key format
+    const oldKey = `debate_threads_${oldTopic.replace(/\s+/g, '_')}`;
+    const newKey = `debate_threads_${newTopic.replace(/\s+/g, '_')}`;
+    const oldData = localStorage.getItem(oldKey);
     if (oldData) {
-      localStorage.setItem(`debate_data_${newTopic}`, oldData);
-      localStorage.removeItem(`debate_data_${oldTopic}`);
+      localStorage.setItem(newKey, oldData);
+      localStorage.removeItem(oldKey);
     }
     setEditingTopic(null);
   };
@@ -96,7 +99,9 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
 
   const loadDebateData = (topic) => {
     setSelectedDebate(topic);
-    const data = localStorage.getItem(`debate_data_${topic}`);
+    // Use correct storage key format
+    const storageKey = `debate_threads_${topic.replace(/\s+/g, '_')}`;
+    const data = localStorage.getItem(storageKey);
     if (data) {
       const parsed = JSON.parse(data);
       setDebateQuestions(parsed.questions || []);
@@ -105,27 +110,63 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     }
   };
 
+  const saveDebateData = (questions) => {
+    const storageKey = `debate_threads_${selectedDebate.replace(/\s+/g, '_')}`;
+    const debateData = { topic: selectedDebate, questions };
+    localStorage.setItem(storageKey, JSON.stringify(debateData));
+  };
+
   const deleteQuestion = (questionId) => {
     if (window.confirm('Delete this question and all its replies?')) {
       const updated = debateQuestions.filter(q => q.id !== questionId);
       setDebateQuestions(updated);
-      const debateData = { topic: selectedDebate, questions: updated };
-      localStorage.setItem(`debate_data_${selectedDebate}`, JSON.stringify(debateData));
+      saveDebateData(updated);
+      loadData(); // Reload to update reports
     }
   };
 
-  const deleteReply = (questionId, replyId) => {
-    if (window.confirm('Delete this reply?')) {
-      const updated = debateQuestions.map(q => {
-        if (q.id === questionId) {
-          return { ...q, replies: q.replies.filter(r => r.id !== replyId) };
-        }
-        return q;
-      });
+  // Recursive function to delete reply from nested structure
+  const deleteReplyRecursive = (items, replyId) => {
+    return items.map(item => {
+      if (item.replies && item.replies.length > 0) {
+        return {
+          ...item,
+          replies: deleteReplyRecursive(item.replies.filter(r => r.id !== replyId), replyId)
+        };
+      }
+      return item;
+    }).filter(item => item.id !== replyId);
+  };
+
+  const deleteReply = (replyId) => {
+    if (window.confirm('Delete this reply and all its sub-replies?')) {
+      const updated = deleteReplyRecursive(debateQuestions, replyId);
       setDebateQuestions(updated);
-      const debateData = { topic: selectedDebate, questions: updated };
-      localStorage.setItem(`debate_data_${selectedDebate}`, JSON.stringify(debateData));
+      saveDebateData(updated);
+      loadData(); // Reload to update reports
     }
+  };
+
+  // Edit question/reply text
+  const [editingPost, setEditingPost] = useState(null);
+
+  const updatePostRecursive = (items, postId, newText) => {
+    return items.map(item => {
+      if (item.id === postId) {
+        return { ...item, text: newText };
+      }
+      if (item.replies && item.replies.length > 0) {
+        return { ...item, replies: updatePostRecursive(item.replies, postId, newText) };
+      }
+      return item;
+    });
+  };
+
+  const updatePost = (postId, newText) => {
+    const updated = updatePostRecursive(debateQuestions, postId, newText);
+    setDebateQuestions(updated);
+    saveDebateData(updated);
+    setEditingPost(null);
   };
 
   // FAQ Management
@@ -180,11 +221,140 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     }
   };
 
-  // Reports Management
+  // Reports Management - Enhanced with aggregation
+  const getAggregatedReports = () => {
+    const aggregated = {};
+
+    reports.forEach((report) => {
+      const postId = report.postId;
+      if (!aggregated[postId]) {
+        aggregated[postId] = {
+          postId: report.postId,
+          postText: report.postText,
+          reporters: [],
+          reasons: [],
+          firstReportDate: report.timestamp,
+          totalCount: 0
+        };
+      }
+      aggregated[postId].reporters.push({
+        name: report.reporter,
+        reason: report.reason,
+        timestamp: report.timestamp
+      });
+      aggregated[postId].reasons.push(report.reason);
+      aggregated[postId].totalCount++;
+    });
+
+    // Convert to array and sort by report count (highest first)
+    return Object.values(aggregated).sort((a, b) => b.totalCount - a.totalCount);
+  };
+
   const deleteReport = (index) => {
     const updated = reports.filter((_, i) => i !== index);
     setReports(updated);
     localStorage.setItem(REPORTS_KEY, JSON.stringify(updated));
+  };
+
+  const deleteAllReportsForPost = (postId) => {
+    if (window.confirm('Dismiss all reports for this post?')) {
+      const updated = reports.filter(r => r.postId !== postId);
+      setReports(updated);
+      localStorage.setItem(REPORTS_KEY, JSON.stringify(updated));
+    }
+  };
+
+  const deleteReportedPost = (postId) => {
+    if (window.confirm('Delete this reported post from all debates?')) {
+      // Search through all debates and remove the post
+      let found = false;
+      topics.forEach(topic => {
+        const storageKey = `debate_threads_${topic.replace(/\s+/g, '_')}`;
+        const data = localStorage.getItem(storageKey);
+        if (data) {
+          const parsed = JSON.parse(data);
+          const originalLength = JSON.stringify(parsed).length;
+
+          // Remove from questions
+          parsed.questions = parsed.questions.filter(q => q.uniqueId !== postId);
+
+          // Remove from nested replies recursively
+          const removeFromReplies = (items) => {
+            return items.map(item => {
+              if (item.replies && item.replies.length > 0) {
+                item.replies = removeFromReplies(item.replies.filter(r => r.uniqueId !== postId));
+              }
+              return item;
+            });
+          };
+
+          parsed.questions = removeFromReplies(parsed.questions);
+
+          if (JSON.stringify(parsed).length !== originalLength) {
+            localStorage.setItem(storageKey, JSON.stringify(parsed));
+            found = true;
+          }
+        }
+      });
+
+      if (found) {
+        // Remove all reports for this post
+        deleteAllReportsForPost(postId);
+        alert('Post deleted successfully from all debates.');
+        loadData();
+      } else {
+        alert('Post not found in any debate.');
+      }
+    }
+  };
+
+  const warnReporters = (postId) => {
+    const postReports = reports.filter(r => r.postId === postId);
+    if (postReports.length > 0) {
+      const reporterNames = [...new Set(postReports.map(r => r.reporter))].join(', ');
+      alert(`Warning sent to: ${reporterNames}\n\nNote: In production, this would send actual warnings to users.`);
+    }
+  };
+
+  const editReportedPost = (postId) => {
+    const newText = prompt('Enter new text for this post:');
+    if (newText && newText.trim()) {
+      let found = false;
+      topics.forEach(topic => {
+        const storageKey = `debate_threads_${topic.replace(/\s+/g, '_')}`;
+        const data = localStorage.getItem(storageKey);
+        if (data) {
+          const parsed = JSON.parse(data);
+
+          // Update in questions
+          const updateInItems = (items) => {
+            return items.map(item => {
+              if (item.uniqueId === postId) {
+                item.text = newText.trim();
+                found = true;
+              }
+              if (item.replies && item.replies.length > 0) {
+                item.replies = updateInItems(item.replies);
+              }
+              return item;
+            });
+          };
+
+          parsed.questions = updateInItems(parsed.questions);
+
+          if (found) {
+            localStorage.setItem(storageKey, JSON.stringify(parsed));
+          }
+        }
+      });
+
+      if (found) {
+        alert('Post edited successfully. Consider dismissing the reports.');
+        loadData();
+      } else {
+        alert('Post not found in any debate.');
+      }
+    }
   };
 
   const clearAllReports = () => {
@@ -206,6 +376,57 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       setMessages([]);
       localStorage.setItem(MESSAGES_KEY, JSON.stringify([]));
     }
+  };
+
+  // Analytics - Top 10 Questions and Answers
+  const getTop10Stats = () => {
+    const allPosts = [];
+
+    topics.forEach(topic => {
+      const storageKey = `debate_threads_${topic.replace(/\s+/g, '_')}`;
+      const data = localStorage.getItem(storageKey);
+      if (data) {
+        const parsed = JSON.parse(data);
+        const collectPosts = (items, isQuestion = false) => {
+          items.forEach(item => {
+            allPosts.push({
+              ...item,
+              topic,
+              type: isQuestion ? 'question' : 'answer',
+              totalLikes: (item.votes?.up || 0)
+            });
+            if (item.replies && item.replies.length > 0) {
+              collectPosts(item.replies, false);
+            }
+          });
+        };
+        if (parsed.questions) {
+          collectPosts(parsed.questions, true);
+        }
+      }
+    });
+
+    const questions = allPosts.filter(p => p.type === 'question')
+      .sort((a, b) => b.totalLikes - a.totalLikes)
+      .slice(0, 10);
+
+    const answers = allPosts.filter(p => p.type === 'answer')
+      .sort((a, b) => b.totalLikes - a.totalLikes)
+      .slice(0, 10);
+
+    return { questions, answers };
+  };
+
+  // Flatten all replies for display
+  const flattenReplies = (replies, depth = 1) => {
+    const result = [];
+    replies.forEach(reply => {
+      result.push({ ...reply, depth });
+      if (reply.replies && reply.replies.length > 0) {
+        result.push(...flattenReplies(reply.replies, depth + 1));
+      }
+    });
+    return result;
   };
 
   return (
@@ -232,6 +453,12 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
           onClick={() => setActiveTab('questions')}
         >
           Questions & Answers
+        </button>
+        <button
+          className={`admin-tab ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          Top 10 Analytics
         </button>
         <button
           className={`admin-tab ${activeTab === 'reports' ? 'active' : ''}`}
@@ -361,7 +588,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                                 <div className="reply-text">{reply.text}</div>
                                 <button
                                   className="btn btn-small btn-danger"
-                                  onClick={() => deleteReply(question.id, reply.id)}
+                                  onClick={() => deleteReply(reply.id)}
                                 >
                                   Delete Reply
                                 </button>
@@ -391,17 +618,21 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
               {reports.length === 0 ? (
                 <p className="empty-state">No reported posts.</p>
               ) : (
-                reports.map((report, index) => (
+                getAggregatedReports().map((report, index) => (
                   <div key={index} className="admin-item report-item">
                     <div className="report-details">
                       <div><strong>Post ID:</strong> {report.postId}</div>
-                      <div><strong>Reported by:</strong> {report.reporter}</div>
-                      <div><strong>Reason:</strong> {report.reason}</div>
-                      <div><strong>Date:</strong> {report.timestamp}</div>
+                      <div><strong>Reported by:</strong> {report.reporters.map(r => r.name).join(', ')}</div>
+                      <div><strong>Reasons:</strong> {report.reasons.join(', ')}</div>
+                      <div><strong>Date:</strong> {report.firstReportDate}</div>
+                      <div><strong>Total Reports:</strong> {report.totalCount}</div>
                     </div>
-                    <button className="btn btn-small btn-danger" onClick={() => deleteReport(index)}>
-                      Dismiss
-                    </button>
+                    <div className="report-actions">
+                      <button className="btn btn-small" onClick={() => deleteAllReportsForPost(report.postId)}>Dismiss All</button>
+                      <button className="btn btn-small" onClick={() => deleteReportedPost(report.postId)}>Delete Post</button>
+                      <button className="btn btn-small" onClick={() => warnReporters(report.postId)}>Warn Reporters</button>
+                      <button className="btn btn-small" onClick={() => editReportedPost(report.postId)}>Edit Post</button>
+                    </div>
                   </div>
                 ))
               )}
@@ -568,6 +799,77 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Tab - Top 10 Most Liked Questions and Answers */}
+        {activeTab === 'analytics' && (
+          <div className="admin-section">
+            <h2>📊 Top 10 Analytics - Most Liked Content</h2>
+            <div className="analytics-grid">
+              {/* Top 10 Questions */}
+              <div className="analytics-section">
+                <h3>🏆 Top 10 Questions</h3>
+                {(() => {
+                  const stats = getTop10Stats();
+                  return stats.questions.length === 0 ? (
+                    <p className="empty-state">No questions available yet.</p>
+                  ) : (
+                    <div className="top-list">
+                      {stats.questions.map((question, index) => (
+                        <div key={index} className="top-item">
+                          <div className="rank">{index + 1}</div>
+                          <div className="top-content">
+                            <div className="top-topic">{question.topic}</div>
+                            <div className="top-text">{question.text}</div>
+                            <div className="top-meta">
+                              <span className="top-author">By: {question.author}</span>
+                              <span className="top-id">ID: {question.uniqueId}</span>
+                              <span className="top-tag">[{question.tag}]</span>
+                            </div>
+                          </div>
+                          <div className="top-likes">
+                            <div className="likes-count">{question.totalLikes}</div>
+                            <div className="likes-label">👍 Likes</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Top 10 Answers */}
+              <div className="analytics-section">
+                <h3>🏆 Top 10 Answers</h3>
+                {(() => {
+                  const stats = getTop10Stats();
+                  return stats.answers.length === 0 ? (
+                    <p className="empty-state">No answers available yet.</p>
+                  ) : (
+                    <div className="top-list">
+                      {stats.answers.map((answer, index) => (
+                        <div key={index} className="top-item">
+                          <div className="rank">{index + 1}</div>
+                          <div className="top-content">
+                            <div className="top-topic">{answer.topic}</div>
+                            <div className="top-text">{answer.text}</div>
+                            <div className="top-meta">
+                              <span className="top-author">By: {answer.author}</span>
+                              <span className="top-id">ID: {answer.uniqueId}</span>
+                            </div>
+                          </div>
+                          <div className="top-likes">
+                            <div className="likes-count">{answer.totalLikes}</div>
+                            <div className="likes-label">👍 Likes</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         )}

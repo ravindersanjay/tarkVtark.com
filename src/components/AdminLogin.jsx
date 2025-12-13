@@ -14,7 +14,7 @@ const AdminLogin = ({ onLogin }) => {
     e.preventDefault();
 
     // Simple hardcoded auth (replace with real auth in production)
-    if (username === 'admin' && password === 'admin123') {
+    if (username === 'admin' && password === 'admin996') {
       localStorage.setItem('admin_logged_in', 'true');
       onLogin();
     } else {
@@ -92,4 +92,3 @@ const AdminLogin = ({ onLogin }) => {
 };
 
 export default AdminLogin;
-

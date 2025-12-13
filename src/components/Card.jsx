@@ -91,8 +91,22 @@ const Card = ({
           Reply this {node.side === 'left' ? leftLabel : rightLabel} question
         </button>
 
-        {/* Report button - shows alert (in real app, would report to moderators) */}
-        <button className="btn" onClick={() => alert('Thank you for reporting. Our moderators will review this.')}>
+        {/* Report button - saves report to localStorage for admin review */}
+        <button className="btn" onClick={() => {
+          const reason = prompt('Please provide a reason for reporting this post:');
+          if (reason && reason.trim()) {
+            const reports = JSON.parse(localStorage.getItem('reported_posts') || '[]');
+            reports.push({
+              postId: node.uniqueId,
+              postText: node.text,
+              reporter: node.author || 'Anonymous',
+              reason: reason.trim(),
+              timestamp: new Date().toLocaleString()
+            });
+            localStorage.setItem('reported_posts', JSON.stringify(reports));
+            alert('Report submitted. Thank you! Our moderators will review this.');
+          }
+        }}>
           Report
         </button>
 

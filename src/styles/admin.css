@@ -246,6 +246,14 @@
   align-self: flex-end;
 }
 
+.report-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: flex-end;
+}
+
 /* Message Specific Styles */
 .message-item {
   flex-direction: column;
@@ -410,5 +418,139 @@
     flex-direction: column;
     align-items: stretch;
   }
+
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
+/* Analytics Tab Styles */
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.analytics-section {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.analytics-section h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #111827;
+  font-size: 1.3rem;
+}
+
+.top-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.top-item {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.top-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.rank {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.top-item:nth-child(1) .rank {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.top-item:nth-child(2) .rank {
+  background: linear-gradient(135deg, #d1d5db, #9ca3af);
+}
+
+.top-item:nth-child(3) .rank {
+  background: linear-gradient(135deg, #cd7f32, #a0522d);
+}
+
+.top-content {
+  flex: 1;
+}
+
+.top-topic {
+  font-size: 0.85rem;
+  color: #2563eb;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.top-text {
+  color: #111827;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.top-meta {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.top-author {
+  font-weight: 500;
+}
+
+.top-id {
+  color: #9ca3af;
+}
+
+.top-tag {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.top-likes {
+  text-align: center;
+  min-width: 70px;
+}
+
+.likes-count {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2563eb;
+  margin-bottom: 4px;
+}
+
+.likes-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 500;
+}
