@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Reply Sample — 3-level mockup</title>
+  <style>
+    :root{--bg:#f4f6f9;--card:#fff;--left:#eef2ff;--right:#fff8ed;--muted:#6b7280;--accent:#2563eb}
+    body{font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); margin:24px}
+    .container{max-width:1100px; margin:0 auto}
+    h1{font-size:18px; margin:0 0 12px}
+    .topic{font-weight:700; color:#111827; margin-bottom:8px}
+    .board{display:grid; grid-template-columns:1fr 1fr; gap:20px}
+    .col{background:transparent}
+    .col-header{font-weight:700; padding:8px 12px; border-radius:12px; display:inline-block; margin-bottom:10px}
+    .col-left .col-header{background:var(--left); color:#0f172a}
+    .col-right .col-header{background:var(--right); color:#0f172a}
+
+    /* Each question is a section with left/right placement between the two columns */
+    .question-sep{border:none; border-top:1px solid #e5e7eb; margin:12px 0}
+    .question-section{background:var(--card); padding:14px; border-radius:10px; border:1px solid rgba(16,24,40,0.04); box-shadow:0 8px 28px rgba(16,24,40,0.04)}
+    .question-row{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+    .left-card,.right-card{padding:10px; border-radius:8px}
+    .left-card{background:var(--left); border:1px solid #cbd5e1}
+    .right-card{background:var(--right); border:1px solid #ffe5d4}
+
+    .meta{font-size:12px; color:var(--muted); margin-bottom:8px}
+    .content{font-size:15px; color:#0f172a}
+    .controls{margin-top:10px; display:flex; gap:8px}
+    .btn{padding:6px 10px; border-radius:8px; border:0; cursor:pointer; background:var(--accent); color:#fff; font-weight:600}
+    .btn.ghost{background:transparent; color:var(--accent); border:1px solid rgba(37,99,235,0.12)}
+
+    /* Replies visual nesting inside the right-card for the question */
+    .reply{background:#fff; border-radius:8px; padding:10px; margin-bottom:10px; border:1px solid #e8eef8}
+    .reply .meta{font-size:11px; color:var(--muted); margin-bottom:6px}
+    .reply-level-1{margin-left:0}
+    .reply-level-2{margin-left:12px; background:#fbfdff}
+    .reply-level-3{margin-left:24px; background:#fffef8}
+
+    .note{font-size:12px;color:#374151;margin-top:6px}
+
+    /* small screen fallback */
+    @media (max-width:720px){
+      .board{grid-template-columns:1fr}
+      .question-row{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topic">Topic: <strong>Cat vs Dog</strong></div>
+    <h1>Demo — question with 3-level replies (visual mockup)</h1>
+
+    <div class="board">
+      <div class="col col-left">
+        <div class="col-header">Cat</div>
+
+        <!-- Separator then question -->
+        <hr class="question-sep" />
+        <div class="question-section">
+          <div class="question-row">
+            <!-- Question sits on the left column -->
+            <div class="left-cell">
+              <div class="left-card">
+                <div class="meta">Question • Alice • 2025-12-07 10:02 • Q1</div>
+                <div class="content"><strong>Q1:</strong> Cats are better for apartment living — explain why.</div>
+                <div class="controls">
+                  <button class="btn ghost">Reply this question</button>
+                  <button class="btn">Report</button>
+                </div>
+                <div class="note">Reply form is on this card — submitted replies show in the opponent column (Dog).</div>
+              </div>
+            </div>
+
+            <!-- Replies appear in the opponent (right) card -->
+            <div class="right-cell">
+              <div class="right-card">
+                <!-- Level 1 (direct reply to Q1) -->
+                <div class="reply reply-level-1">
+                  <div class="meta">Bob replied • 2025-12-07 10:05 • R1</div>
+                  <div class="content">I disagree — dogs can be trained and give companionship, even in apartments.</div>
+                </div>
+
+                <!-- Level 2 (reply to R1) -->
+                <div class="reply reply-level-2">
+                  <div class="meta">Carol replied • 2025-12-07 10:10 • R2 (in reply to R1)</div>
+                  <div class="content">Training a dog takes time and space — smaller breeds adapt well; also consider noise levels.</div>
+                </div>
+
+                <!-- Level 3 (reply to R2) -->
+                <div class="reply reply-level-3">
+                  <div class="meta">Dave replied • 2025-12-07 10:14 • R3 (in reply to R2)</div>
+                  <div class="content">True, but many apartment owners schedule walks and use indoor enrichment — it's manageable.</div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <div class="col col-right">
+        <div class="col-header">Dog</div>
+        <!-- This column intentionally left empty in this mockup (replies for Q1 rendered in opponent card to the right of the question) -->
+        <div style="color:#666;margin-top:8px"><i>Opponent feed (other questions/replies would appear here)</i></div>
+      </div>
+    </div>
+
+    <p style="margin-top:18px; color:#374151; font-size:13px">Notes: This is a static mockup for demonstration. Level-1 is a direct reply to Q1; Level-2 replies to Level-1; Level-3 replies to Level-2. Reply submission happens from the question card (left) and appears in the opponent column (right-card) visually.</p>
+  </div>
+</body>
+</html>

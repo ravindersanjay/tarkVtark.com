@@ -1,11 +1,12 @@
 /* Guidelines page styles (Guidelines.jsx) */
 .guidelines-container {
-	max-width: 700px;
+	max-width: 1200px;
 	margin: 40px auto;
 	background: #fff;
 	border-radius: 12px;
 	box-shadow: 0 2px 16px rgba(0,0,0,0.07);
 	padding: 32px 28px 40px 28px;
+	box-sizing: border-box;
 }
 .guidelines-section {
 	margin-top: 18px;
@@ -32,16 +33,16 @@
 	transition: background 0.5s;
 }
 /* Import FAQ styles from FAQ component */
-@import './components/FAQ.css';
-/* Import Guidelines styles from Guidelines component */
 /* FAQ Styles */
+
 .faq-container {
-	max-width: 700px;
+	max-width: 1200px;
 	margin: 40px auto;
 	background: #fff;
 	border-radius: 12px;
 	box-shadow: 0 2px 16px rgba(0,0,0,0.07);
 	padding: 32px 28px 40px 28px;
+	box-sizing: border-box;
 }
 .faq-section {
 	margin-top: 18px;
@@ -83,49 +84,75 @@
 }
 /* Top Navigation Bar (used by TopNav.jsx) */
 .topnav {
-	width: 100vw;
+	width: 100%;
 	min-width: 320px;
 	background: #2563eb;
-	display: flex;
-	align-items: center;
-	padding-left: 24px;
-	height: 54px;
+	display: block;
+	/* Reduced height from 96px to 60px for more compact navbar */
+	height: 60px;
 	box-shadow: 0 2px 8px rgba(37,99,235,0.07);
 	position: sticky;
 	top: 0;
 	z-index: 100;
 }
+
+.topnav-inner {
+	max-width: 1200px;
+	margin: 0 auto;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 0 24px 0 12px; /* align padding with logo position */
+	position: relative; /* for absolute-positioned logo */
+}
+
+/* logo in the nav - scaled down to fit smaller navbar */
+.nav-logo {
+	position: relative; /* changed from absolute to relative for proper flow */
+	height: 50px; /* reduced from 88px to 50px */
+	width: auto;
+	display: block;
+	margin-right: 24px; /* spacing between logo and nav links */
+	cursor: pointer;
+}
+
 .topnav-link {
 	color: #fff;
-	font-size: 1.08rem;
+	font-size: 1rem; /* reduced from 1.08rem for better fit */
 	font-weight: 500;
-	padding: 0 22px;
-	height: 54px;
+	padding: 0 16px; /* reduced from 22px for more compact spacing */
+	height: 60px; /* match new topnav height */
 	display: flex;
 	align-items: center;
 	cursor: pointer;
-	transition: background 0.18s, color 0.18s;
-	border: none;
-	background: none;
-	outline: none;
+	transition: background 0.2s;
 }
+
 .topnav-link:hover, .topnav-link.active {
 	background: #174ea6;
 	color: #fffbe7;
 }
+
 .topnav-jump {
 	display: flex;
 	align-items: center;
 	margin-left: auto;
 	gap: 4px;
 }
+
 .topnav-jump .jump-input {
-	width: 170px;
-	padding: 6px 8px;
-	border-radius: 6px;
+	padding: 6px 10px; /* slightly reduced padding for compact look */
+	border-radius: 4px;
 	border: 1px solid #cbd5e1;
-	font-size: 1rem;
-	margin-right: 18px;
+	font-size: 0.95rem;
+	width: 200px; /* set explicit width for better control */
+}
+
+.topnav-jump .btn {
+	padding: 6px 14px; /* matched with input padding */
+	font-size: 0.95rem;
+	height: auto; /* remove any fixed height */
 }
 
 /* Tailwind base/components/utilities import */
@@ -133,23 +160,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Reset body spacing so layout is consistent across pages */
+html, body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+}
 body {
 	background: #f4f6f9;
 	font-family: 'Segoe UI', Arial, sans-serif;
 	color: #222;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* sensible box-sizing for predictable layout */
+*, *:before, *:after { box-sizing: border-box; }
+/* Global page container used across the app (keeps nav and page content aligned) */
+.container {
+	max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
 }
 /* Used by home and contact pages */
-.home-container, .contact-container {
-	max-width: 700px;
+.home-container {
+	max-width: 1200px;
 	margin: 40px auto;
 	background: #fff;
 	border-radius: 12px;
-
-/* FAQ, Guidelines, and Contact styles are now modularized in src/styles/ and imported in their respective components. */
-
-/* Top Navigation Bar (used by TopNav.jsx) */
 	box-shadow: 0 2px 16px rgba(0,0,0,0.07);
 	padding: 32px 28px 40px 28px;
+	box-sizing: border-box;
+}
+
+
+.contact-container {
+	max-width: 1200px;
+	margin: 40px auto;
+	background: #fff;
+	border-radius: 12px;
+	box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+	padding: 32px 28px 40px 28px;
+	box-sizing: border-box;
 }
 /* Used by header in home/contact */
 .header {
@@ -194,6 +246,13 @@ body {
 	cursor: pointer;
 	text-decoration: underline;
 }
+/* Ensure breadcrumb aligns with the global container/nav */
+.breadcrumb {
+		max-width: 1200px;
+  margin: 12px auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
 /* Topic list and add form (used by DebateTopics.jsx) */
 .topics-section {
 	margin-top: 18px;
@@ -204,8 +263,6 @@ body {
 	margin: 0 0 18px 0;
 }
 /* Import Guidelines styles from Guidelines component */
-@import './components/Guidelines.css';
-/* Import Contact styles from ContactUs component */
 .topic-btn {
 	background: #eef2ff;
 	color: #2563eb;
@@ -266,4 +323,3 @@ body {
 	resize: vertical;
 }
 /* Import Contact styles from ContactUs component */
-@import './components/ContactUs.css';
