@@ -21,7 +21,7 @@
  * because the app is small. URL structure: /debate_Topic_Name.html
  */
 
-import { StrictMode, useState } from 'react';
+import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App.jsx';
@@ -30,6 +30,8 @@ import ContactUs from './components/ContactUs.jsx';
 import Guidelines from './components/Guidelines.jsx';
 import TopNav from './components/TopNav.jsx';
 import FAQ from './components/FAQ.jsx';
+import AdminLogin from './components/AdminLogin.jsx';
+import AdminDashboard from './components/AdminDashboard.jsx';
 
 /**
  * Extract debate topic from the URL path
@@ -75,6 +77,31 @@ function MainRouter() {
     return { type: 'home' };
   });
 
+  // Admin authentication state
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
+    return localStorage.getItem('admin_logged_in') === 'true';
+  });
+
+  // Check for admin route in URL
+  useEffect(() => {
+    if (window.location.pathname.includes('/admin')) {
+      setPage({ type: 'admin' });
+    }
+  }, []);
+
+  // Admin logout handler
+  const handleAdminLogout = () => {
+    localStorage.removeItem('admin_logged_in');
+    setIsAdminLoggedIn(false);
+    setPage({ type: 'home' });
+  };
+
+  // Admin login handler
+  const handleAdminLogin = () => {
+    setIsAdminLoggedIn(true);
+    setPage({ type: 'admin' });
+  };
+
   /**
    * Jump to a specific post by its uniqueId
    *
@@ -113,6 +140,7 @@ function MainRouter() {
     onContact: () => setPage({ type: 'contact' }),
     onGuidelines: () => setPage({ type: 'guidelines' }),
     onFAQ: () => setPage({ type: 'faq' }),
+    onAdmin: () => setPage({ type: 'admin' }),
     active: page.type,
     // Jump feature only available on debate pages
     onJump: page.type === 'debate' ? jumpToUniqueId : undefined
@@ -120,8 +148,8 @@ function MainRouter() {
 
   return (
     <>
-      {/* Navigation bar - appears on all pages */}
-      <TopNav {...navProps} />
+      {/* Navigation bar - appears on all pages except admin */}
+      {page.type !== 'admin' && <TopNav {...navProps} />}
 
       {/* Render the appropriate page based on current state */}
       {page.type === 'home' && (
@@ -144,6 +172,19 @@ function MainRouter() {
 
       {page.type === 'faq' && (
         <FAQ />
+      )}
+
+      {page.type === 'admin' && (
+        <>
+          {!isAdminLoggedIn ? (
+            <AdminLogin onLogin={handleAdminLogin} />
+          ) : (
+            <AdminDashboard
+              onLogout={handleAdminLogout}
+              onBackToSite={() => setPage({ type: 'home' })}
+            />
+          )}
+        </>
       )}
     </>
   );

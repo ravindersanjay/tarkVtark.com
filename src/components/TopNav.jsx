@@ -11,10 +11,11 @@ import logoFallback from '../assets/react.svg';
  * @param {function} onContact - go to contact page
  * @param {function} onGuidelines - go to guidelines page
  * @param {function} onFAQ - go to FAQ page
+ * @param {function} onAdmin - go to admin panel
  * @param {string} active - which nav item is active
  * @param {function} onJump - callback for unique ID jump
  */
-const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, active, onJump }) => {
+const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJump }) => {
   const [jumpId, setJumpId] = useState('');
   return (
     <nav className="topnav">
@@ -32,6 +33,7 @@ const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, active, onJump }) => {
         <span className={`topnav-link${active === 'guidelines' ? ' active' : ''}`} onClick={onGuidelines}>Guidelines</span>
         <span className={`topnav-link${active === 'faq' ? ' active' : ''}`} onClick={onFAQ}>FAQ</span>
         <span className={`topnav-link${active === 'contact' ? ' active' : ''}`} onClick={onContact}>Contact Us</span>
+        <span className={`topnav-link${active === 'admin' ? ' active' : ''}`} onClick={onAdmin}>Admin</span>
         {/* Jump to Unique ID */}
         <div className="topnav-jump">
           <input

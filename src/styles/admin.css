@@ -1,0 +1,414 @@
+/* Admin Dashboard Styles */
+
+.admin-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #f4f6f9;
+  min-height: 100vh;
+}
+
+.admin-header {
+  background: #fff;
+  padding: 20px 32px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-header h1 {
+  margin: 0;
+  color: #2563eb;
+  font-size: 1.8rem;
+}
+
+.admin-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.admin-tab {
+  padding: 12px 20px;
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.admin-tab:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.admin-tab.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.admin-content {
+  background: #fff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  min-height: 500px;
+}
+
+.admin-section h2 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: #111827;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 12px;
+}
+
+.admin-section h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #374151;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.section-header h2 {
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-item {
+  padding: 16px 20px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: box-shadow 0.2s;
+}
+
+.admin-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.item-text {
+  font-size: 1.05rem;
+  color: #111827;
+  flex: 1;
+}
+
+.item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+.edit-form {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex: 1;
+}
+
+.edit-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.edit-textarea {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 1rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.empty-state {
+  text-align: center;
+  color: #6b7280;
+  padding: 40px;
+  font-size: 1.1rem;
+}
+
+/* Add Form Styles */
+.add-form {
+  background: #f0f9ff;
+  padding: 24px;
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+  margin-bottom: 32px;
+}
+
+.form-input, .form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+
+.form-textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* FAQ Specific Styles */
+.faq-item {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.faq-content {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.faq-q {
+  color: #2563eb;
+  margin-bottom: 8px;
+  font-size: 1.05rem;
+}
+
+.faq-a {
+  color: #374151;
+  padding-left: 20px;
+}
+
+.faq-item .item-actions {
+  align-self: flex-end;
+}
+
+/* Report Specific Styles */
+.report-item {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.report-details {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.report-details > div {
+  margin-bottom: 6px;
+}
+
+.report-item button {
+  align-self: flex-end;
+}
+
+/* Message Specific Styles */
+.message-item {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.message-details {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.message-details > div {
+  margin-bottom: 6px;
+}
+
+.message-text {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fff;
+  border-left: 3px solid #2563eb;
+  border-radius: 4px;
+}
+
+.message-item button {
+  align-self: flex-end;
+}
+
+/* Debate Selector */
+.debate-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* Questions List */
+.questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.question-item {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.question-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.question-tag {
+  background: #dbeafe;
+  color: #1e40af;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.question-author {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.question-id {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin-left: auto;
+}
+
+.question-text {
+  color: #111827;
+  font-size: 1.05rem;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.question-actions {
+  margin-top: 12px;
+}
+
+.replies-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.replies-section h4 {
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.reply-item {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.reply-author {
+  font-weight: 600;
+  color: #2563eb;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.reply-text {
+  color: #374151;
+  flex: 1;
+  margin-right: 12px;
+}
+
+.reply-item button {
+  flex-shrink: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 12px;
+  }
+
+  .admin-header {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .admin-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .admin-content {
+    padding: 20px;
+  }
+
+  .admin-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .item-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: 12px;
+  }
+
+  .edit-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
