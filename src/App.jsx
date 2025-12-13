@@ -159,6 +159,9 @@ const App = ({ topic }) => {
   const [newTag, setNewTag] = useState('');           // Category tag input
   const [newQuestionText, setNewQuestionText] = useState(''); // Question text
   const [newQuestionSide, setNewQuestionSide] = useState(''); // Which side (left/right)
+  const [newQuestionFiles, setNewQuestionFiles] = useState([]); // Evidence files for new question
+  const [newQuestionUrls, setNewQuestionUrls] = useState([]); // Evidence URLs for new question
+  const [newQuestionUrlInput, setNewQuestionUrlInput] = useState(''); // URL input field
 
   // Search/filter state
   const [filterTag, setFilterTag] = useState(''); // Filter posts by tag/text
@@ -166,6 +169,8 @@ const App = ({ topic }) => {
   // Reply form management
   const [drafts, setDrafts] = useState({});    // Draft text for each reply form (keyed by post ID)
   const [openForms, setOpenForms] = useState({}); // Track which reply forms are open (keyed by post ID)
+  const [evidenceFiles, setEvidenceFiles] = useState({}); // Evidence files for each reply form
+  const [evidenceUrls, setEvidenceUrls] = useState({}); // Evidence URLs for each reply form
 
   // UI feedback state
   const [copied, setCopied] = useState({});    // Track which uniqueIds were recently copied
@@ -275,7 +280,7 @@ const App = ({ topic }) => {
    * Validates inputs, creates a new question object, and adds it to the debate data.
    * The question is added to the array and will appear at the bottom of the board.
    */
-  const addNewQuestion = () => {
+  const addNewQuestion = async () => {
     try {
       const text = newQuestionText.trim();
       const tag = newTag.trim();
@@ -283,6 +288,32 @@ const App = ({ topic }) => {
       // Validation
       if (!text) return alert('Enter question');
       if (!newQuestionSide) return alert('Please select a side (left or right) before adding a question');
+
+      // Convert files to base64 data URLs for storage
+      const processedFiles = await Promise.all(
+        newQuestionFiles.map(file => {
+          return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              resolve({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                dataUrl: e.target.result
+              });
+            };
+            reader.onerror = () => {
+              resolve({
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                dataUrl: null
+              });
+            };
+            reader.readAsDataURL(file);
+          });
+        })
+      );
 
       // Create new question object
       const newQ = {
@@ -296,6 +327,14 @@ const App = ({ topic }) => {
         votes: { up: 0, down: 0 },
         uniqueId: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}` // Shareable ID
       };
+
+      // Add evidence if provided
+      if (processedFiles.length > 0 || newQuestionUrls.length > 0) {
+        newQ.evidence = {
+          files: processedFiles,
+          urls: newQuestionUrls
+        };
+      }
 
       // Add to debate data
       setDebateData(prev => {
@@ -321,6 +360,9 @@ const App = ({ topic }) => {
       setNewQuestionText('');
       setNewTag('');
       setNewQuestionSide('');
+      setNewQuestionFiles([]);
+      setNewQuestionUrls([]);
+      setNewQuestionUrlInput('');
     } catch (err) {
       console.error('addNewQuestion error', err);
       alert('Unexpected error when adding question — check console');
@@ -335,12 +377,44 @@ const App = ({ topic }) => {
    * 2. Creates a new reply object
    * 3. Sets the reply's side to the OPPOSITE of the parent (for alternating columns)
    * 4. Adds the reply to the parent's replies array
+   * 5. Attaches evidence (files and URLs) if provided
+   * 6. Converts files to base64 data URLs for download/viewing
    *
    * @param {string} parentId - The ID of the post being replied to
    */
-  const postReply = (parentId) => {
+  const postReply = async (parentId) => {
     const text = drafts[parentId] || '';
     if (!text.trim()) return alert('Enter reply');
+
+    // Get evidence for this reply
+    const files = evidenceFiles[parentId] || [];
+    const urls = evidenceUrls[parentId] || [];
+
+    // Convert files to base64 data URLs for storage
+    const processedFiles = await Promise.all(
+      files.map(file => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            resolve({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              dataUrl: e.target.result // base64 data URL
+            });
+          };
+          reader.onerror = () => {
+            resolve({
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              dataUrl: null
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      })
+    );
 
     setDebateData(prev => {
       // Use deepCopy to avoid mutating state directly
@@ -364,6 +438,14 @@ const App = ({ topic }) => {
         side: parent.side === 'left' ? 'right' : 'left' // OPPOSITE side!
       };
 
+      // Add evidence if provided
+      if (processedFiles.length > 0 || urls.length > 0) {
+        newReply.evidence = {
+          files: processedFiles,
+          urls: urls
+        };
+      }
+
       // Add reply to parent's replies array
       parent.replies = parent.replies || [];
       parent.replies.push(newReply);
@@ -371,8 +453,10 @@ const App = ({ topic }) => {
       return newData;
     });
 
-    // Clear the draft and close the form
+    // Clear the draft, evidence, and close the form
     setDrafts(prev => ({ ...prev, [parentId]: '' }));
+    setEvidenceFiles(prev => ({ ...prev, [parentId]: [] }));
+    setEvidenceUrls(prev => ({ ...prev, [parentId]: [] }));
     setOpenForms(prev => ({ ...prev, [parentId]: false }));
     saveData();
   };
@@ -436,6 +520,10 @@ const App = ({ topic }) => {
       copyUniqueId={copyUniqueId}
       leftLabel={leftLabel}
       rightLabel={rightLabel}
+      evidenceFiles={evidenceFiles}
+      setEvidenceFiles={setEvidenceFiles}
+      evidenceUrls={evidenceUrls}
+      setEvidenceUrls={setEvidenceUrls}
     />
   );
 
@@ -764,6 +852,153 @@ const App = ({ topic }) => {
             value={newTag}
             onChange={(e) => setNewTag(e.target.value)}
           />
+
+          {/* Evidence section */}
+          <div style={{ marginTop: '12px', padding: '12px', background: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#0c4a6e' }}>
+              Evidence (optional):
+            </label>
+
+            {/* File upload */}
+            <div style={{ marginBottom: '12px' }}>
+              <input
+                type="file"
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                multiple
+                onChange={(e) => {
+                  const newFiles = Array.from(e.target.files);
+                  if (newFiles.length > 0) {
+                    setNewQuestionFiles(prev => [...prev, ...newFiles]);
+                  }
+                  // Reset the input so the same file can be selected again if needed
+                  e.target.value = '';
+                }}
+                style={{ marginBottom: '4px' }}
+              />
+              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+                Accepted: Images, Videos, Audio, PDF, Documents
+              </div>
+
+              {/* Display selected files */}
+              {newQuestionFiles.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  {newQuestionFiles.map((file, idx) => (
+                    <div key={idx} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '6px 8px',
+                      background: '#fff',
+                      borderRadius: '4px',
+                      marginBottom: '4px',
+                      border: '1px solid #e0f2fe'
+                    }}>
+                      <span style={{ fontSize: '16px' }}>📎</span>
+                      <span style={{ flex: 1, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setNewQuestionFiles(prev => prev.filter((_, i) => i !== idx))}
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '2px 8px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* URL input */}
+            <div>
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                <input
+                  type="text"
+                  placeholder="Paste URL evidence (e.g., YouTube, articles, sources)"
+                  value={newQuestionUrlInput}
+                  onChange={(e) => setNewQuestionUrlInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (newQuestionUrlInput.trim()) {
+                        setNewQuestionUrls(prev => [...prev, newQuestionUrlInput.trim()]);
+                        setNewQuestionUrlInput('');
+                      }
+                    }
+                  }}
+                  style={{ flex: 1, padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newQuestionUrlInput.trim()) {
+                      setNewQuestionUrls(prev => [...prev, newQuestionUrlInput.trim()]);
+                      setNewQuestionUrlInput('');
+                    }
+                  }}
+                  style={{
+                    background: '#2563eb',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '6px 12px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  Add URL
+                </button>
+              </div>
+
+              {/* Display added URLs */}
+              {newQuestionUrls.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  {newQuestionUrls.map((url, idx) => (
+                    <div key={idx} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '6px 8px',
+                      background: '#fff',
+                      borderRadius: '4px',
+                      marginBottom: '4px',
+                      border: '1px solid #e0f2fe'
+                    }}>
+                      <span style={{ fontSize: '16px' }}>🔗</span>
+                      <span style={{ flex: 1, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#2563eb' }}>
+                        {url}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setNewQuestionUrls(prev => prev.filter((_, i) => i !== idx))}
+                        style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '2px 8px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Submit button */}
           <button

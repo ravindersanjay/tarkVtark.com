@@ -47,7 +47,11 @@ const Card = ({
   handleVote = () => {},
   copyUniqueId = () => {},
   leftLabel,
-  rightLabel
+  rightLabel,
+  evidenceFiles = {},
+  setEvidenceFiles = () => {},
+  evidenceUrls = {},
+  setEvidenceUrls = () => {}
 }) => {
   // Local state to track if the Copy button was clicked (separate from uniqueId copy)
   const [textCopied, setTextCopied] = React.useState(false);
@@ -66,6 +70,109 @@ const Card = ({
     navigator.clipboard.writeText(node.text || '');
     setTextCopied(true);
     setTimeout(() => setTextCopied(false), 2000); // Hide message after 2 seconds
+  };
+
+  // Handler to open evidence files in a new tab properly
+  const openFileInNewTab = (file, e) => {
+    e.preventDefault();
+
+    if (!file.dataUrl) {
+      alert('File data is not available');
+      return;
+    }
+
+    // For images, PDFs, and other viewable formats, open in new tab with proper content
+    const newWindow = window.open('', '_blank');
+    if (newWindow) {
+      const fileType = file.type || '';
+
+      if (fileType.startsWith('image/')) {
+        // For images, create an HTML page with the image
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>${file.name}</title>
+              <style>
+                body { margin: 0; padding: 20px; background: #1a1a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                img { max-width: 100%; max-height: 100vh; object-fit: contain; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+              </style>
+            </head>
+            <body>
+              <img src="${file.dataUrl}" alt="${file.name}" />
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else if (fileType === 'application/pdf') {
+        // For PDFs, embed the PDF viewer
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>${file.name}</title>
+              <style>
+                body { margin: 0; padding: 0; }
+                embed, iframe { width: 100%; height: 100vh; border: none; }
+              </style>
+            </head>
+            <body>
+              <embed src="${file.dataUrl}" type="application/pdf" width="100%" height="100%" />
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else if (fileType.startsWith('video/')) {
+        // For videos
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>${file.name}</title>
+              <style>
+                body { margin: 0; padding: 20px; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+                video { max-width: 100%; max-height: 100vh; }
+              </style>
+            </head>
+            <body>
+              <video controls autoplay>
+                <source src="${file.dataUrl}" type="${fileType}">
+                Your browser does not support the video tag.
+              </video>
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else if (fileType.startsWith('audio/')) {
+        // For audio
+        newWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>${file.name}</title>
+              <style>
+                body { margin: 0; padding: 40px; background: #f3f4f6; display: flex; justify-content: center; align-items: center; min-height: 100vh; flex-direction: column; }
+                h2 { color: #374151; margin-bottom: 20px; }
+                audio { width: 100%; max-width: 500px; }
+              </style>
+            </head>
+            <body>
+              <h2>🎵 ${file.name}</h2>
+              <audio controls autoplay>
+                <source src="${file.dataUrl}" type="${fileType}">
+                Your browser does not support the audio tag.
+              </audio>
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } else {
+        // For other file types, try direct navigation
+        newWindow.location.href = file.dataUrl;
+      }
+    } else {
+      alert('Pop-up blocked. Please allow pop-ups for this site.');
+    }
   };
 
   return (
@@ -93,6 +200,91 @@ const Card = ({
 
       {/* Main content area - displays the question or reply text */}
       <div className="content">{node.text}</div>
+
+      {/* Display evidence if available */}
+      {node.evidence && (node.evidence.files?.length > 0 || node.evidence.urls?.length > 0) && (
+        <div style={{ marginTop: '8px', padding: '10px', background: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e', marginBottom: '8px' }}>
+            📚 Evidence Attached:
+          </div>
+
+          {/* Display file evidence */}
+          {node.evidence.files && node.evidence.files.length > 0 && (
+            <div style={{ marginBottom: '8px' }}>
+              {node.evidence.files.map((file, idx) => (
+                <div key={idx} style={{
+                  padding: '6px 10px',
+                  background: '#fff',
+                  borderRadius: '4px',
+                  marginBottom: '4px',
+                  border: '1px solid #e0f2fe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span style={{ fontSize: '16px' }}>📎</span>
+                  {file.dataUrl ? (
+                    <a
+                      href={file.dataUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: '#2563eb',
+                        textDecoration: 'underline',
+                        fontSize: '13px',
+                        flex: 1,
+                        cursor: 'pointer'
+                      }}
+                      onClick={(e) => openFileInNewTab(file, e)}
+                    >
+                      {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                    </a>
+                  ) : (
+                    <span style={{ fontSize: '13px', color: '#6b7280', flex: 1 }}>
+                      {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Display URL evidence */}
+          {node.evidence.urls && node.evidence.urls.length > 0 && (
+            <div>
+              {node.evidence.urls.map((url, idx) => (
+                <div key={idx} style={{
+                  padding: '6px 10px',
+                  background: '#fff',
+                  borderRadius: '4px',
+                  marginBottom: '4px',
+                  border: '1px solid #e0f2fe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  <span style={{ fontSize: '16px' }}>🔗</span>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: '#2563eb',
+                      textDecoration: 'underline',
+                      fontSize: '13px',
+                      flex: 1,
+                      wordBreak: 'break-all',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {url}
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Control buttons section */}
       <div className="controls">
@@ -150,6 +342,10 @@ const Card = ({
         onChange={(v) => setDrafts(prev => ({ ...prev, [node.id]: v }))}
         onPost={() => postReply(node.id)}
         open={!!openForms[node.id]}
+        evidenceFiles={evidenceFiles[node.id] || []}
+        onFilesChange={(files) => setEvidenceFiles(prev => ({ ...prev, [node.id]: files }))}
+        evidenceUrls={evidenceUrls[node.id] || []}
+        onUrlsChange={(urls) => setEvidenceUrls(prev => ({ ...prev, [node.id]: urls }))}
       />
     </div>
   );
