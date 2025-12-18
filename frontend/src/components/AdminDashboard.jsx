@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/admin.css';
-import { topicsAPI } from '../services/apiService.js';
+import { topicsAPI, questionsAPI, repliesAPI } from '../services/apiService.js';
 
 const MESSAGES_KEY = 'contact_messages';
 const REPORTS_KEY = 'reported_posts';
@@ -133,55 +133,48 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
 
   // Question/Answer Management (from specific debate)
   const [selectedDebate, setSelectedDebate] = useState(null);
+  const [selectedDebateTopic, setSelectedDebateTopic] = useState(null);
   const [debateQuestions, setDebateQuestions] = useState([]);
 
-  const loadDebateData = (topic) => {
-    setSelectedDebate(topic);
-    // Use correct storage key format
-    const storageKey = `debate_threads_${topic.replace(/\s+/g, '_')}`;
-    const data = localStorage.getItem(storageKey);
-    if (data) {
-      const parsed = JSON.parse(data);
-      setDebateQuestions(parsed.questions || []);
-    } else {
+  const loadDebateData = async (topicObj) => {
+    setSelectedDebate(topicObj.topic);
+    setSelectedDebateTopic(topicObj);
+
+    try {
+      const questions = await questionsAPI.getByTopic(topicObj.id);
+      setDebateQuestions(questions || []);
+    } catch (err) {
+      console.error('Failed to load questions from backend:', err);
       setDebateQuestions([]);
     }
   };
 
-  const saveDebateData = (questions) => {
-    const storageKey = `debate_threads_${selectedDebate.replace(/\s+/g, '_')}`;
-    const debateData = { topic: selectedDebate, questions };
-    localStorage.setItem(storageKey, JSON.stringify(debateData));
-  };
 
-  const deleteQuestion = (questionId) => {
+  const deleteQuestion = async (questionId) => {
     if (window.confirm('Delete this question and all its replies?')) {
-      const updated = debateQuestions.filter(q => q.id !== questionId);
-      setDebateQuestions(updated);
-      saveDebateData(updated);
-      loadData(); // Reload to update reports
+      try {
+        await questionsAPI.delete(questionId);
+        await loadDebateData(selectedDebateTopic);
+        await loadData(); // Reload to update reports
+        alert('Question deleted successfully!');
+      } catch (err) {
+        console.error('Failed to delete question:', err);
+        alert('Failed to delete question. Please try again.');
+      }
     }
   };
 
-  // Recursive function to delete reply from nested structure
-  const deleteReplyRecursive = (items, replyId) => {
-    return items.map(item => {
-      if (item.replies && item.replies.length > 0) {
-        return {
-          ...item,
-          replies: deleteReplyRecursive(item.replies.filter(r => r.id !== replyId), replyId)
-        };
-      }
-      return item;
-    }).filter(item => item.id !== replyId);
-  };
-
-  const deleteReply = (replyId) => {
+  const deleteReply = async (replyId) => {
     if (window.confirm('Delete this reply and all its sub-replies?')) {
-      const updated = deleteReplyRecursive(debateQuestions, replyId);
-      setDebateQuestions(updated);
-      saveDebateData(updated);
-      loadData(); // Reload to update reports
+      try {
+        await repliesAPI.delete(replyId);
+        await loadDebateData(selectedDebateTopic);
+        await loadData(); // Reload to update reports
+        alert('Reply deleted successfully!');
+      } catch (err) {
+        console.error('Failed to delete reply:', err);
+        alert('Failed to delete reply. Please try again.');
+      }
     }
   };
 
@@ -582,7 +575,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                     <button
                       key={topicObj.id || index}
                       className="topic-btn"
-                      onClick={() => loadDebateData(topicObj.topic)}
+                      onClick={() => loadDebateData(topicObj)}
                     >
                       {topicObj.topic}
                     </button>

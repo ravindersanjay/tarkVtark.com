@@ -169,7 +169,6 @@ const App = ({ topic }) => {
 
   /**
    * Load debate data from backend API when component mounts
-   * TODO: Implement API call when backend is ready
    */
   useEffect(() => {
     const loadDebateData = async () => {
@@ -177,24 +176,31 @@ const App = ({ topic }) => {
         setLoading(true);
         setError(null);
 
-        // TODO: Uncomment when backend API is ready
-        // const topicData = await topicsAPI.getByName(topic);
-        // if (topicData) {
-        //   const questions = await questionsAPI.getByTopic(topicData.id);
-        //   setDebateData({
-        //     topic: topicData.topic,
-        //     questions: questions
-        //   });
-        // }
+        // Get all topics to find the matching one
+        const topics = await topicsAPI.getAll();
+        const topicData = topics.find(t => t.topic === topic);
 
-        // For now, use empty state
+        if (topicData) {
+          const questions = await questionsAPI.getByTopic(topicData.id);
+          setDebateData({
+            topic: topicData.topic,
+            questions: questions || []
+          });
+        } else {
+          // Topic not found in database
+          setDebateData({
+            topic: topic || 'Sanatan vs Islam',
+            questions: []
+          });
+          setError(`Topic "${topic}" not found in database.`);
+        }
+      } catch (err) {
+        console.error('Failed to load debate data:', err);
+        setError('Failed to load debate. Please make sure the backend is running.');
         setDebateData({
           topic: topic || 'Sanatan vs Islam',
           questions: []
         });
-      } catch (err) {
-        console.error('Failed to load debate data:', err);
-        setError('Failed to load debate. Please make sure the backend is running.');
       } finally {
         setLoading(false);
       }
@@ -324,30 +330,28 @@ const App = ({ topic }) => {
         uniqueId: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}` // Shareable ID
       };
 
-      // Add evidence if provided
-      if (processedFiles.length > 0 || newQuestionUrls.length > 0) {
-        newQ.evidence = {
-          files: processedFiles,
-          urls: newQuestionUrls
-        };
+      // Save to backend API
+      const topics = await topicsAPI.getAll();
+      const topicData = topics.find(t => t.topic === topic);
+
+      if (!topicData) {
+        alert(`Topic "${topic}" not found in database. Please create it first.`);
+        return;
       }
 
-      // TODO: Save to backend API when ready
-      // const topicData = await topicsAPI.getByName(topic);
-      // const savedQuestion = await questionsAPI.create({
-      //   debateTopicId: topicData.id,
-      //   text,
-      //   tag,
-      //   side: newQuestionSide,
-      //   author: CURRENT_USER,
-      //   evidence: { files: processedFiles, urls: newQuestionUrls }
-      // });
+      const savedQuestion = await questionsAPI.create({
+        debateTopic: { id: topicData.id }, // Send as object with id
+        text,
+        tag,
+        side: newQuestionSide,
+        author: CURRENT_USER,
+        uniqueId: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      });
 
-      // Add to debate data (local state)
+      // Add to debate data (local state) using the saved question from database
       setDebateData(prev => {
         try {
-          const newData = { ...prev, questions: [...(prev.questions || []), newQ] };
-
+          const newData = { ...prev, questions: [...(prev.questions || []), savedQuestion] };
           return newData;
         } catch (innerErr) {
           console.error('Failed to add question', innerErr);
@@ -363,6 +367,8 @@ const App = ({ topic }) => {
       setNewQuestionFiles([]);
       setNewQuestionUrls([]);
       setNewQuestionUrlInput('');
+
+      alert('Question added successfully!');
     } catch (err) {
       console.error('addNewQuestion error', err);
       alert('Unexpected error when adding question — check console');
@@ -416,49 +422,52 @@ const App = ({ topic }) => {
       })
     );
 
-    setDebateData(prev => {
-      // Use deepCopy to avoid mutating state directly
-      const newData = deepCopy(prev);
+    // Find the parent post to determine if it's a question or reply
+    const parent = findPostById(parentId, debateData.questions);
+    if (!parent) {
+      alert('Parent post not found');
+      return;
+    }
 
-      // Find the parent post (could be a question or a reply)
-      const parent = findPostById(parentId, newData.questions);
-      if (!parent) return newData;
+    try {
+      // Determine the opposite side
+      const replySide = parent.side === 'left' ? 'right' : 'left';
 
-      // Create new reply object
-      // KEY: The reply's side is OPPOSITE of the parent's side
-      // This creates the alternating left-right pattern
-      const newReply = {
-        id: generateUniqueId('r'),
+      // Save to backend API
+      const savedReply = await repliesAPI.create({
+        question: parent.id.startsWith('q-') ? { id: parent.id } : null,
+        parentReply: parent.id.startsWith('r-') ? { id: parent.id } : null,
         text: text.trim(),
+        side: replySide,
         author: CURRENT_USER,
-        timestamp: new Date().toLocaleString(),
-        votes: { up: 0, down: 0 },
-        replies: [], // This reply can itself be replied to
-        uniqueId: generateUniqueId('r'),
-        side: parent.side === 'left' ? 'right' : 'left' // OPPOSITE side!
-      };
+        depth: parent.id.startsWith('q-') ? 0 : (parent.depth || 0) + 1,
+        uniqueId: generateUniqueId('r')
+      });
 
-      // Add evidence if provided
-      if (processedFiles.length > 0 || urls.length > 0) {
-        newReply.evidence = {
-          files: processedFiles,
-          urls: urls
-        };
-      }
+      // Update local state with the saved reply
+      setDebateData(prev => {
+        const newData = deepCopy(prev);
+        const parentInState = findPostById(parentId, newData.questions);
 
-      // Add reply to parent's replies array
-      parent.replies = parent.replies || [];
-      parent.replies.push(newReply);
+        if (parentInState) {
+          parentInState.replies = parentInState.replies || [];
+          parentInState.replies.push(savedReply);
+        }
 
-      return newData;
-    });
+        return newData;
+      });
 
-    // Clear the draft, evidence, and close the form
-    setDrafts(prev => ({ ...prev, [parentId]: '' }));
-    setEvidenceFiles(prev => ({ ...prev, [parentId]: [] }));
-    setEvidenceUrls(prev => ({ ...prev, [parentId]: [] }));
-    setOpenForms(prev => ({ ...prev, [parentId]: false }));
-    saveData();
+      // Clear the draft, evidence, and close the form
+      setDrafts(prev => ({ ...prev, [parentId]: '' }));
+      setEvidenceFiles(prev => ({ ...prev, [parentId]: [] }));
+      setEvidenceUrls(prev => ({ ...prev, [parentId]: [] }));
+      setOpenForms(prev => ({ ...prev, [parentId]: false }));
+
+      alert('Reply posted successfully!');
+    } catch (err) {
+      console.error('Failed to save reply:', err);
+      alert('Failed to post reply. Please try again.');
+    }
   };
 
   /**
@@ -476,14 +485,20 @@ const App = ({ topic }) => {
     // Check if user already voted on this post
     if (voteSet.current.has(key)) return alert('Already voted');
 
-    // TODO: Send vote to backend API when ready
-    // Determine if this is a question or reply
-    // const isQuestion = id.startsWith('q-');
-    // if (isQuestion) {
-    //   await questionsAPI.vote(id, type);
-    // } else {
-    //   await repliesAPI.vote(id, type);
-    // }
+    // Send vote to backend API
+    try {
+      const isQuestion = id.startsWith('q-') || debateData.questions.some(q => q.id === id);
+
+      if (isQuestion) {
+        await questionsAPI.vote(id, type);
+      } else {
+        await repliesAPI.vote(id, type);
+      }
+    } catch (err) {
+      console.error('Failed to vote:', err);
+      alert('Failed to register vote');
+      return;
+    }
 
     setDebateData(prev => {
       const newData = deepCopy(prev);
