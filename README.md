@@ -1,16 +1,58 @@
-# React + Vite
+# TarkVtark - Debate Application Monorepo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A full-stack debate application with React frontend and Java Spring Boot backend.
 
-Currently, two official plugins are available:
+## 📁 Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```
+tarkVtark.com/
+├── frontend/          # React + Vite application
+│   ├── src/
+│   ├── public/
+│   └── package.json
+├── backend/           # Java Spring Boot API (to be implemented)
+│   └── ...
+├── DEVELOPMENT_PLAN.md
+├── FRESH_START_CHECKLIST.md
+└── README.md (this file)
+```
 
-## React Compiler
+## 🚀 Quick Start
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
+### Backend
+```bash
+cd backend
+# Backend setup instructions coming soon
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 📚 Documentation
+
+- **[FRESH_START_CHECKLIST.md](./FRESH_START_CHECKLIST.md)** - Step-by-step setup guide (PRIMARY GUIDE)
+- **[DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md)** - Comprehensive development roadmap
+- **[PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md)** - Architecture and data flow
+- **[PROJECT_BEST_PRACTICES.md](./PROJECT_BEST_PRACTICES.md)** - Best practices guide
+
+## 🎯 Current Status
+
+✅ Monorepo structure established  
+⏳ Following FRESH_START_CHECKLIST.md for PostgreSQL integration  
+⏳ Backend setup in progress
+
+## 🔧 Technologies
+
+**Frontend:**
+- React 18
+- Vite
+- Tailwind CSS
+
+**Backend:**
+- Java 17+
+- Spring Boot
+- PostgreSQL
