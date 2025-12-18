@@ -1,0 +1,790 @@
+openapi: 3.0.0
+info:
+  title: TarkVtark Debate Arena API
+  description: |
+    Backend API for TarkVtark debate application.
+    This API manages debate topics, questions, replies, voting, and admin features.
+    
+    All data is stored in PostgreSQL database.
+  version: 1.0.0
+  contact:
+    name: TarkVtark Team
+    email: admin@tarkvtark.com
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+  - url: https://api.tarkvtark.com/api/v1
+    description: Production server
+
+tags:
+  - name: Topics
+    description: Debate topics management
+  - name: Questions
+    description: Questions within debates
+  - name: Replies
+    description: Replies to questions and other replies
+  - name: Admin
+    description: Admin panel operations
+  - name: Contact
+    description: Contact form submissions
+
+paths:
+  # =====================================================================
+  # TOPICS ENDPOINTS
+  # =====================================================================
+  /topics:
+    get:
+      tags: [Topics]
+      summary: Get all debate topics
+      description: Returns a list of all active debate topics
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DebateTopic'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags: [Topics]
+      summary: Create a new debate topic
+      description: Creates a new debate topic (admin only in production)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTopicRequest'
+      responses:
+        '201':
+          description: Topic created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebateTopic'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /topics/{topicId}:
+    get:
+      tags: [Topics]
+      summary: Get a specific topic by ID
+      description: Returns a single topic with all its metadata
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DebateTopic'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # =====================================================================
+  # QUESTIONS ENDPOINTS
+  # =====================================================================
+  /questions/topic/{topicId}:
+    get:
+      tags: [Questions]
+      summary: Get all questions for a topic
+      description: Returns all questions with nested replies for a specific topic
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Question'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /questions:
+    post:
+      tags: [Questions]
+      summary: Create a new question
+      description: Post a new top-level question to a debate topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateQuestionRequest'
+      responses:
+        '201':
+          description: Question created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /questions/{questionId}/vote:
+    put:
+      tags: [Questions]
+      summary: Vote on a question
+      description: Upvote or downvote a question
+      parameters:
+        - name: questionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoteRequest'
+      responses:
+        '200':
+          description: Vote recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Question'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # =====================================================================
+  # REPLIES ENDPOINTS
+  # =====================================================================
+  /replies:
+    post:
+      tags: [Replies]
+      summary: Create a new reply
+      description: Post a reply to a question or another reply
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReplyRequest'
+      responses:
+        '201':
+          description: Reply created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reply'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /replies/{replyId}/vote:
+    put:
+      tags: [Replies]
+      summary: Vote on a reply
+      description: Upvote or downvote a reply
+      parameters:
+        - name: replyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoteRequest'
+      responses:
+        '200':
+          description: Vote recorded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reply'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # =====================================================================
+  # ADMIN ENDPOINTS
+  # =====================================================================
+  /admin/login:
+    post:
+      tags: [Admin]
+      summary: Admin login
+      description: Authenticate admin user and create session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/guidelines:
+    get:
+      tags: [Admin]
+      summary: Get guidelines
+      description: Returns the list of community guidelines
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  - "Be respectful and constructive in your arguments."
+                  - "No hate speech, personal attacks, or discrimination."
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /admin/faq:
+    get:
+      tags: [Admin]
+      summary: Get FAQ items
+      description: Returns the list of frequently asked questions
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FAQItem'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # =====================================================================
+  # CONTACT ENDPOINTS
+  # =====================================================================
+  /contact:
+    post:
+      tags: [Contact]
+      summary: Send contact message
+      description: Submit a message through the contact form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContactRequest'
+      responses:
+        '201':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+# =====================================================================
+# COMPONENT SCHEMAS
+# =====================================================================
+components:
+  schemas:
+    # -----------------------------------------------------------------
+    # DEBATE TOPIC
+    # -----------------------------------------------------------------
+    DebateTopic:
+      type: object
+      required:
+        - id
+        - topic
+        - leftLabel
+        - rightLabel
+        - isActive
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the topic
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        topic:
+          type: string
+          description: Topic title (e.g., "Sanatan vs Islam")
+          example: "Sanatan vs Islam"
+          minLength: 5
+          maxLength: 255
+        leftLabel:
+          type: string
+          description: Label for the left column
+          example: "Sanatan"
+          minLength: 1
+          maxLength: 100
+        rightLabel:
+          type: string
+          description: Label for the right column
+          example: "Islam"
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+          description: Optional description of the debate topic
+          example: "A respectful debate comparing philosophical aspects"
+          maxLength: 1000
+        isActive:
+          type: boolean
+          description: Whether the topic is currently active
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: When the topic was created
+          example: "2025-12-18T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the topic was last updated
+          example: "2025-12-18T10:30:00Z"
+
+    CreateTopicRequest:
+      type: object
+      required:
+        - topic
+        - leftLabel
+        - rightLabel
+      properties:
+        topic:
+          type: string
+          minLength: 5
+          maxLength: 255
+          example: "Capitalism vs Socialism"
+        leftLabel:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Capitalism"
+        rightLabel:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Socialism"
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          example: "Economic systems debate"
+        isActive:
+          type: boolean
+          default: true
+
+    # -----------------------------------------------------------------
+    # QUESTION
+    # -----------------------------------------------------------------
+    Question:
+      type: object
+      required:
+        - id
+        - debateTopicId
+        - text
+        - side
+        - author
+        - votesUp
+        - votesDown
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the question
+        debateTopicId:
+          type: string
+          format: uuid
+          description: ID of the debate topic this question belongs to
+        text:
+          type: string
+          description: The question text
+          minLength: 10
+          maxLength: 5000
+        tag:
+          type: string
+          nullable: true
+          description: Category tag (e.g., "Philosophy", "Theology")
+          maxLength: 100
+        side:
+          type: string
+          enum: [left, right]
+          description: Which side of the debate (left or right column)
+        author:
+          type: string
+          description: Username of the author
+          default: "Anonymous"
+          maxLength: 100
+        votesUp:
+          type: integer
+          minimum: 0
+          description: Number of upvotes
+          example: 5
+        votesDown:
+          type: integer
+          minimum: 0
+          description: Number of downvotes
+          example: 2
+        uniqueId:
+          type: string
+          nullable: true
+          description: Human-readable unique ID for sharing
+          example: "q-1702475844123-456"
+        replies:
+          type: array
+          description: Nested replies to this question
+          items:
+            $ref: '#/components/schemas/Reply'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateQuestionRequest:
+      type: object
+      required:
+        - debateTopicId
+        - text
+        - side
+      properties:
+        debateTopicId:
+          type: string
+          format: uuid
+        text:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        tag:
+          type: string
+          nullable: true
+          maxLength: 100
+        side:
+          type: string
+          enum: [left, right]
+        author:
+          type: string
+          default: "CurrentUser"
+          maxLength: 100
+
+    # -----------------------------------------------------------------
+    # REPLY
+    # -----------------------------------------------------------------
+    Reply:
+      type: object
+      required:
+        - id
+        - text
+        - side
+        - author
+        - votesUp
+        - votesDown
+        - depth
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        questionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the question (if direct reply to question)
+        parentReplyId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the parent reply (if reply to another reply)
+        text:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        side:
+          type: string
+          enum: [left, right]
+          description: Always opposite of parent's side
+        author:
+          type: string
+          default: "Anonymous"
+          maxLength: 100
+        votesUp:
+          type: integer
+          minimum: 0
+        votesDown:
+          type: integer
+          minimum: 0
+        uniqueId:
+          type: string
+          nullable: true
+          example: "r-1702475844567-789"
+        depth:
+          type: integer
+          minimum: 0
+          description: Nesting level (0 = reply to question, 1 = reply to reply, etc.)
+        replies:
+          type: array
+          description: Nested replies to this reply
+          items:
+            $ref: '#/components/schemas/Reply'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateReplyRequest:
+      type: object
+      required:
+        - text
+        - side
+      properties:
+        questionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Required if replying to a question
+        parentReplyId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Required if replying to another reply
+        text:
+          type: string
+          minLength: 10
+          maxLength: 5000
+        side:
+          type: string
+          enum: [left, right]
+        author:
+          type: string
+          default: "CurrentUser"
+          maxLength: 100
+        depth:
+          type: integer
+          minimum: 0
+          default: 0
+
+    # -----------------------------------------------------------------
+    # VOTING
+    # -----------------------------------------------------------------
+    VoteRequest:
+      type: object
+      required:
+        - voteType
+      properties:
+        voteType:
+          type: string
+          enum: [up, down]
+          description: Type of vote (upvote or downvote)
+
+    # -----------------------------------------------------------------
+    # ADMIN
+    # -----------------------------------------------------------------
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        password:
+          type: string
+          minLength: 6
+          maxLength: 100
+
+    LoginResponse:
+      type: object
+      required:
+        - success
+        - user
+      properties:
+        success:
+          type: boolean
+        token:
+          type: string
+          nullable: true
+          description: JWT token (if using token-based auth)
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            username:
+              type: string
+            email:
+              type: string
+            fullName:
+              type: string
+
+    FAQItem:
+      type: object
+      required:
+        - q
+        - a
+      properties:
+        q:
+          type: string
+          description: The question
+        a:
+          type: string
+          description: The answer
+
+    # -----------------------------------------------------------------
+    # CONTACT
+    # -----------------------------------------------------------------
+    ContactRequest:
+      type: object
+      required:
+        - name
+        - email
+        - message
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          maxLength: 100
+        subject:
+          type: string
+          nullable: true
+          maxLength: 200
+        message:
+          type: string
+          minLength: 10
+          maxLength: 5000
+
+    ContactResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        id:
+          type: string
+          format: uuid
+          description: ID of the saved contact message
+
+    # -----------------------------------------------------------------
+    # ERROR RESPONSES
+    # -----------------------------------------------------------------
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          nullable: true
+          description: Additional error details
+
+  # =====================================================================
+  # REUSABLE RESPONSES
+  # =====================================================================
+  responses:
+    BadRequest:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "BAD_REQUEST"
+            message: "Invalid input data"
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "UNAUTHORIZED"
+            message: "Invalid credentials"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "NOT_FOUND"
+            message: "Resource not found"
+
+    ServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "INTERNAL_ERROR"
+            message: "An unexpected error occurred"
+

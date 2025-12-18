@@ -78,9 +78,8 @@ function MainRouter() {
   });
 
   // Admin authentication state
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
-    return localStorage.getItem('admin_logged_in') === 'true';
-  });
+  // TODO: Replace with session-based auth from backend API
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
 
   // Check for admin route in URL
   useEffect(() => {
@@ -91,7 +90,7 @@ function MainRouter() {
 
   // Admin logout handler
   const handleAdminLogout = () => {
-    localStorage.removeItem('admin_logged_in');
+    // TODO: Call backend logout API
     setIsAdminLoggedIn(false);
     setPage({ type: 'home' });
   };

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-
-const TOPICS_KEY = 'debate_topics_list';
+import React, { useState, useEffect } from 'react';
+import { topicsAPI } from '../services/apiService.js';
 
 /**
  * =====================================================================
@@ -11,31 +10,48 @@ const TOPICS_KEY = 'debate_topics_list';
  * Users can click a topic to navigate to that debate, or add new topics.
  *
  * FEATURES:
- * - Display list of debate topics from localStorage
+ * - Display list of debate topics from PostgreSQL database (via API)
  * - Click a topic to navigate to that debate
  * - Add new topics (format: "X vs Y")
- * - Topics persist in localStorage
+ * - Topics persist in database
  *
  * @param {Function} onSelectTopic - Callback when a topic is clicked: (topic: string) => void
  * @param {Function} onContact - Optional callback for Contact Us navigation
  */
 const DebateTopics = ({ onSelectTopic, onContact }) => {
-  // Load topics from localStorage on mount
-  const [topics, setTopics] = useState(() => {
-    const s = localStorage.getItem(TOPICS_KEY);
-    if (s) {
-      try { return JSON.parse(s); } catch (e) { return []; }
-    }
-    return [];
-  });
-
+  // Load topics from backend API
+  const [topics, setTopics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [newTopic, setNewTopic] = useState('');
+
+  // Fetch topics from backend on mount
+  useEffect(() => {
+    loadTopics();
+  }, []);
+
+  const loadTopics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch topics from backend API
+      const data = await topicsAPI.getAll();
+      setTopics(data.map(t => t.topic));
+    } catch (err) {
+      console.error('Failed to load topics:', err);
+      setError('Failed to load topics. Please make sure the backend is running.');
+      setTopics([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /**
    * Add a new debate topic to the list
    * Validates format (must be "X vs Y") and checks for duplicates
    */
-  const addTopic = () => {
+  const addTopic = async () => {
     const t = newTopic.trim();
 
     // Validate format
@@ -44,11 +60,32 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
     // Check for duplicates
     if (topics.includes(t)) return alert('Topic already exists');
 
-    // Add to list and save
-    const updated = [...topics, t];
-    setTopics(updated);
-    localStorage.setItem(TOPICS_KEY, JSON.stringify(updated));
-    setNewTopic('');
+    try {
+      // TODO: Uncomment when backend is ready
+      // Parse topic to extract labels
+      // const parts = t.split(/\s+vs\s+/i);
+      // const leftLabel = parts[0].trim();
+      // const rightLabel = parts[1].trim();
+      //
+      // await topicsAPI.create({
+      //   topic: t,
+      //   leftLabel,
+      //   rightLabel,
+      //   description: '',
+      //   isActive: true
+      // });
+
+      // Add to local list and refresh from backend
+      const updated = [...topics, t];
+      setTopics(updated);
+      setNewTopic('');
+
+      // Reload from backend to ensure sync
+      // await loadTopics();
+    } catch (err) {
+      console.error('Failed to add topic:', err);
+      alert('Failed to add topic. Please try again.');
+    }
   };
 
   return (
@@ -62,8 +99,17 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
           <div className="topics-section">
             <h2>Debate Topics</h2>
 
+            {/* Show loading/error states */}
+            {loading && <p>Loading topics...</p>}
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+
             {/* List of debate topics */}
             <ul className="topics-list">
+              {topics.length === 0 && !loading && !error && (
+                <li style={{ color: '#666', fontStyle: 'italic' }}>
+                  No topics yet. Add one below to get started!
+                </li>
+              )}
               {topics.map((t) => (
                 <li key={t}>
                   {/* Click to navigate to debate - calls onSelectTopic callback */}

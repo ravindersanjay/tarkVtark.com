@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateUniqueId, deepCopy } from './utils/helpers.js';
+import { topicsAPI, questionsAPI, repliesAPI } from './services/apiService.js';
 import Card from './components/Card.jsx';
 import './styles/app.css';
 
@@ -116,44 +117,17 @@ const App = ({ topic }) => {
   // =====================================================================
 
   /**
-   * Storage key - unique per topic to keep different debates separate
-   * Example: "debate_threads_Sanatan_vs_Islam"
-   */
-  const STORAGE_KEY = topic ? `debate_threads_${topic.replace(/\s+/g, '_')}` : 'debate_threads_default';
-
-  /**
    * Main debate data state
-   * Initialized from localStorage if available, otherwise empty
+   * Will be loaded from backend API instead of localStorage
    * Structure: { topic: string, questions: Question[] }
    */
-  const [debateData, setDebateData] = useState(() => {
-    const s = localStorage.getItem(STORAGE_KEY);
-    if (s) {
-      try {
-        const data = JSON.parse(s);
-
-        // Ensure all posts have uniqueIds (for older data that might not have them)
-        const ensureUniqueIds = (items) => {
-          if (Array.isArray(items)) {
-            items.forEach(item => {
-              if (!item.uniqueId && item.id) {
-                item.uniqueId = generateUniqueId(item.id[0]);
-              }
-              // Recursively ensure uniqueIds for all nested replies
-              ensureUniqueIds(item.replies);
-            });
-          }
-        };
-        ensureUniqueIds(data.questions);
-        return data;
-      } catch {
-        // If parsing fails, return empty debate
-        return { topic: topic || 'Sanatan vs Islam', questions: [] };
-      }
-    }
-    // No saved data, start fresh
-    return { topic: topic || 'Sanatan vs Islam', questions: [] };
+  const [debateData, setDebateData] = useState({
+    topic: topic || 'Sanatan vs Islam',
+    questions: []
   });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Form inputs for adding a new question
   const [newTag, setNewTag] = useState('');           // Category tag input
@@ -194,12 +168,40 @@ const App = ({ topic }) => {
   // =====================================================================
 
   /**
-   * Auto-save to localStorage whenever debateData changes
-   * This ensures data persists across page refreshes
+   * Load debate data from backend API when component mounts
+   * TODO: Implement API call when backend is ready
    */
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(debateData));
-  }, [debateData, STORAGE_KEY]);
+    const loadDebateData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // TODO: Uncomment when backend API is ready
+        // const topicData = await topicsAPI.getByName(topic);
+        // if (topicData) {
+        //   const questions = await questionsAPI.getByTopic(topicData.id);
+        //   setDebateData({
+        //     topic: topicData.topic,
+        //     questions: questions
+        //   });
+        // }
+
+        // For now, use empty state
+        setDebateData({
+          topic: topic || 'Sanatan vs Islam',
+          questions: []
+        });
+      } catch (err) {
+        console.error('Failed to load debate data:', err);
+        setError('Failed to load debate. Please make sure the backend is running.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDebateData();
+  }, [topic]);
 
   /**
    * Auto-focus the textarea when a reply form is opened
@@ -233,12 +235,6 @@ const App = ({ topic }) => {
   // EVENT HANDLERS
   // =====================================================================
 
-  /**
-   * Manual save function (auto-save happens via useEffect, but this is here for explicit calls)
-   */
-  const saveData = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(debateData));
-  };
 
   /**
    * Copy a uniqueId to clipboard and show confirmation message
@@ -336,17 +332,21 @@ const App = ({ topic }) => {
         };
       }
 
-      // Add to debate data
+      // TODO: Save to backend API when ready
+      // const topicData = await topicsAPI.getByName(topic);
+      // const savedQuestion = await questionsAPI.create({
+      //   debateTopicId: topicData.id,
+      //   text,
+      //   tag,
+      //   side: newQuestionSide,
+      //   author: CURRENT_USER,
+      //   evidence: { files: processedFiles, urls: newQuestionUrls }
+      // });
+
+      // Add to debate data (local state)
       setDebateData(prev => {
         try {
           const newData = { ...prev, questions: [...(prev.questions || []), newQ] };
-
-          // Also save to localStorage immediately
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-          } catch (err) {
-            console.error('localStorage set failed', err);
-          }
 
           return newData;
         } catch (innerErr) {
@@ -470,11 +470,20 @@ const App = ({ topic }) => {
    * @param {'up'|'down'} type - Type of vote
    * @param {string} id - ID of the post being voted on
    */
-  const handleVote = (type, id) => {
+  const handleVote = async (type, id) => {
     const key = id + '-' + CURRENT_USER;
 
     // Check if user already voted on this post
     if (voteSet.current.has(key)) return alert('Already voted');
+
+    // TODO: Send vote to backend API when ready
+    // Determine if this is a question or reply
+    // const isQuestion = id.startsWith('q-');
+    // if (isQuestion) {
+    //   await questionsAPI.vote(id, type);
+    // } else {
+    //   await repliesAPI.vote(id, type);
+    // }
 
     setDebateData(prev => {
       const newData = deepCopy(prev);
@@ -490,7 +499,6 @@ const App = ({ topic }) => {
 
     // Mark this vote to prevent duplicates
     voteSet.current.add(key);
-    saveData();
   };
 
   // =====================================================================
