@@ -568,30 +568,106 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                           <span className="question-author">{question.author}</span>
                           <span className="question-id">ID: {question.uniqueId}</span>
                         </div>
-                        <div className="question-text">{question.text}</div>
-                        <div className="question-actions">
-                          <button
-                            className="btn btn-small btn-danger"
-                            onClick={() => deleteQuestion(question.id)}
-                          >
-                            Delete Question
-                          </button>
-                        </div>
+
+                        {/* Question Text - Editable */}
+                        {editingPost === question.id ? (
+                          <div className="edit-form">
+                            <textarea
+                              id={`edit-${question.id}`}
+                              defaultValue={question.text}
+                              className="edit-textarea"
+                              rows="4"
+                            />
+                            <div className="form-actions">
+                              <button
+                                className="btn btn-small"
+                                onClick={() => {
+                                  const newText = document.getElementById(`edit-${question.id}`).value;
+                                  if (newText.trim()) {
+                                    updatePost(question.id, newText.trim());
+                                  }
+                                }}
+                              >
+                                Save
+                              </button>
+                              <button className="btn btn-small" onClick={() => setEditingPost(null)}>Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="question-text">{question.text}</div>
+                            <div className="question-actions">
+                              <button
+                                className="btn btn-small"
+                                onClick={() => setEditingPost(question.id)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-small btn-danger"
+                                onClick={() => deleteQuestion(question.id)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </>
+                        )}
 
                         {/* Replies */}
                         {question.replies && question.replies.length > 0 && (
                           <div className="replies-section">
                             <h4>Replies ({question.replies.length})</h4>
-                            {question.replies.map((reply) => (
-                              <div key={reply.id} className="reply-item">
-                                <div className="reply-author">{reply.author}</div>
-                                <div className="reply-text">{reply.text}</div>
-                                <button
-                                  className="btn btn-small btn-danger"
-                                  onClick={() => deleteReply(reply.id)}
-                                >
-                                  Delete Reply
-                                </button>
+                            {flattenReplies(question.replies).map((reply) => (
+                              <div key={reply.id} className="reply-item" style={{ marginLeft: `${reply.depth * 20}px` }}>
+                                <div className="reply-header">
+                                  <span className="reply-author">{reply.author}</span>
+                                  <span className="reply-id">ID: {reply.uniqueId}</span>
+                                  {reply.depth > 1 && <span className="reply-depth">↳ Level {reply.depth}</span>}
+                                </div>
+
+                                {/* Reply Text - Editable */}
+                                {editingPost === reply.id ? (
+                                  <div className="edit-form">
+                                    <textarea
+                                      id={`edit-${reply.id}`}
+                                      defaultValue={reply.text}
+                                      className="edit-textarea"
+                                      rows="3"
+                                    />
+                                    <div className="form-actions">
+                                      <button
+                                        className="btn btn-small"
+                                        onClick={() => {
+                                          const newText = document.getElementById(`edit-${reply.id}`).value;
+                                          if (newText.trim()) {
+                                            updatePost(reply.id, newText.trim());
+                                          }
+                                        }}
+                                      >
+                                        Save
+                                      </button>
+                                      <button className="btn btn-small" onClick={() => setEditingPost(null)}>Cancel</button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="reply-text">{reply.text}</div>
+                                    <div className="reply-actions">
+                                      <button
+                                        className="btn btn-small"
+                                        onClick={() => setEditingPost(reply.id)}
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        className="btn btn-small btn-danger"
+                                        onClick={() => deleteReply(reply.id)}
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             ))}
                           </div>

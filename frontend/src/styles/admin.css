@@ -359,27 +359,70 @@
   border-radius: 6px;
   border: 1px solid #e5e7eb;
   margin-bottom: 8px;
+  transition: box-shadow 0.2s;
+}
+
+.reply-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.reply-header {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
   gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
 }
 
 .reply-author {
   font-weight: 600;
   color: #2563eb;
   font-size: 0.9rem;
-  margin-bottom: 4px;
+}
+
+.reply-id {
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+.reply-depth {
+  color: #6b7280;
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 .reply-text {
   color: #374151;
-  flex: 1;
-  margin-right: 12px;
+  line-height: 1.5;
+  margin-bottom: 8px;
 }
 
-.reply-item button {
-  flex-shrink: 0;
+.reply-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.reply-item .edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.reply-item .edit-textarea {
+  width: 100%;
+}
+
+.question-item .edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.question-item .edit-textarea {
+  width: 100%;
 }
 
 /* Responsive Design */
