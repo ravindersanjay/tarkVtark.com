@@ -61,27 +61,27 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
     if (topics.includes(t)) return alert('Topic already exists');
 
     try {
-      // TODO: Uncomment when backend is ready
       // Parse topic to extract labels
-      // const parts = t.split(/\s+vs\s+/i);
-      // const leftLabel = parts[0].trim();
-      // const rightLabel = parts[1].trim();
-      //
-      // await topicsAPI.create({
-      //   topic: t,
-      //   leftLabel,
-      //   rightLabel,
-      //   description: '',
-      //   isActive: true
-      // });
+      const parts = t.split(/\s+vs\s+/i);
+      const leftLabel = parts[0].trim();
+      const rightLabel = parts[1].trim();
 
-      // Add to local list and refresh from backend
-      const updated = [...topics, t];
-      setTopics(updated);
+      // Save to backend database
+      await topicsAPI.create({
+        topic: t,
+        leftLabel,
+        rightLabel,
+        description: '',
+        isActive: true
+      });
+
+      // Clear input
       setNewTopic('');
 
       // Reload from backend to ensure sync
-      // await loadTopics();
+      await loadTopics();
+
+      alert('Topic added successfully!');
     } catch (err) {
       console.error('Failed to add topic:', err);
       alert('Failed to add topic. Please try again.');

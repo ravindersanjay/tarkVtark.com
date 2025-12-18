@@ -90,6 +90,30 @@ export const topicsAPI = {
       body: JSON.stringify(topicData),
     });
   },
+
+  /**
+   * Update an existing debate topic
+   * @param {string} topicId - UUID of the topic
+   * @param {Object} topicData - { topic, leftLabel, rightLabel, description, isActive }
+   * @returns {Promise<Object>} Updated topic object
+   */
+  update: async (topicId, topicData) => {
+    return await apiFetch(`/topics/${topicId}`, {
+      method: 'PUT',
+      body: JSON.stringify(topicData),
+    });
+  },
+
+  /**
+   * Delete a debate topic
+   * @param {string} topicId - UUID of the topic
+   * @returns {Promise<void>}
+   */
+  delete: async (topicId) => {
+    await apiFetch(`/topics/${topicId}`, {
+      method: 'DELETE',
+    });
+  },
 };
 
 // =====================================================================
@@ -146,6 +170,30 @@ export const repliesAPI = {
     return await apiFetch('/replies', {
       method: 'POST',
       body: JSON.stringify(replyData),
+    });
+  },
+
+  /**
+   * Update an existing reply
+   * @param {string} replyId - UUID of the reply
+   * @param {Object} replyData - { text, side, author }
+   * @returns {Promise<Object>} Updated reply object
+   */
+  update: async (replyId, replyData) => {
+    return await apiFetch(`/replies/${replyId}`, {
+      method: 'PUT',
+      body: JSON.stringify(replyData),
+    });
+  },
+
+  /**
+   * Delete a reply
+   * @param {string} replyId - UUID of the reply
+   * @returns {Promise<void>}
+   */
+  delete: async (replyId) => {
+    await apiFetch(`/replies/${replyId}`, {
+      method: 'DELETE',
     });
   },
 

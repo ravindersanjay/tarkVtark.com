@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/admin.css';
+import { topicsAPI } from '../services/apiService.js';
 
-const TOPICS_KEY = 'debate_topics_list';
 const MESSAGES_KEY = 'contact_messages';
 const REPORTS_KEY = 'reported_posts';
 
@@ -31,16 +31,21 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     loadData();
   }, []);
 
-  const loadData = () => {
-    // Load topics
-    const topicsData = localStorage.getItem(TOPICS_KEY);
-    setTopics(topicsData ? JSON.parse(topicsData) : []);
+  const loadData = async () => {
+    // Load topics from backend API (store full objects, not just names)
+    try {
+      const topicsData = await topicsAPI.getAll();
+      setTopics(topicsData); // Store full topic objects with IDs
+    } catch (err) {
+      console.error('Failed to load topics from backend:', err);
+      setTopics([]);
+    }
 
-    // Load messages
+    // Load messages (still from localStorage for now)
     const messagesData = localStorage.getItem(MESSAGES_KEY);
     setMessages(messagesData ? JSON.parse(messagesData) : []);
 
-    // Load reports
+    // Load reports (still from localStorage for now)
     const reportsData = localStorage.getItem(REPORTS_KEY);
     setReports(reportsData ? JSON.parse(reportsData) : []);
 
@@ -66,31 +71,64 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   };
 
   // Topic Management
-  const deleteTopic = (topic) => {
-    if (window.confirm(`Delete debate "${topic}"? This will also delete all questions and answers.`)) {
-      const updated = topics.filter(t => t !== topic);
-      setTopics(updated);
-      localStorage.setItem(TOPICS_KEY, JSON.stringify(updated));
-      // Also delete the debate data - use correct key format
-      const storageKey = `debate_threads_${topic.replace(/\s+/g, '_')}`;
-      localStorage.removeItem(storageKey);
+  const deleteTopic = async (topicObj) => {
+    const topicName = typeof topicObj === 'string' ? topicObj : topicObj.topic;
+    const topicId = typeof topicObj === 'object' ? topicObj.id : null;
+
+    if (!topicId) {
+      alert('Cannot delete: Topic ID not found');
+      return;
+    }
+
+    if (window.confirm(`Delete debate "${topicName}"? This will also delete all questions and answers.`)) {
+      try {
+        // Delete from backend
+        await topicsAPI.delete(topicId);
+
+        // Reload from backend to sync
+        await loadData();
+
+        alert('Topic deleted successfully!');
+      } catch (err) {
+        console.error('Failed to delete topic:', err);
+        alert('Failed to delete topic. Please try again.');
+      }
     }
   };
 
-  const updateTopic = (oldTopic, newTopic) => {
-    const updated = topics.map(t => t === oldTopic ? newTopic : t);
-    setTopics(updated);
-    localStorage.setItem(TOPICS_KEY, JSON.stringify(updated));
+  const updateTopic = async (oldTopicObj, newTopicName) => {
+    const topicId = typeof oldTopicObj === 'object' ? oldTopicObj.id : null;
 
-    // Move debate data to new key - use correct key format
-    const oldKey = `debate_threads_${oldTopic.replace(/\s+/g, '_')}`;
-    const newKey = `debate_threads_${newTopic.replace(/\s+/g, '_')}`;
-    const oldData = localStorage.getItem(oldKey);
-    if (oldData) {
-      localStorage.setItem(newKey, oldData);
-      localStorage.removeItem(oldKey);
+    if (!topicId) {
+      alert('Cannot update: Topic ID not found');
+      return;
     }
-    setEditingTopic(null);
+
+    try {
+      // Parse new topic name to extract labels
+      const parts = newTopicName.split(/\s+vs\s+/i);
+      const leftLabel = parts[0]?.trim() || oldTopicObj.leftLabel;
+      const rightLabel = parts[1]?.trim() || oldTopicObj.rightLabel;
+
+      // Update in backend
+      await topicsAPI.update(topicId, {
+        topic: newTopicName,
+        leftLabel,
+        rightLabel,
+        description: oldTopicObj.description || '',
+        isActive: oldTopicObj.isActive !== false
+      });
+
+      setEditingTopic(null);
+
+      // Reload from backend to sync
+      await loadData();
+
+      alert('Topic updated successfully!');
+    } catch (err) {
+      console.error('Failed to update topic:', err);
+      alert('Failed to update topic. Please try again.');
+    }
   };
 
   // Question/Answer Management (from specific debate)
@@ -150,23 +188,23 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   // Edit question/reply text
   const [editingPost, setEditingPost] = useState(null);
 
-  const updatePostRecursive = (items, postId, newText) => {
-    return items.map(item => {
-      if (item.id === postId) {
-        return { ...item, text: newText };
+  const updatePost = async (postId, newText, isQuestion) => {
+    try {
+      if (isQuestion) {
+        // Update question
+        await questionsAPI.update(postId, { text: newText });
+      } else {
+        // Update reply
+        await repliesAPI.update(postId, { text: newText });
       }
-      if (item.replies && item.replies.length > 0) {
-        return { ...item, replies: updatePostRecursive(item.replies, postId, newText) };
-      }
-      return item;
-    });
-  };
 
-  const updatePost = (postId, newText) => {
-    const updated = updatePostRecursive(debateQuestions, postId, newText);
-    setDebateQuestions(updated);
-    saveDebateData(updated);
-    setEditingPost(null);
+      await loadDebateData(selectedDebateTopic);
+      setEditingPost(null);
+      alert('Updated successfully!');
+    } catch (err) {
+      console.error('Failed to update:', err);
+      alert('Failed to update. Please try again.');
+    }
   };
 
   // FAQ Management
@@ -382,8 +420,9 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   const getTop10Stats = () => {
     const allPosts = [];
 
-    topics.forEach(topic => {
-      const storageKey = `debate_threads_${topic.replace(/\s+/g, '_')}`;
+    topics.forEach(topicObj => {
+      const topicName = topicObj.topic || topicObj;
+      const storageKey = `debate_threads_${topicName.replace(/\s+/g, '_')}`;
       const data = localStorage.getItem(storageKey);
       if (data) {
         const parsed = JSON.parse(data);
@@ -391,7 +430,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
           items.forEach(item => {
             allPosts.push({
               ...item,
-              topic,
+              topic: topicName,
               type: isQuestion ? 'question' : 'answer',
               totalLikes: (item.votes?.up || 0)
             });
@@ -496,16 +535,16 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
               {topics.length === 0 ? (
                 <p className="empty-state">No debate topics yet.</p>
               ) : (
-                topics.map((topic, index) => (
-                  <div key={index} className="admin-item">
-                    {editingTopic === topic ? (
+                topics.map((topicObj, index) => (
+                  <div key={topicObj.id || index} className="admin-item">
+                    {editingTopic === topicObj.topic ? (
                       <div className="edit-form">
                         <input
                           type="text"
-                          defaultValue={topic}
+                          defaultValue={topicObj.topic}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
-                              updateTopic(topic, e.target.value);
+                              updateTopic(topicObj, e.target.value);
                             } else if (e.key === 'Escape') {
                               setEditingTopic(null);
                             }
@@ -517,10 +556,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                       </div>
                     ) : (
                       <>
-                        <span className="item-text">{topic}</span>
+                        <span className="item-text">{topicObj.topic}</span>
                         <div className="item-actions">
-                          <button className="btn btn-small" onClick={() => setEditingTopic(topic)}>Edit</button>
-                          <button className="btn btn-small btn-danger" onClick={() => deleteTopic(topic)}>Delete</button>
+                          <button className="btn btn-small" onClick={() => setEditingTopic(topicObj.topic)}>Edit</button>
+                          <button className="btn btn-small btn-danger" onClick={() => deleteTopic(topicObj)}>Delete</button>
                         </div>
                       </>
                     )}
@@ -539,13 +578,13 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
               <div>
                 <p>Select a debate to manage its questions and answers:</p>
                 <div className="debate-selector">
-                  {topics.map((topic, index) => (
+                  {topics.map((topicObj, index) => (
                     <button
-                      key={index}
+                      key={topicObj.id || index}
                       className="topic-btn"
-                      onClick={() => loadDebateData(topic)}
+                      onClick={() => loadDebateData(topicObj.topic)}
                     >
-                      {topic}
+                      {topicObj.topic}
                     </button>
                   ))}
                 </div>
@@ -640,7 +679,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                                         onClick={() => {
                                           const newText = document.getElementById(`edit-${reply.id}`).value;
                                           if (newText.trim()) {
-                                            updatePost(reply.id, newText.trim());
+                                            updatePost(reply.id, newText.trim(), false); // false = isReply
                                           }
                                         }}
                                       >

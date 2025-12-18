@@ -78,5 +78,51 @@ public class TopicController {
         DebateTopic savedTopic = debateTopicRepository.save(topic);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedTopic);
     }
+
+    /**
+     * PUT /topics/{topicId}
+     * Update an existing debate topic
+     *
+     * @param topicId UUID of the topic to update
+     * @param updatedTopic The updated topic data
+     * @return The updated topic
+     */
+    @PutMapping("/{topicId}")
+    public ResponseEntity<DebateTopic> updateTopic(
+            @PathVariable UUID topicId,
+            @RequestBody DebateTopic updatedTopic) {
+
+        return debateTopicRepository.findById(topicId)
+                .map(existingTopic -> {
+                    // Update fields
+                    existingTopic.setTopic(updatedTopic.getTopic());
+                    existingTopic.setLeftLabel(updatedTopic.getLeftLabel());
+                    existingTopic.setRightLabel(updatedTopic.getRightLabel());
+                    existingTopic.setDescription(updatedTopic.getDescription());
+                    existingTopic.setIsActive(updatedTopic.getIsActive());
+
+                    // Save and return
+                    DebateTopic saved = debateTopicRepository.save(existingTopic);
+                    return ResponseEntity.ok(saved);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * DELETE /topics/{topicId}
+     * Delete a debate topic (and all associated questions/replies via cascade)
+     *
+     * @param topicId UUID of the topic to delete
+     * @return No content
+     */
+    @DeleteMapping("/{topicId}")
+    public ResponseEntity<Void> deleteTopic(@PathVariable UUID topicId) {
+        if (!debateTopicRepository.existsById(topicId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        debateTopicRepository.deleteById(topicId);
+        return ResponseEntity.noContent().build();
+    }
 }
 
