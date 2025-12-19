@@ -1,13 +1,19 @@
 package com.debatearena.controller;
 
+import com.debatearena.dto.QuestionDTO;
+import com.debatearena.model.DebateTopic;
 import com.debatearena.model.Question;
+import com.debatearena.model.Reply;
+import com.debatearena.repository.DebateTopicRepository;
 import com.debatearena.repository.QuestionRepository;
+import com.debatearena.repository.ReplyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -36,18 +42,34 @@ import java.util.UUID;
 public class QuestionController {
 
     private final QuestionRepository questionRepository;
+    private final DebateTopicRepository debateTopicRepository;
+    private final ReplyRepository replyRepository;
 
     /**
      * GET /questions/topic/{topicId}
-     * Get all questions for a specific debate topic
+     * Get all questions for a specific debate topic with nested replies
      *
      * @param topicId UUID of the debate topic
-     * @return List of questions
+     * @return List of QuestionDTOs with replies
      */
     @GetMapping("/topic/{topicId}")
-    public ResponseEntity<List<Question>> getQuestionsByTopic(@PathVariable UUID topicId) {
+    public ResponseEntity<List<QuestionDTO>> getQuestionsByTopic(@PathVariable UUID topicId) {
+        System.out.println("📥 GET /questions/topic/" + topicId + " - Loading questions with replies");
+
         List<Question> questions = questionRepository.findByDebateTopic_Id(topicId);
-        return ResponseEntity.ok(questions);
+        System.out.println("✅ Found " + questions.size() + " questions");
+
+        // Convert to DTOs with replies
+        List<QuestionDTO> dtos = questions.stream()
+            .map(q -> {
+                List<Reply> replies = replyRepository.findByQuestion_Id(q.getId());
+                System.out.println("  Question " + q.getId() + " has " + replies.size() + " replies");
+                return QuestionDTO.fromEntity(q, replies);
+            })
+            .toList();
+
+        System.out.println("✅ Returning " + dtos.size() + " QuestionDTOs with replies");
+        return ResponseEntity.ok(dtos);
     }
 
     /**
@@ -68,11 +90,41 @@ public class QuestionController {
      * POST /questions
      * Create a new question
      *
-     * @param question The question to create
+     * @param requestBody Map containing question data including debateTopicId
      * @return The created question
      */
     @PostMapping
-    public ResponseEntity<Question> createQuestion(@RequestBody Question question) {
+    public ResponseEntity<Question> createQuestion(@RequestBody Map<String, Object> requestBody) {
+        // Extract debateTopicId from request
+        String topicIdStr = null;
+        if (requestBody.get("debateTopicId") != null) {
+            topicIdStr = requestBody.get("debateTopicId").toString();
+        } else if (requestBody.get("debateTopic") instanceof Map) {
+            Map<String, Object> topicMap = (Map<String, Object>) requestBody.get("debateTopic");
+            topicIdStr = topicMap.get("id").toString();
+        }
+
+        if (topicIdStr == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        UUID topicId = UUID.fromString(topicIdStr);
+
+        // Find the debate topic
+        DebateTopic debateTopic = debateTopicRepository.findById(topicId)
+                .orElseThrow(() -> new RuntimeException("Topic not found"));
+
+        // Create question object
+        Question question = new Question();
+        question.setDebateTopic(debateTopic);
+        question.setText(requestBody.get("text").toString());
+        question.setTag(requestBody.get("tag") != null ? requestBody.get("tag").toString() : null);
+        question.setSide(requestBody.get("side").toString());
+        question.setAuthor(requestBody.get("author") != null ? requestBody.get("author").toString() : "Anonymous");
+        question.setUniqueId(requestBody.get("uniqueId") != null ? requestBody.get("uniqueId").toString() : null);
+        question.setVotesUp(0);
+        question.setVotesDown(0);
+
         Question savedQuestion = questionRepository.save(question);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedQuestion);
     }

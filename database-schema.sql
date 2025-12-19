@@ -96,9 +96,11 @@ CREATE TABLE contact_messages (
 -- ================================================
 CREATE INDEX idx_questions_debate_topic ON questions(debate_topic_id);
 CREATE INDEX idx_questions_created_at ON questions(created_at DESC);
+CREATE INDEX idx_questions_unique_id ON questions(unique_id);
 CREATE INDEX idx_replies_question ON replies(question_id);
 CREATE INDEX idx_replies_parent ON replies(parent_reply_id);
 CREATE INDEX idx_replies_created_at ON replies(created_at DESC);
+CREATE INDEX idx_replies_unique_id ON replies(unique_id);
 CREATE INDEX idx_debate_topics_active ON debate_topics(is_active);
 
 -- ================================================

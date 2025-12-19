@@ -75,23 +75,30 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     const topicName = typeof topicObj === 'string' ? topicObj : topicObj.topic;
     const topicId = typeof topicObj === 'object' ? topicObj.id : null;
 
+    console.log('Delete topic called with:', { topicObj, topicName, topicId });
+
     if (!topicId) {
+      console.error('Cannot delete: Topic ID not found', topicObj);
       alert('Cannot delete: Topic ID not found');
       return;
     }
 
     if (window.confirm(`Delete debate "${topicName}"? This will also delete all questions and answers.`)) {
       try {
+        console.log('Calling topicsAPI.delete with ID:', topicId);
         // Delete from backend
         await topicsAPI.delete(topicId);
 
+        console.log('Topic deleted successfully, reloading data...');
         // Reload from backend to sync
         await loadData();
 
         alert('Topic deleted successfully!');
       } catch (err) {
-        console.error('Failed to delete topic:', err);
-        alert('Failed to delete topic. Please try again.');
+        console.error('Failed to delete topic - Full error:', err);
+        console.error('Error message:', err.message);
+        console.error('Error response:', err.response);
+        alert(`Failed to delete topic. Error: ${err.message || 'Please try again.'}`);
       }
     }
   };
@@ -137,15 +144,22 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   const [debateQuestions, setDebateQuestions] = useState([]);
 
   const loadDebateData = async (topicObj) => {
+    console.log('loadDebateData called with:', topicObj);
+
     setSelectedDebate(topicObj.topic);
     setSelectedDebateTopic(topicObj);
 
     try {
+      console.log('Fetching questions for topic ID:', topicObj.id);
       const questions = await questionsAPI.getByTopic(topicObj.id);
+      console.log('Questions loaded:', questions);
       setDebateQuestions(questions || []);
     } catch (err) {
-      console.error('Failed to load questions from backend:', err);
+      console.error('Failed to load questions from backend - Full error:', err);
+      console.error('Error message:', err.message);
+      console.error('Error response:', err.response);
       setDebateQuestions([]);
+      alert(`Failed to load questions. Error: ${err.message || 'Please check console for details.'}`);
     }
   };
 

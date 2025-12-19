@@ -1,6 +1,8 @@
 package com.debatearena.controller;
 
+import com.debatearena.model.Question;
 import com.debatearena.model.Reply;
+import com.debatearena.repository.QuestionRepository;
 import com.debatearena.repository.ReplyRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -8,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -36,6 +39,7 @@ import java.util.UUID;
 public class ReplyController {
 
     private final ReplyRepository replyRepository;
+    private final QuestionRepository questionRepository;
 
     /**
      * GET /replies/question/{questionId}
@@ -68,13 +72,69 @@ public class ReplyController {
      * POST /replies
      * Create a new reply (to a question or another reply)
      *
-     * @param reply The reply to create
+     * @param requestBody Map containing reply data
      * @return The created reply
      */
     @PostMapping
-    public ResponseEntity<Reply> createReply(@RequestBody Reply reply) {
-        Reply savedReply = replyRepository.save(reply);
-        return ResponseEntity.status(HttpStatus.CREATED).body(savedReply);
+    public ResponseEntity<Reply> createReply(@RequestBody Map<String, Object> requestBody) {
+        // LOG INPUT
+        System.out.println("📥 ReplyController.createReply() - Request body: " + requestBody);
+
+        Reply reply = new Reply();
+
+        // Better validation
+        boolean hasQuestion = requestBody.containsKey("question") && requestBody.get("question") != null;
+        boolean hasParentReply = requestBody.containsKey("parentReply") && requestBody.get("parentReply") != null;
+
+        System.out.println("🔍 hasQuestion: " + hasQuestion + ", hasParentReply: " + hasParentReply);
+
+        if (!hasQuestion && !hasParentReply) {
+            System.err.println("❌ Error: Must specify either question or parentReply");
+            return ResponseEntity.badRequest().build();
+        }
+
+        try {
+            // Handle question reference
+            if (hasQuestion) {
+                Map<String, Object> questionMap = (Map<String, Object>) requestBody.get("question");
+                UUID questionId = UUID.fromString(questionMap.get("id").toString());
+                System.out.println("🔍 Looking for question: " + questionId);
+                Question question = questionRepository.findById(questionId)
+                        .orElseThrow(() -> new RuntimeException("Question not found: " + questionId));
+                reply.setQuestion(question);
+                System.out.println("✅ Question set successfully");
+            }
+
+            // Handle parent reply reference
+            if (hasParentReply) {
+                Map<String, Object> parentMap = (Map<String, Object>) requestBody.get("parentReply");
+                UUID parentId = UUID.fromString(parentMap.get("id").toString());
+                System.out.println("🔍 Looking for parent reply: " + parentId);
+                Reply parentReply = replyRepository.findById(parentId)
+                        .orElseThrow(() -> new RuntimeException("Parent reply not found: " + parentId));
+                reply.setParentReply(parentReply);
+                System.out.println("✅ Parent reply set successfully");
+            }
+
+            // Set other fields
+            reply.setText(requestBody.get("text").toString());
+            reply.setSide(requestBody.get("side").toString());
+            reply.setAuthor(requestBody.get("author") != null ? requestBody.get("author").toString() : "Anonymous");
+            reply.setDepth(requestBody.get("depth") != null ? Integer.parseInt(requestBody.get("depth").toString()) : 0);
+            reply.setUniqueId(requestBody.get("uniqueId") != null ? requestBody.get("uniqueId").toString() : null);
+            reply.setVotesUp(0);
+            reply.setVotesDown(0);
+
+            System.out.println("✅ All fields set, saving reply...");
+            Reply savedReply = replyRepository.save(reply);
+            System.out.println("✅ Reply saved successfully: " + savedReply.getId());
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(savedReply);
+        } catch (Exception e) {
+            System.err.println("❌ Error creating reply: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to create reply: " + e.getMessage(), e);
+        }
     }
 
     /**

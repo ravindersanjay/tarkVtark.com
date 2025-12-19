@@ -168,6 +168,29 @@ const App = ({ topic }) => {
   // =====================================================================
 
   /**
+   * Helper function to recursively merge replies with evidence from localStorage
+   */
+  const mergeRepliesWithEvidence = (replies, evidenceMap) => {
+    if (!replies) return [];
+    return replies.map(r => ({
+      ...r,
+      evidence: evidenceMap[r.id] || { files: [], urls: [] },
+      replies: mergeRepliesWithEvidence(r.replies || [], evidenceMap)
+    }));
+  };
+
+  /**
+   * Helper function to save evidence to localStorage
+   */
+  const saveEvidenceToLocalStorage = (topicId, postId, evidence) => {
+    const evidenceKey = `evidence_${topicId}`;
+    const storedEvidence = localStorage.getItem(evidenceKey);
+    const evidenceMap = storedEvidence ? JSON.parse(storedEvidence) : {};
+    evidenceMap[postId] = evidence;
+    localStorage.setItem(evidenceKey, JSON.stringify(evidenceMap));
+  };
+
+  /**
    * Load debate data from backend API when component mounts
    */
   useEffect(() => {
@@ -182,9 +205,22 @@ const App = ({ topic }) => {
 
         if (topicData) {
           const questions = await questionsAPI.getByTopic(topicData.id);
+
+          // Load evidence from localStorage (since backend doesn't store it yet)
+          const evidenceKey = `evidence_${topicData.id}`;
+          const storedEvidence = localStorage.getItem(evidenceKey);
+          const evidenceMap = storedEvidence ? JSON.parse(storedEvidence) : {};
+
+          // Merge backend questions with localStorage evidence
+          const questionsWithEvidence = questions.map(q => ({
+            ...q,
+            evidence: evidenceMap[q.id] || { files: [], urls: [] },
+            replies: mergeRepliesWithEvidence(q.replies || [], evidenceMap)
+          }));
+
           setDebateData({
             topic: topicData.topic,
-            questions: questions || []
+            questions: questionsWithEvidence
           });
         } else {
           // Topic not found in database
@@ -348,10 +384,32 @@ const App = ({ topic }) => {
         uniqueId: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}`
       });
 
+      // Prepare evidence (frontend-only, not in backend yet)
+      const evidence = {
+        files: newQuestionFiles.map(f => ({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          dataUrl: URL.createObjectURL(f) // Create URL for display
+        })),
+        urls: newQuestionUrls
+      };
+
+      // Save evidence to localStorage
+      if (evidence.files.length > 0 || evidence.urls.length > 0) {
+        saveEvidenceToLocalStorage(topicData.id, savedQuestion.id, evidence);
+      }
+
+      // Add evidence to the saved question for immediate display
+      const questionWithEvidence = {
+        ...savedQuestion,
+        evidence
+      };
+
       // Add to debate data (local state) using the saved question from database
       setDebateData(prev => {
         try {
-          const newData = { ...prev, questions: [...(prev.questions || []), savedQuestion] };
+          const newData = { ...prev, questions: [...(prev.questions || []), questionWithEvidence] };
           return newData;
         } catch (innerErr) {
           console.error('Failed to add question', innerErr);
@@ -433,16 +491,62 @@ const App = ({ topic }) => {
       // Determine the opposite side
       const replySide = parent.side === 'left' ? 'right' : 'left';
 
-      // Save to backend API
-      const savedReply = await repliesAPI.create({
-        question: parent.id.startsWith('q-') ? { id: parent.id } : null,
-        parentReply: parent.id.startsWith('r-') ? { id: parent.id } : null,
+      // Determine if parent is a question (exists in top-level questions array)
+      // This is the correct way to detect questions vs replies with UUIDs
+      const isQuestion = debateData.questions.some(q => q.id === parent.id);
+
+      console.log('💬 Posting reply:', {
+        parentId,
+        parentSide: parent.side,
+        replySide,
+        isQuestion,
+        parentType: isQuestion ? 'question' : 'reply',
+        parentDepth: parent.depth
+      });
+
+      // Build reply data - only include question OR parentReply, not both
+      // Don't send undefined or null values
+      const replyData = {
         text: text.trim(),
         side: replySide,
         author: CURRENT_USER,
-        depth: parent.id.startsWith('q-') ? 0 : (parent.depth || 0) + 1,
+        depth: isQuestion ? 0 : (parent.depth || 0) + 1,
         uniqueId: generateUniqueId('r')
-      });
+      };
+
+      // Add either question or parentReply reference (not both, no undefined)
+      if (isQuestion) {
+        replyData.question = { id: parent.id };
+      } else {
+        replyData.parentReply = { id: parent.id };
+      }
+
+      console.log('💬 Reply data to send:', replyData);
+
+      // Save to backend API
+      const savedReply = await repliesAPI.create(replyData);
+
+      // Prepare evidence (frontend-only, not in backend yet)
+      const evidence = {
+        files: processedFiles,
+        urls: urls
+      };
+
+      // Save evidence to localStorage (need to get topicId from debateData)
+      if (evidence.files.length > 0 || evidence.urls.length > 0) {
+        // Get topic ID from the current debate
+        const topics = await topicsAPI.getAll();
+        const currentTopic = topics.find(t => t.topic === debateData.topic);
+        if (currentTopic) {
+          saveEvidenceToLocalStorage(currentTopic.id, savedReply.id, evidence);
+        }
+      }
+
+      // Add evidence to the saved reply for immediate display
+      const replyWithEvidence = {
+        ...savedReply,
+        evidence
+      };
 
       // Update local state with the saved reply
       setDebateData(prev => {
@@ -451,7 +555,7 @@ const App = ({ topic }) => {
 
         if (parentInState) {
           parentInState.replies = parentInState.replies || [];
-          parentInState.replies.push(savedReply);
+          parentInState.replies.push(replyWithEvidence);
         }
 
         return newData;
@@ -465,8 +569,15 @@ const App = ({ topic }) => {
 
       alert('Reply posted successfully!');
     } catch (err) {
-      console.error('Failed to save reply:', err);
-      alert('Failed to post reply. Please try again.');
+      console.error('Failed to save reply - Full error:', err);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
+      console.error('Parent data:', {
+        parentId,
+        parent,
+        isQuestion: debateData.questions.some(q => q.id === parent?.id)
+      });
+      alert(`Failed to post reply. Error: ${err.message || 'Please try again.'}`);
     }
   };
 

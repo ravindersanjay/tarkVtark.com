@@ -7,37 +7,44 @@ const FAQ = () => {
   const [open, setOpen] = useState({});
   const [faqList, setFaqList] = useState([]);
 
-  // Load FAQ from backend API
-  useEffect(() => {
-    // TODO: Fetch from backend when API is ready
-    // For now, use default FAQ
-    setFaqList([
-      {
-        q: 'How do I add a new debate topic?',
-        a: 'Go to the Home page and use the "Add Topic" form. Enter your topic in the format "X vs Y".'
-      },
-      {
-        q: 'How do I participate in a debate?',
-        a: 'Click on any debate topic to view and reply to questions and answers.'
-      },
-      {
-        q: 'Can I report inappropriate content?',
-        a: 'Yes, please use the Contact Us page to report any issues or inappropriate content.'
-      },
-      {
-        q: 'How are replies organized?',
-        a: 'Replies to answers can be promoted to new questions, creating a branching debate structure.'
-      },
-      {
-        q: 'How many times i can vote a question or an answer?',
-        a: 'One question or one answer can be voted only once.'
-      }
-    ]);
+  // Default FAQ items
+  const defaultFaqItems = [
+    {
+      q: 'How do I add a new debate topic?',
+      a: 'Go to the Home page and use the "Add Topic" form. Enter your topic in the format "X vs Y".'
+    },
+    {
+      q: 'How do I participate in a debate?',
+      a: 'Click on any debate topic to view and reply to questions and answers.'
+    },
+    {
+      q: 'Can I report inappropriate content?',
+      a: 'Yes, please use the Contact Us page to report any issues or inappropriate content.'
+    },
+    {
+      q: 'How are replies organized?',
+      a: 'Replies to answers can be promoted to new questions, creating a branching debate structure.'
+    },
+    {
+      q: 'How many times can I vote a question or an answer?',
+      a: 'One question or one answer can be voted only once.'
+    }
+  ];
 
-    // Uncomment when backend is ready:
-    // adminAPI.getFAQ()
-    //   .then(setFaqList)
-    //   .catch(err => console.error('Failed to load FAQ:', err));
+  // Load FAQ from localStorage (synchronized with AdminDashboard)
+  useEffect(() => {
+    const storedFaq = localStorage.getItem('admin_faq_items');
+    if (storedFaq) {
+      try {
+        const parsedFaq = JSON.parse(storedFaq);
+        setFaqList(parsedFaq.length > 0 ? parsedFaq : defaultFaqItems);
+      } catch (err) {
+        console.error('Failed to parse FAQ from localStorage:', err);
+        setFaqList(defaultFaqItems);
+      }
+    } else {
+      setFaqList(defaultFaqItems);
+    }
   }, []);
 
   return (

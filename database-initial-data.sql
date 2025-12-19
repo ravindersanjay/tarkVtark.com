@@ -7,12 +7,20 @@
 -- Default Admin User
 -- Username: admin
 -- Password: admin123 (CHANGE IN PRODUCTION!)
+--
+-- NOTE: This password_hash is a placeholder for initial setup ONLY
+-- TODO: Replace with actual bcrypt hash before production deployment
+-- Expected password: admin123 (should be hashed with bcrypt strength 10)
+--
+-- SECURITY WARNING: This is NOT a valid bcrypt hash!
+-- Implement proper bcrypt hashing in backend authentication before using in production.
+-- The hash should be generated using a proper bcrypt library with a work factor of 10+
 -- ================================================
 INSERT INTO admin_users (username, email, password_hash, full_name, is_active)
 VALUES (
     'admin',
     'admin@tarkvtark.com',
-    '$2a$10$xDkZKYqJ5F5K5K5K5K5K5.', -- This is a placeholder - implement proper bcrypt hashing in backend
+    '$2a$10$xDkZKYqJ5F5K5K5K5K5K5.', -- PLACEHOLDER - Replace with real bcrypt hash
     'System Administrator',
     true
 );
