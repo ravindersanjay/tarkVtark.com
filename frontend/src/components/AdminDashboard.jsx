@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/admin.css';
-import { topicsAPI, questionsAPI, repliesAPI } from '../services/apiService.js';
+import { topicsAPI, questionsAPI, repliesAPI, adminAPI } from '../services/apiService.js';
 
 const MESSAGES_KEY = 'contact_messages';
 const REPORTS_KEY = 'reported_posts';
@@ -16,6 +16,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   const [reports, setReports] = useState([]);
   const [faqItems, setFaqItems] = useState([]);
   const [guidelines, setGuidelines] = useState([]);
+  const [allQuestionsData, setAllQuestionsData] = useState([]); // Store all questions from all topics
 
   // Edit states
   const [editingTopic, setEditingTopic] = useState(null);
@@ -36,9 +37,33 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     try {
       const topicsData = await topicsAPI.getAll();
       setTopics(topicsData); // Store full topic objects with IDs
+
+      // Load all questions from all topics for analytics
+      const allQuestions = [];
+      for (const topic of topicsData) {
+        try {
+          const questions = await questionsAPI.getByTopic(topic.id);
+          // Transform vote format and add topic info
+          questions.forEach(q => {
+            allQuestions.push({
+              ...q,
+              topic: topic.topic,
+              topicId: topic.id,
+              votes: {
+                up: q.votesUp || 0,
+                down: q.votesDown || 0
+              }
+            });
+          });
+        } catch (err) {
+          console.error(`Failed to load questions for topic ${topic.topic}:`, err);
+        }
+      }
+      setAllQuestionsData(allQuestions);
     } catch (err) {
       console.error('Failed to load topics from backend:', err);
       setTopics([]);
+      setAllQuestionsData([]);
     }
 
     // Load messages (still from localStorage for now)
@@ -59,7 +84,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       { q: 'Is my data saved?', a: 'All debates and topics are saved in your browser local storage.' }
     ]);
 
-    // Load guidelines
+    // Load guidelines from localStorage
     const guidelinesData = localStorage.getItem('admin_guidelines');
     setGuidelines(guidelinesData ? JSON.parse(guidelinesData) : [
       'Be respectful and constructive in your arguments.',
@@ -240,30 +265,33 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     }
   };
 
-  // Guidelines Management
-  const saveGuidelines = (items) => {
-    setGuidelines(items);
-    localStorage.setItem('admin_guidelines', JSON.stringify(items));
-  };
-
-  const addGuideline = () => {
+  // Guidelines Management - Using backend API
+  const addGuideline = async () => {
     if (newGuideline.trim()) {
-      saveGuidelines([...guidelines, newGuideline]);
-      setNewGuideline('');
+      try {
+        await adminAPI.createGuideline(newGuideline.trim());
+        setNewGuideline('');
+        // Reload guidelines from backend
+        await loadData();
+        alert('Guideline added successfully!');
+      } catch (err) {
+        console.error('Failed to add guideline:', err);
+        alert('Failed to add guideline. Please try again.');
+      }
     }
   };
 
   const updateGuideline = (index, text) => {
-    const updated = [...guidelines];
-    updated[index] = text;
-    saveGuidelines(updated);
+    // Note: Backend API uses IDs, not indices
+    // For now, just reload the list
+    alert('Edit feature coming soon. Please delete and re-create the guideline.');
     setEditingGuideline(null);
   };
 
   const deleteGuideline = (index) => {
-    if (window.confirm('Delete this guideline?')) {
-      saveGuidelines(guidelines.filter((_, i) => i !== index));
-    }
+    // Note: Backend API uses IDs, not indices
+    // For now, just reload the list
+    alert('Delete feature coming soon. Guidelines persist in database.');
   };
 
   // Reports Management - Enhanced with aggregation
@@ -427,27 +455,46 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   const getTop10Stats = () => {
     const allPosts = [];
 
+    // Collect questions and answers from backend data
+    const collectPosts = (items, topicName, isQuestion = false) => {
+      items.forEach(item => {
+        // Handle both old format (votes.up) and new format (votesUp)
+        const votesUp = item.votes?.up || item.votesUp || 0;
+        const votesDown = item.votes?.down || item.votesDown || 0;
+
+        allPosts.push({
+          ...item,
+          topic: topicName,
+          type: isQuestion ? 'question' : 'answer',
+          totalLikes: votesUp,
+          votes: {
+            up: votesUp,
+            down: votesDown
+          }
+        });
+
+        // Recursively collect replies (answers)
+        if (item.replies && item.replies.length > 0) {
+          collectPosts(item.replies, topicName, false);
+        }
+      });
+    };
+
+    // Process backend data
+    allQuestionsData.forEach(question => {
+      collectPosts([question], question.topic, true);
+    });
+
+    // Also check localStorage for any legacy data
     topics.forEach(topicObj => {
       const topicName = topicObj.topic || topicObj;
       const storageKey = `debate_threads_${topicName.replace(/\s+/g, '_')}`;
       const data = localStorage.getItem(storageKey);
+
       if (data) {
         const parsed = JSON.parse(data);
-        const collectPosts = (items, isQuestion = false) => {
-          items.forEach(item => {
-            allPosts.push({
-              ...item,
-              topic: topicName,
-              type: isQuestion ? 'question' : 'answer',
-              totalLikes: (item.votes?.up || 0)
-            });
-            if (item.replies && item.replies.length > 0) {
-              collectPosts(item.replies, false);
-            }
-          });
-        };
         if (parsed.questions) {
-          collectPosts(parsed.questions, true);
+          collectPosts(parsed.questions, topicName, true);
         }
       }
     });

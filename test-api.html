@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Endpoint Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-top: 10px;
+            border-left: 4px solid #007bff;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+        .success {
+            border-left-color: #28a745;
+        }
+        .error {
+            border-left-color: #dc3545;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status.ok {
+            background: #28a745;
+            color: white;
+        }
+        .status.fail {
+            background: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Debate App - API Endpoint Tests</h1>
+    <p>Test all backend endpoints to verify voting and guidelines fixes</p>
+
+    <div class="test-section">
+        <h2>1. Topics Endpoint <span id="topics-status"></span></h2>
+        <button onclick="testTopics()">Test GET /api/v1/topics</button>
+        <div id="topics-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Questions Endpoint <span id="questions-status"></span></h2>
+        <p>First, select a topic above, then test questions for that topic</p>
+        <button onclick="testQuestions()">Test GET /api/v1/questions/topic/{topicId}</button>
+        <div id="questions-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Guidelines Endpoint <span id="guidelines-status"></span></h2>
+        <button onclick="testGuidelines()">Test GET /api/v1/admin/guidelines</button>
+        <div id="guidelines-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. FAQ Endpoint <span id="faq-status"></span></h2>
+        <button onclick="testFAQ()">Test GET /api/v1/admin/faq</button>
+        <div id="faq-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Vote Format Check <span id="vote-status"></span></h2>
+        <p>Check if questions have proper vote counts (votesUp, votesDown)</p>
+        <button onclick="testVoteFormat()">Check Vote Format</button>
+        <div id="vote-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8080/api/v1';
+        let currentTopicId = null;
+
+        async function testTopics() {
+            const resultDiv = document.getElementById('topics-result');
+            const statusSpan = document.getElementById('topics-status');
+
+            try {
+                const response = await fetch(`${API_BASE}/topics`);
+                const data = await response.json();
+
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Success! Found ${data.length} topics:\n\n` +
+                    JSON.stringify(data, null, 2);
+
+                statusSpan.className = 'status ok';
+                statusSpan.textContent = '✅ OK';
+
+                // Store first topic ID for questions test
+                if (data.length > 0) {
+                    currentTopicId = data[0].id;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = '❌ FAIL';
+            }
+        }
+
+        async function testQuestions() {
+            const resultDiv = document.getElementById('questions-result');
+            const statusSpan = document.getElementById('questions-status');
+
+            if (!currentTopicId) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ Please test Topics endpoint first to get a topic ID';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/questions/topic/${currentTopicId}`);
+                const data = await response.json();
+
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Success! Found ${data.length} questions:\n\n` +
+                    JSON.stringify(data, null, 2);
+
+                statusSpan.className = 'status ok';
+                statusSpan.textContent = '✅ OK';
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = '❌ FAIL';
+            }
+        }
+
+        async function testGuidelines() {
+            const resultDiv = document.getElementById('guidelines-result');
+            const statusSpan = document.getElementById('guidelines-status');
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/guidelines`);
+                const data = await response.json();
+
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Success! Found ${data.length} guidelines:\n\n` +
+                    data.map((g, i) => `${i + 1}. ${g}`).join('\n');
+
+                statusSpan.className = 'status ok';
+                statusSpan.textContent = '✅ OK';
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = '❌ FAIL';
+            }
+        }
+
+        async function testFAQ() {
+            const resultDiv = document.getElementById('faq-result');
+            const statusSpan = document.getElementById('faq-status');
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/faq`);
+                const data = await response.json();
+
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Success! Found ${data.length} FAQ items:\n\n` +
+                    data.map((item, i) => `${i + 1}. Q: ${item.q}\n   A: ${item.a}`).join('\n\n');
+
+                statusSpan.className = 'status ok';
+                statusSpan.textContent = '✅ OK';
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = '❌ FAIL';
+            }
+        }
+
+        async function testVoteFormat() {
+            const resultDiv = document.getElementById('vote-result');
+            const statusSpan = document.getElementById('vote-status');
+
+            if (!currentTopicId) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ Please test Topics endpoint first';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/questions/topic/${currentTopicId}`);
+                const questions = await response.json();
+
+                if (questions.length === 0) {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = '⚠️ No questions found to check vote format';
+                    return;
+                }
+
+                const question = questions[0];
+                const hasVotesUp = question.hasOwnProperty('votesUp');
+                const hasVotesDown = question.hasOwnProperty('votesDown');
+
+                if (hasVotesUp && hasVotesDown) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `✅ Vote format is correct!\n\n` +
+                        `Sample question:\n` +
+                        `  - votesUp: ${question.votesUp}\n` +
+                        `  - votesDown: ${question.votesDown}\n\n` +
+                        `Frontend will transform this to:\n` +
+                        `  - votes.up: ${question.votesUp}\n` +
+                        `  - votes.down: ${question.votesDown}`;
+
+                    statusSpan.className = 'status ok';
+                    statusSpan.textContent = '✅ OK';
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ Vote format is incorrect!\n\n` +
+                        `Expected: votesUp and votesDown properties\n` +
+                        `Found: ${JSON.stringify(question, null, 2)}`;
+
+                    statusSpan.className = 'status fail';
+                    statusSpan.textContent = '❌ FAIL';
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                statusSpan.className = 'status fail';
+                statusSpan.textContent = '❌ FAIL';
+            }
+        }
+
+        // Auto-run all tests on page load
+        window.addEventListener('load', async () => {
+            console.log('Running automated tests...');
+            await testTopics();
+            await new Promise(r => setTimeout(r, 500));
+            await testQuestions();
+            await new Promise(r => setTimeout(r, 500));
+            await testGuidelines();
+            await new Promise(r => setTimeout(r, 500));
+            await testFAQ();
+            await new Promise(r => setTimeout(r, 500));
+            await testVoteFormat();
+        });
+    </script>
+</body>
+</html>
+

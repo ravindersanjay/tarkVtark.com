@@ -367,6 +367,61 @@ export const adminAPI = {
   },
 
   /**
+   * Get all guidelines including inactive (for admin management)
+   * @returns {Promise<Array>} Array of guideline objects
+   */
+  getAllGuidelines: async () => {
+    console.log('👨‍💼 adminAPI.getAllGuidelines() - Fetching all guidelines');
+    const result = await apiFetch('/admin/guidelines/all');
+    console.log('👨‍💼 adminAPI.getAllGuidelines() - Success:', result?.length || 0, 'guidelines');
+    return result;
+  },
+
+  /**
+   * Create a new guideline
+   * @param {string} text - Guideline text
+   * @returns {Promise<Object>} Created guideline object
+   */
+  createGuideline: async (text) => {
+    console.log('👨‍💼 adminAPI.createGuideline() - Creating guideline:', text);
+    const result = await apiFetch('/admin/guidelines', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+    console.log('👨‍💼 adminAPI.createGuideline() - Created:', result);
+    return result;
+  },
+
+  /**
+   * Update an existing guideline
+   * @param {number} id - Guideline ID
+   * @param {Object} data - { text, isActive, displayOrder }
+   * @returns {Promise<Object>} Updated guideline object
+   */
+  updateGuideline: async (id, data) => {
+    console.log('👨‍💼 adminAPI.updateGuideline() - Updating guideline:', id, data);
+    const result = await apiFetch(`/admin/guidelines/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    console.log('👨‍💼 adminAPI.updateGuideline() - Updated:', result);
+    return result;
+  },
+
+  /**
+   * Delete a guideline
+   * @param {number} id - Guideline ID
+   * @returns {Promise<void>}
+   */
+  deleteGuideline: async (id) => {
+    console.log('👨‍💼 adminAPI.deleteGuideline() - Deleting guideline:', id);
+    await apiFetch(`/admin/guidelines/${id}`, {
+      method: 'DELETE',
+    });
+    console.log('👨‍💼 adminAPI.deleteGuideline() - Deleted successfully');
+  },
+
+  /**
    * Get FAQ items
    * @returns {Promise<Array>} Array of { q, a } objects
    */

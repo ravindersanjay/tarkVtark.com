@@ -104,6 +104,22 @@ CREATE INDEX idx_replies_unique_id ON replies(unique_id);
 CREATE INDEX idx_debate_topics_active ON debate_topics(is_active);
 
 -- ================================================
+-- TABLE: guidelines
+-- ================================================
+CREATE TABLE guidelines (
+    id BIGSERIAL PRIMARY KEY,
+    text VARCHAR(1000) NOT NULL,
+    display_order INTEGER NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for guidelines
+CREATE INDEX idx_guidelines_display_order ON guidelines(display_order);
+CREATE INDEX idx_guidelines_active ON guidelines(is_active);
+
+-- ================================================
 -- COMMENTS
 -- ================================================
 COMMENT ON TABLE debate_topics IS 'Main debate topics (e.g., Sanatan vs Islam)';
@@ -111,6 +127,7 @@ COMMENT ON TABLE questions IS 'Top-level questions posted on either side';
 COMMENT ON TABLE replies IS 'Nested replies to questions or other replies';
 COMMENT ON TABLE admin_users IS 'Admin users for managing content';
 COMMENT ON TABLE contact_messages IS 'Messages from contact form';
+COMMENT ON TABLE guidelines IS 'Community guidelines for debates';
 
 -- ================================================
 -- VERIFICATION

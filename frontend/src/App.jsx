@@ -164,6 +164,41 @@ const App = ({ topic }) => {
   const rightLabel = parts[1] ? parts[1].trim() : 'Right';
 
   // =====================================================================
+  // DATA TRANSFORMATION HELPERS
+  // =====================================================================
+
+  /**
+   * Transform backend question/reply format to frontend format
+   * Backend: { votesUp, votesDown, ... }
+   * Frontend: { votes: { up, down }, ... }
+   */
+  const transformBackendToFrontend = (item) => {
+    if (!item) return item;
+
+    return {
+      ...item,
+      votes: {
+        up: item.votesUp || 0,
+        down: item.votesDown || 0
+      },
+      // Remove old format to avoid confusion
+      votesUp: undefined,
+      votesDown: undefined
+    };
+  };
+
+  /**
+   * Recursively transform replies with vote format conversion
+   */
+  const transformReplies = (replies) => {
+    if (!replies || !Array.isArray(replies)) return [];
+    return replies.map(reply => ({
+      ...transformBackendToFrontend(reply),
+      replies: transformReplies(reply.replies || [])
+    }));
+  };
+
+  // =====================================================================
   // SIDE EFFECTS
   // =====================================================================
 
@@ -211,12 +246,18 @@ const App = ({ topic }) => {
           const storedEvidence = localStorage.getItem(evidenceKey);
           const evidenceMap = storedEvidence ? JSON.parse(storedEvidence) : {};
 
-          // Merge backend questions with localStorage evidence
-          const questionsWithEvidence = questions.map(q => ({
-            ...q,
-            evidence: evidenceMap[q.id] || { files: [], urls: [] },
-            replies: mergeRepliesWithEvidence(q.replies || [], evidenceMap)
-          }));
+          // Transform and merge backend questions with localStorage evidence
+          const questionsWithEvidence = questions.map(q => {
+            const transformedQuestion = transformBackendToFrontend(q);
+            return {
+              ...transformedQuestion,
+              evidence: evidenceMap[q.id] || { files: [], urls: [] },
+              replies: transformReplies(q.replies || []).map(r => ({
+                ...r,
+                evidence: evidenceMap[r.id] || { files: [], urls: [] }
+              }))
+            };
+          });
 
           setDebateData({
             topic: topicData.topic,
