@@ -2,12 +2,23 @@ spring:
   application:
     name: debate-arena-backend
 
-  # PostgreSQL Database Configuration
+  # PostgreSQL Database Configuration - localhost
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/debate_db
+#    driver-class-name: org.postgresql.Driver
+#    username: postgres
+#    password: 123456
+#    hikari:
+#      maximum-pool-size: 10
+#      minimum-idle: 5
+#      connection-timeout: 30000
+
+  # PostgreSQL Database Configuration - neondb
   datasource:
-    url: jdbc:postgresql://localhost:5432/debate_db
+    url: jdbc:postgresql://ep-curly-queen-a1tu44g3-pooler.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require
     driver-class-name: org.postgresql.Driver
-    username: postgres
-    password: 123456
+    username: neondb_owner
+    password: npg_TfMWjGuX81EY
     hikari:
       maximum-pool-size: 10
       minimum-idle: 5
