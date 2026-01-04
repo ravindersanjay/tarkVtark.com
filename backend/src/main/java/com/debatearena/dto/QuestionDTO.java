@@ -42,6 +42,10 @@ public class QuestionDTO {
     // Nested replies - this is the key difference from entity
     private List<ReplyDTO> replies = new ArrayList<>();
 
+    // Evidence and attachments
+    private List<AttachmentDTO> attachments = new ArrayList<>();
+    private List<EvidenceUrlDTO> evidenceUrls = new ArrayList<>();
+
     /**
      * Convert Question entity to DTO with replies
      */

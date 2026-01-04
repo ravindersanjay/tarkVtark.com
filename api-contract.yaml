@@ -24,6 +24,8 @@ tags:
     description: Questions within debates
   - name: Replies
     description: Replies to questions and other replies
+  - name: Files
+    description: File uploads and evidence management
   - name: Admin
     description: Admin panel operations
   - name: Contact
@@ -235,6 +237,214 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  # =====================================================================
+  # FILES ENDPOINTS
+  # =====================================================================
+  /files/upload:
+    post:
+      tags: [Files]
+      summary: Upload a file attachment
+      description: Upload a file (image, video, document) for a question or reply
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File to upload (max 10MB)
+                questionId:
+                  type: string
+                  format: uuid
+                  description: ID of question (if attaching to question)
+                replyId:
+                  type: string
+                  format: uuid
+                  description: ID of reply (if attaching to reply)
+                uploadedBy:
+                  type: string
+                  description: Name of uploader
+                  default: "Anonymous"
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attachment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          description: File too large (max 10MB)
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /files/{filename}:
+    get:
+      tags: [Files]
+      summary: Download or view a file
+      description: Retrieve an uploaded file by filename
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "abc-123-456.pdf"
+      responses:
+        '200':
+          description: File content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /files/{id}:
+    delete:
+      tags: [Files]
+      summary: Delete an attachment
+      description: Delete a file attachment and its database record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: File deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /files/evidence-url:
+    post:
+      tags: [Files]
+      summary: Add an evidence URL
+      description: Add an external URL as evidence for a question or reply
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uri
+          example: "https://youtube.com/watch?v=example"
+        - name: questionId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: replyId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: title
+          in: query
+          schema:
+            type: string
+          example: "Evidence Video"
+      responses:
+        '200':
+          description: Evidence URL added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EvidenceUrl'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /files/evidence-url/{id}:
+    delete:
+      tags: [Files]
+      summary: Delete an evidence URL
+      description: Remove an evidence URL from a question or reply
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Evidence URL deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /files/attachments:
+    get:
+      tags: [Files]
+      summary: Get attachments
+      description: Get all file attachments for a question or reply
+      parameters:
+        - name: questionId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: replyId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of attachments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Attachment'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /files/evidence-urls:
+    get:
+      tags: [Files]
+      summary: Get evidence URLs
+      description: Get all evidence URLs for a question or reply
+      parameters:
+        - name: questionId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: replyId
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of evidence URLs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EvidenceUrl'
         '500':
           $ref: '#/components/responses/ServerError'
 
@@ -482,6 +692,16 @@ components:
           description: Nested replies to this question
           items:
             $ref: '#/components/schemas/Reply'
+        attachments:
+          type: array
+          description: File attachments for this question
+          items:
+            $ref: '#/components/schemas/Attachment'
+        evidenceUrls:
+          type: array
+          description: Evidence URLs for this question
+          items:
+            $ref: '#/components/schemas/EvidenceUrl'
         createdAt:
           type: string
           format: date-time
@@ -574,6 +794,16 @@ components:
           description: Nested replies to this reply
           items:
             $ref: '#/components/schemas/Reply'
+        attachments:
+          type: array
+          description: File attachments for this reply
+          items:
+            $ref: '#/components/schemas/Attachment'
+        evidenceUrls:
+          type: array
+          description: Evidence URLs for this reply
+          items:
+            $ref: '#/components/schemas/EvidenceUrl'
         createdAt:
           type: string
           format: date-time
@@ -723,6 +953,119 @@ components:
           type: string
           format: uuid
           description: ID of the saved contact message
+
+    # -----------------------------------------------------------------
+    # FILES & EVIDENCE
+    # -----------------------------------------------------------------
+    Attachment:
+      type: object
+      required:
+        - id
+        - fileName
+        - fileSize
+        - fileType
+        - storageUrl
+        - storageProvider
+        - uploadedBy
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the attachment
+        questionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the question this is attached to
+        replyId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the reply this is attached to
+        fileName:
+          type: string
+          description: Original filename
+          example: "evidence-document.pdf"
+        fileSize:
+          type: integer
+          format: int64
+          description: File size in bytes
+          example: 2048576
+        fileType:
+          type: string
+          description: MIME type
+          example: "application/pdf"
+        storageUrl:
+          type: string
+          format: uri
+          description: URL to access the file
+          example: "http://localhost:8080/api/v1/files/abc-123-456.pdf"
+        storageProvider:
+          type: string
+          description: Storage provider (local, cloudinary, s3, etc.)
+          example: "local"
+          default: "local"
+        displayOrder:
+          type: integer
+          nullable: true
+          description: Order for display in UI
+          example: 1
+        uploadedBy:
+          type: string
+          description: Name of user who uploaded
+          default: "Anonymous"
+          maxLength: 100
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EvidenceUrl:
+      type: object
+      required:
+        - id
+        - url
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the evidence URL
+        questionId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the question this is linked to
+        replyId:
+          type: string
+          format: uuid
+          nullable: true
+          description: ID of the reply this is linked to
+        url:
+          type: string
+          format: uri
+          description: The evidence URL
+          example: "https://youtube.com/watch?v=example"
+        title:
+          type: string
+          nullable: true
+          description: Optional title/description
+          maxLength: 255
+          example: "Supporting Evidence Video"
+        displayOrder:
+          type: integer
+          nullable: true
+          description: Order for display in UI
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
 
     # -----------------------------------------------------------------
     # ERROR RESPONSES

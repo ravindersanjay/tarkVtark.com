@@ -1,10 +1,14 @@
 package com.debatearena.controller;
 
+import com.debatearena.dto.AttachmentDTO;
+import com.debatearena.dto.EvidenceUrlDTO;
 import com.debatearena.dto.QuestionDTO;
 import com.debatearena.model.DebateTopic;
 import com.debatearena.model.Question;
 import com.debatearena.model.Reply;
+import com.debatearena.repository.AttachmentRepository;
 import com.debatearena.repository.DebateTopicRepository;
+import com.debatearena.repository.EvidenceUrlRepository;
 import com.debatearena.repository.QuestionRepository;
 import com.debatearena.repository.ReplyRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +48,8 @@ public class QuestionController {
     private final QuestionRepository questionRepository;
     private final DebateTopicRepository debateTopicRepository;
     private final ReplyRepository replyRepository;
+    private final AttachmentRepository attachmentRepository;
+    private final EvidenceUrlRepository evidenceUrlRepository;
 
     /**
      * GET /questions/topic/{topicId}
@@ -59,16 +65,35 @@ public class QuestionController {
         List<Question> questions = questionRepository.findByDebateTopic_Id(topicId);
         System.out.println("✅ Found " + questions.size() + " questions");
 
-        // Convert to DTOs with replies
+        // Convert to DTOs with replies, attachments, and evidence URLs
         List<QuestionDTO> dtos = questions.stream()
             .map(q -> {
                 List<Reply> replies = replyRepository.findByQuestion_Id(q.getId());
                 System.out.println("  Question " + q.getId() + " has " + replies.size() + " replies");
-                return QuestionDTO.fromEntity(q, replies);
+
+                QuestionDTO dto = QuestionDTO.fromEntity(q, replies);
+
+                // Load attachments for this question
+                List<AttachmentDTO> attachments = attachmentRepository.findByQuestionId(q.getId())
+                    .stream()
+                    .map(AttachmentDTO::fromEntity)
+                    .toList();
+                dto.setAttachments(attachments);
+
+                // Load evidence URLs for this question
+                List<EvidenceUrlDTO> evidenceUrls = evidenceUrlRepository.findByQuestionId(q.getId())
+                    .stream()
+                    .map(EvidenceUrlDTO::fromEntity)
+                    .toList();
+                dto.setEvidenceUrls(evidenceUrls);
+
+                System.out.println("  Question " + q.getId() + " has " + attachments.size() + " attachments and " + evidenceUrls.size() + " evidence URLs");
+
+                return dto;
             })
             .toList();
 
-        System.out.println("✅ Returning " + dtos.size() + " QuestionDTOs with replies");
+        System.out.println("✅ Returning " + dtos.size() + " QuestionDTOs with replies and evidence");
         return ResponseEntity.ok(dtos);
     }
 

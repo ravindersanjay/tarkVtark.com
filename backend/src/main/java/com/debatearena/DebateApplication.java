@@ -13,7 +13,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * This application provides REST API endpoints for the TarkVtark debate
  * platform, managing topics, questions, replies, voting, and admin features.
  *
- * All data is stored in PostgreSQL database (debate_db).
+ * All data is stored in PostgreSQL database (Neon DB).
  * API specification: api-contract.yaml (OpenAPI 3.0)
  *
  * @author TarkVtark Team
@@ -25,6 +25,5 @@ public class DebateApplication {
     public static void main(String[] args) {
         SpringApplication.run(DebateApplication.class, args);
     }
-
 }
 
