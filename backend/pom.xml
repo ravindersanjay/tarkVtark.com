@@ -43,9 +43,11 @@
         </dependency>
 
         <!-- PostgreSQL Driver -->
+        <!-- Upgraded to 42.7.1 to fix SCRAM authentication issue with Neon DB -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
+            <version>42.7.1</version>
             <scope>runtime</scope>
         </dependency>
 

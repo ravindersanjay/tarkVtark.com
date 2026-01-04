@@ -2,10 +2,11 @@ spring:
   application:
     name: debate-arena-backend
 
+  # PostgreSQL Database Configuration - Neon DB
   datasource:
-    url: ${SPRING_DATASOURCE_URL}
-    username: ${SPRING_DATASOURCE_USERNAME}
-    password: ${SPRING_DATASOURCE_PASSWORD}
+    url: jdbc:postgresql://ep-curly-queen-a1tu44g3-pooler.ap-southeast-1.aws.neon.tech:5432/neondb?sslmode=require
+    username: neondb_owner
+    password: npg_TfMWjGuX81EY
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -14,7 +15,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:validate}
+      ddl-auto: validate
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true

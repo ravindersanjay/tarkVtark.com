@@ -32,6 +32,7 @@ import TopNav from './components/TopNav.jsx';
 import FAQ from './components/FAQ.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 
 /**
  * Extract debate topic from the URL path
@@ -205,6 +206,8 @@ function MainRouter() {
  */
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <MainRouter />
+    <ErrorBoundary>
+      <MainRouter />
+    </ErrorBoundary>
   </StrictMode>
 );

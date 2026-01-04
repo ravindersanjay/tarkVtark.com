@@ -27,6 +27,13 @@ import logger from '../utils/logger.js';
 // Vite exposes env variables as import.meta.env.VITE_*
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
+// Debug: Log the API URL being used
+console.log('🔧 API Configuration:', {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  API_BASE_URL: API_BASE_URL,
+  mode: import.meta.env.MODE
+});
+
 /**
  * Generic fetch wrapper with error handling
  */
@@ -102,7 +109,7 @@ async function apiFetch(url, options = {}) {
 // DEBATE TOPICS API
 // =====================================================================
 
-export const topicsAPI = {
+const topicsAPI = {
   /**
    * Get all debate topics
    * @returns {Promise<Array>} Array of topic objects
@@ -188,7 +195,7 @@ export const topicsAPI = {
 // QUESTIONS API
 // =====================================================================
 
-export const questionsAPI = {
+const questionsAPI = {
   /**
    * Get all questions for a topic
    * @param {string} topicId - UUID of the topic
@@ -266,7 +273,7 @@ export const questionsAPI = {
 // REPLIES API
 // =====================================================================
 
-export const repliesAPI = {
+const repliesAPI = {
   /**
    * Get all replies for a question
    * @param {string} questionId - UUID of the question
@@ -344,7 +351,7 @@ export const repliesAPI = {
 // ADMIN API
 // =====================================================================
 
-export const adminAPI = {
+const adminAPI = {
   /**
    * Get guidelines content
    * @returns {Promise<Array>} Array of guideline strings
@@ -469,7 +476,7 @@ export const adminAPI = {
 // CONTACT API
 // =====================================================================
 
-export const contactAPI = {
+const contactAPI = {
   /**
    * Send a contact message
    * @param {Object} messageData - { name, email, subject, message }
@@ -595,6 +602,9 @@ const filesAPI = {
   },
 };
 
+// Export all APIs
+export { topicsAPI, questionsAPI, repliesAPI, adminAPI, contactAPI, filesAPI };
+
 export default {
   topics: topicsAPI,
   questions: questionsAPI,
@@ -604,4 +614,3 @@ export default {
   files: filesAPI,
 };
 
-export { topicsAPI, questionsAPI, repliesAPI, adminAPI, contactAPI, filesAPI };
