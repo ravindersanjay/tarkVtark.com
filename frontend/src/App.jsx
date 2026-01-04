@@ -235,15 +235,21 @@ const App = ({ topic }) => {
   useEffect(() => {
     const loadDebateData = async () => {
       try {
+        console.log('🔄 Loading debate data for topic:', topic);
         setLoading(true);
         setError(null);
 
         // Get all topics to find the matching one
+        console.log('📡 Fetching topics from API...');
         const topics = await topicsAPI.getAll();
+        console.log('✅ Topics loaded:', topics.length, 'topics');
+
         const topicData = topics.find(t => t.topic === topic);
 
         if (topicData) {
+          console.log('📡 Fetching questions for topic:', topicData.id);
           const questions = await questionsAPI.getByTopic(topicData.id);
+          console.log('✅ Questions loaded:', questions.length, 'questions');
 
           // Transform backend questions - evidence is now included in API response
           const questionsWithEvidence = questions.map(q => {
@@ -271,17 +277,24 @@ const App = ({ topic }) => {
             topic: topicData.topic,
             questions: questionsWithEvidence
           });
+          console.log('✅ Debate data loaded successfully');
         } else {
           // Topic not found in database
+          console.warn('⚠️ Topic not found:', topic);
           setDebateData({
             topic: topic || 'Sanatan vs Islam',
             questions: []
           });
-          setError(`Topic "${topic}" not found in database.`);
+          setError(`Topic "${topic}" not found in database. Available topics: ${topics.map(t => t.topic).join(', ')}`);
         }
       } catch (err) {
-        console.error('Failed to load debate data:', err);
-        setError('Failed to load debate. Please make sure the backend is running.');
+        console.error('❌ Failed to load debate data:', err);
+        console.error('Error details:', {
+          message: err.message,
+          stack: err.stack,
+          response: err.response
+        });
+        setError(`Failed to load debate. Error: ${err.message}. Please make sure the backend is running on http://localhost:8080`);
         setDebateData({
           topic: topic || 'Sanatan vs Islam',
           questions: []

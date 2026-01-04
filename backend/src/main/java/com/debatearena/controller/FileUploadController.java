@@ -40,18 +40,23 @@ import java.util.stream.Collectors;
  * Handles file uploads and downloads for question and reply attachments.
  *
  * ENDPOINTS:
- * POST   /api/v1/files/upload           - Upload a file
- * GET    /api/v1/files/{filename}       - Download/view a file
- * DELETE /api/v1/files/{id}             - Delete an attachment
- * POST   /api/v1/files/evidence-url     - Add an evidence URL
- * DELETE /api/v1/files/evidence-url/{id} - Delete an evidence URL
- * GET    /api/v1/files/attachments      - Get attachments for question/reply
- * GET    /api/v1/files/evidence-urls    - Get evidence URLs for question/reply
+ * POST   /files/upload           - Upload a file
+ * GET    /files/{filename}       - Download/view a file
+ * DELETE /files/{id}             - Delete an attachment
+ * POST   /files/evidence-url     - Add an evidence URL
+ * DELETE /files/evidence-url/{id} - Delete an evidence URL
+ * GET    /files/attachments      - Get attachments for question/reply
+ * GET    /files/evidence-urls    - Get evidence URLs for question/reply
+ *
+ * Full URLs (with context path):
+ * POST   /api/v1/files/upload
+ * GET    /api/v1/files/{filename}
+ * etc.
  *
  * @author TarkVtark Team
  */
 @RestController
-@RequestMapping("/api/v1/files")
+@RequestMapping("/files")
 @CrossOrigin(origins = "http://localhost:5173")
 public class FileUploadController {
 
