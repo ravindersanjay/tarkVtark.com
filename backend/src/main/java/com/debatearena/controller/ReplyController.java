@@ -1,7 +1,12 @@
 package com.debatearena.controller;
 
+import com.debatearena.dto.AttachmentDTO;
+import com.debatearena.dto.EvidenceUrlDTO;
+import com.debatearena.dto.ReplyDTO;
 import com.debatearena.model.Question;
 import com.debatearena.model.Reply;
+import com.debatearena.repository.AttachmentRepository;
+import com.debatearena.repository.EvidenceUrlRepository;
 import com.debatearena.repository.QuestionRepository;
 import com.debatearena.repository.ReplyRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +45,8 @@ public class ReplyController {
 
     private final ReplyRepository replyRepository;
     private final QuestionRepository questionRepository;
+    private final AttachmentRepository attachmentRepository;
+    private final EvidenceUrlRepository evidenceUrlRepository;
 
     /**
      * GET /replies/question/{questionId}

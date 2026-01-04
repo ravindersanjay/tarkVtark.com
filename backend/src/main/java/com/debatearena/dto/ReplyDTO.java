@@ -40,6 +40,10 @@ public class ReplyDTO {
     // Nested replies for threaded conversations
     private List<ReplyDTO> replies = new ArrayList<>();
 
+    // Evidence and attachments
+    private List<AttachmentDTO> attachments = new ArrayList<>();
+    private List<EvidenceUrlDTO> evidenceUrls = new ArrayList<>();
+
     /**
      * Convert Reply entity to DTO with nested replies
      */

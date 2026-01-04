@@ -484,11 +484,122 @@ export const contactAPI = {
   },
 };
 
+/**
+ * =====================================================================
+ * FILES API - File Upload & Evidence Management
+ * =====================================================================
+ */
+const filesAPI = {
+  /**
+   * Upload a file attachment
+   * @param {File} file - The file to upload
+   * @param {string} questionId - UUID of question (optional)
+   * @param {string} replyId - UUID of reply (optional)
+   * @param {string} uploadedBy - Name of uploader (optional)
+   * @returns {Promise<Object>} AttachmentDTO with storageUrl
+   */
+  upload: async (file, questionId = null, replyId = null, uploadedBy = 'Anonymous') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (questionId) formData.append('questionId', questionId);
+    if (replyId) formData.append('replyId', replyId);
+    if (uploadedBy) formData.append('uploadedBy', uploadedBy);
+
+    logger.log('📤 filesAPI.upload() - Uploading file:', file.name);
+
+    // Don't use apiFetch for multipart/form-data, use fetch directly
+    const response = await fetch(`${API_BASE_URL}/files/upload`, {
+      method: 'POST',
+      body: formData, // Don't set Content-Type, browser will set it with boundary
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      logger.error('❌ filesAPI.upload() - Upload failed:', error);
+      throw new Error(`Upload failed: ${error}`);
+    }
+
+    const result = await response.json();
+    logger.log('✅ filesAPI.upload() - File uploaded:', result.fileName);
+    return result;
+  },
+
+  /**
+   * Delete an attachment
+   * @param {string} id - Attachment UUID
+   */
+  delete: async (id) => {
+    logger.log('🗑️ filesAPI.delete() - Deleting attachment:', id);
+    return apiFetch(`/files/${id}`, { method: 'DELETE' });
+  },
+
+  /**
+   * Add an evidence URL
+   * @param {string} url - The URL
+   * @param {string} questionId - UUID of question (optional)
+   * @param {string} replyId - UUID of reply (optional)
+   * @param {string} title - Optional title/description
+   * @returns {Promise<Object>} EvidenceUrlDTO
+   */
+  addEvidenceUrl: async (url, questionId = null, replyId = null, title = null) => {
+    const params = new URLSearchParams();
+    params.append('url', url);
+    if (questionId) params.append('questionId', questionId);
+    if (replyId) params.append('replyId', replyId);
+    if (title) params.append('title', title);
+
+    logger.log('🔗 filesAPI.addEvidenceUrl() - Adding URL:', url);
+
+    return apiFetch(`/files/evidence-url?${params.toString()}`, {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Delete an evidence URL
+   * @param {string} id - Evidence URL UUID
+   */
+  deleteEvidenceUrl: async (id) => {
+    logger.log('🗑️ filesAPI.deleteEvidenceUrl() - Deleting URL:', id);
+    return apiFetch(`/files/evidence-url/${id}`, { method: 'DELETE' });
+  },
+
+  /**
+   * Get attachments for a question or reply
+   * @param {string} questionId - UUID of question (optional)
+   * @param {string} replyId - UUID of reply (optional)
+   * @returns {Promise<Array>} List of AttachmentDTOs
+   */
+  getAttachments: async (questionId = null, replyId = null) => {
+    const params = new URLSearchParams();
+    if (questionId) params.append('questionId', questionId);
+    if (replyId) params.append('replyId', replyId);
+
+    return apiFetch(`/files/attachments?${params.toString()}`);
+  },
+
+  /**
+   * Get evidence URLs for a question or reply
+   * @param {string} questionId - UUID of question (optional)
+   * @param {string} replyId - UUID of reply (optional)
+   * @returns {Promise<Array>} List of EvidenceUrlDTOs
+   */
+  getEvidenceUrls: async (questionId = null, replyId = null) => {
+    const params = new URLSearchParams();
+    if (questionId) params.append('questionId', questionId);
+    if (replyId) params.append('replyId', replyId);
+
+    return apiFetch(`/files/evidence-urls?${params.toString()}`);
+  },
+};
+
 export default {
   topics: topicsAPI,
   questions: questionsAPI,
   replies: repliesAPI,
   admin: adminAPI,
   contact: contactAPI,
+  files: filesAPI,
 };
 
+export { topicsAPI, questionsAPI, repliesAPI, adminAPI, contactAPI, filesAPI };

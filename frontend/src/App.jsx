@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateUniqueId, deepCopy } from './utils/helpers.js';
-import { topicsAPI, questionsAPI, repliesAPI } from './services/apiService.js';
+import { topicsAPI, questionsAPI, repliesAPI, filesAPI } from './services/apiService.js';
 import Card from './components/Card.jsx';
 import './styles/app.css';
 
@@ -188,14 +188,28 @@ const App = ({ topic }) => {
   };
 
   /**
-   * Recursively transform replies with vote format conversion
+   * Recursively transform replies with vote format conversion and evidence
    */
   const transformReplies = (replies) => {
     if (!replies || !Array.isArray(replies)) return [];
-    return replies.map(reply => ({
-      ...transformBackendToFrontend(reply),
-      replies: transformReplies(reply.replies || [])
-    }));
+    return replies.map(reply => {
+      // Transform evidence from backend format
+      const evidence = {
+        files: (reply.attachments || []).map(att => ({
+          name: att.fileName,
+          size: att.fileSize,
+          type: att.fileType,
+          dataUrl: att.storageUrl  // Use storageUrl from backend
+        })),
+        urls: (reply.evidenceUrls || []).map(ev => ev.url)
+      };
+
+      return {
+        ...transformBackendToFrontend(reply),
+        evidence,
+        replies: transformReplies(reply.replies || [])
+      };
+    });
   };
 
   // =====================================================================
@@ -214,16 +228,6 @@ const App = ({ topic }) => {
     }));
   };
 
-  /**
-   * Helper function to save evidence to localStorage
-   */
-  const saveEvidenceToLocalStorage = (topicId, postId, evidence) => {
-    const evidenceKey = `evidence_${topicId}`;
-    const storedEvidence = localStorage.getItem(evidenceKey);
-    const evidenceMap = storedEvidence ? JSON.parse(storedEvidence) : {};
-    evidenceMap[postId] = evidence;
-    localStorage.setItem(evidenceKey, JSON.stringify(evidenceMap));
-  };
 
   /**
    * Load debate data from backend API when component mounts
@@ -241,21 +245,25 @@ const App = ({ topic }) => {
         if (topicData) {
           const questions = await questionsAPI.getByTopic(topicData.id);
 
-          // Load evidence from localStorage (since backend doesn't store it yet)
-          const evidenceKey = `evidence_${topicData.id}`;
-          const storedEvidence = localStorage.getItem(evidenceKey);
-          const evidenceMap = storedEvidence ? JSON.parse(storedEvidence) : {};
-
-          // Transform and merge backend questions with localStorage evidence
+          // Transform backend questions - evidence is now included in API response
           const questionsWithEvidence = questions.map(q => {
             const transformedQuestion = transformBackendToFrontend(q);
+
+            // Evidence comes from database now (attachments and evidenceUrls in API response)
+            const evidence = {
+              files: (q.attachments || []).map(att => ({
+                name: att.fileName,
+                size: att.fileSize,
+                type: att.fileType,
+                dataUrl: att.storageUrl  // Use storageUrl from backend
+              })),
+              urls: (q.evidenceUrls || []).map(ev => ev.url)
+            };
+
             return {
               ...transformedQuestion,
-              evidence: evidenceMap[q.id] || { files: [], urls: [] },
-              replies: transformReplies(q.replies || []).map(r => ({
-                ...r,
-                evidence: evidenceMap[r.id] || { files: [], urls: [] }
-              }))
+              evidence,
+              replies: transformReplies(q.replies || [])
             };
           });
 
@@ -368,46 +376,7 @@ const App = ({ topic }) => {
       if (!text) return alert('Enter question');
       if (!newQuestionSide) return alert('Please select a side (left or right) before adding a question');
 
-      // Convert files to base64 data URLs for storage
-      const processedFiles = await Promise.all(
-        newQuestionFiles.map(file => {
-          return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-              resolve({
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                dataUrl: e.target.result
-              });
-            };
-            reader.onerror = () => {
-              resolve({
-                name: file.name,
-                size: file.size,
-                type: file.type,
-                dataUrl: null
-              });
-            };
-            reader.readAsDataURL(file);
-          });
-        })
-      );
-
-      // Create new question object
-      const newQ = {
-        id: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}`, // Unique ID
-        text,
-        tag,
-        side: newQuestionSide || 'left', // Which column to display in
-        author: CURRENT_USER,
-        timestamp: new Date().toLocaleString(),
-        replies: [], // Start with no replies
-        votes: { up: 0, down: 0 },
-        uniqueId: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}` // Shareable ID
-      };
-
-      // Save to backend API
+      // Save to backend API first
       const topics = await topicsAPI.getAll();
       const topicData = topics.find(t => t.topic === topic);
 
@@ -417,7 +386,7 @@ const App = ({ topic }) => {
       }
 
       const savedQuestion = await questionsAPI.create({
-        debateTopic: { id: topicData.id }, // Send as object with id
+        debateTopic: { id: topicData.id },
         text,
         tag,
         side: newQuestionSide,
@@ -425,21 +394,37 @@ const App = ({ topic }) => {
         uniqueId: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}`
       });
 
-      // Prepare evidence (frontend-only, not in backend yet)
+      // Upload files to backend (instead of converting to base64)
+      const uploadedAttachments = [];
+      for (const file of newQuestionFiles) {
+        try {
+          const attachment = await filesAPI.upload(file, savedQuestion.id, null, CURRENT_USER);
+          uploadedAttachments.push(attachment);
+        } catch (err) {
+          console.error('Failed to upload file:', file.name, err);
+          alert(`Failed to upload ${file.name}. ${err.message}`);
+        }
+      }
+
+      // Add evidence URLs to backend
+      for (const url of newQuestionUrls) {
+        try {
+          await filesAPI.addEvidenceUrl(url, savedQuestion.id, null);
+        } catch (err) {
+          console.error('Failed to add evidence URL:', url, err);
+        }
+      }
+
+      // Prepare evidence for local display
       const evidence = {
-        files: newQuestionFiles.map(f => ({
-          name: f.name,
-          size: f.size,
-          type: f.type,
-          dataUrl: URL.createObjectURL(f) // Create URL for display
+        files: uploadedAttachments.map(att => ({
+          name: att.fileName,
+          size: att.fileSize,
+          type: att.fileType,
+          dataUrl: att.storageUrl  // Use storageUrl instead of base64
         })),
         urls: newQuestionUrls
       };
-
-      // Save evidence to localStorage
-      if (evidence.files.length > 0 || evidence.urls.length > 0) {
-        saveEvidenceToLocalStorage(topicData.id, savedQuestion.id, evidence);
-      }
 
       // Add evidence to the saved question for immediate display
       const questionWithEvidence = {
@@ -447,7 +432,7 @@ const App = ({ topic }) => {
         evidence
       };
 
-      // Add to debate data (local state) using the saved question from database
+      // Add to debate data (local state)
       setDebateData(prev => {
         try {
           const newData = { ...prev, questions: [...(prev.questions || []), questionWithEvidence] };
@@ -495,32 +480,6 @@ const App = ({ topic }) => {
     const files = evidenceFiles[parentId] || [];
     const urls = evidenceUrls[parentId] || [];
 
-    // Convert files to base64 data URLs for storage
-    const processedFiles = await Promise.all(
-      files.map(file => {
-        return new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            resolve({
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              dataUrl: e.target.result // base64 data URL
-            });
-          };
-          reader.onerror = () => {
-            resolve({
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              dataUrl: null
-            });
-          };
-          reader.readAsDataURL(file);
-        });
-      })
-    );
-
     // Find the parent post to determine if it's a question or reply
     const parent = findPostById(parentId, debateData.questions);
     if (!parent) {
@@ -532,8 +491,7 @@ const App = ({ topic }) => {
       // Determine the opposite side
       const replySide = parent.side === 'left' ? 'right' : 'left';
 
-      // Determine if parent is a question (exists in top-level questions array)
-      // This is the correct way to detect questions vs replies with UUIDs
+      // Determine if parent is a question
       const isQuestion = debateData.questions.some(q => q.id === parent.id);
 
       console.log('💬 Posting reply:', {
@@ -545,8 +503,7 @@ const App = ({ topic }) => {
         parentDepth: parent.depth
       });
 
-      // Build reply data - only include question OR parentReply, not both
-      // Don't send undefined or null values
+      // Build reply data
       const replyData = {
         text: text.trim(),
         side: replySide,
@@ -555,7 +512,7 @@ const App = ({ topic }) => {
         uniqueId: generateUniqueId('r')
       };
 
-      // Add either question or parentReply reference (not both, no undefined)
+      // Add either question or parentReply reference
       if (isQuestion) {
         replyData.question = { id: parent.id };
       } else {
@@ -567,21 +524,37 @@ const App = ({ topic }) => {
       // Save to backend API
       const savedReply = await repliesAPI.create(replyData);
 
-      // Prepare evidence (frontend-only, not in backend yet)
-      const evidence = {
-        files: processedFiles,
-        urls: urls
-      };
-
-      // Save evidence to localStorage (need to get topicId from debateData)
-      if (evidence.files.length > 0 || evidence.urls.length > 0) {
-        // Get topic ID from the current debate
-        const topics = await topicsAPI.getAll();
-        const currentTopic = topics.find(t => t.topic === debateData.topic);
-        if (currentTopic) {
-          saveEvidenceToLocalStorage(currentTopic.id, savedReply.id, evidence);
+      // Upload files to backend (instead of converting to base64)
+      const uploadedAttachments = [];
+      for (const file of files) {
+        try {
+          const attachment = await filesAPI.upload(file, null, savedReply.id, CURRENT_USER);
+          uploadedAttachments.push(attachment);
+        } catch (err) {
+          console.error('Failed to upload file:', file.name, err);
+          alert(`Failed to upload ${file.name}. ${err.message}`);
         }
       }
+
+      // Add evidence URLs to backend
+      for (const url of urls) {
+        try {
+          await filesAPI.addEvidenceUrl(url, null, savedReply.id);
+        } catch (err) {
+          console.error('Failed to add evidence URL:', url, err);
+        }
+      }
+
+      // Prepare evidence for local display
+      const evidence = {
+        files: uploadedAttachments.map(att => ({
+          name: att.fileName,
+          size: att.fileSize,
+          type: att.fileType,
+          dataUrl: att.storageUrl  // Use storageUrl instead of base64
+        })),
+        urls: urls
+      };
 
       // Add evidence to the saved reply for immediate display
       const replyWithEvidence = {
@@ -613,11 +586,6 @@ const App = ({ topic }) => {
       console.error('Failed to save reply - Full error:', err);
       console.error('Error message:', err.message);
       console.error('Error stack:', err.stack);
-      console.error('Parent data:', {
-        parentId,
-        parent,
-        isQuestion: debateData.questions.some(q => q.id === parent?.id)
-      });
       alert(`Failed to post reply. Error: ${err.message || 'Please try again.'}`);
     }
   };
