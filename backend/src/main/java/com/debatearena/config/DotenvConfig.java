@@ -36,39 +36,53 @@ public class DotenvConfig implements ApplicationContextInitializer<ConfigurableA
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
         try {
-            // Try multiple locations for .env file
+            // Try multiple locations for .env file (backend/.env is preferred)
             Dotenv dotenv = null;
+            String loadedFrom = null;
 
-            // Try project root first (most common)
+            // Try backend directory first (best practice - isolated config)
             try {
                 dotenv = Dotenv.configure()
                         .directory("./")
                         .ignoreIfMissing()
                         .load();
-                System.out.println("📁 Loaded .env from project root (./)");
+                if (dotenv != null && dotenv.get("SPRING_DATASOURCE_URL") != null) {
+                    loadedFrom = "./backend/.env (current directory)";
+                }
             } catch (Exception e1) {
-                // Try parent directory (if running from backend folder)
+                // Try parent directory (legacy location)
                 try {
                     dotenv = Dotenv.configure()
                             .directory("../")
                             .ignoreIfMissing()
                             .load();
-                    System.out.println("📁 Loaded .env from parent directory (../)");
+                    if (dotenv != null && dotenv.get("SPRING_DATASOURCE_URL") != null) {
+                        loadedFrom = "../.env (parent directory - legacy)";
+                    }
                 } catch (Exception e2) {
                     // Try current working directory
-                    dotenv = Dotenv.configure()
-                            .ignoreIfMissing()
-                            .load();
-                    System.out.println("📁 Loaded .env from current directory");
+                    try {
+                        dotenv = Dotenv.configure()
+                                .ignoreIfMissing()
+                                .load();
+                        if (dotenv != null && dotenv.get("SPRING_DATASOURCE_URL") != null) {
+                            loadedFrom = ".env (working directory)";
+                        }
+                    } catch (Exception e3) {
+                        // Will be handled below
+                    }
                 }
             }
 
-            if (dotenv == null) {
-                System.err.println("⚠️ Warning: Could not load .env file from any location");
-                System.err.println("   Tried: ./, ../, and current working directory");
+            if (dotenv == null || dotenv.get("SPRING_DATASOURCE_URL") == null) {
+                System.err.println("⚠️ WARNING: Could not load .env file from any location");
+                System.err.println("   Tried: ./ (backend/.env), ../ (root/.env), and working directory");
+                System.err.println("   Please create backend/.env file with database credentials");
                 System.err.println("   Application will use system environment variables");
                 return;
             }
+
+            System.out.println("✅ Loaded .env from: " + loadedFrom);
 
             ConfigurableEnvironment environment = applicationContext.getEnvironment();
             Map<String, Object> dotenvMap = new HashMap<>();
@@ -90,25 +104,27 @@ public class DotenvConfig implements ApplicationContextInitializer<ConfigurableA
             // Add to Spring environment with high priority
             environment.getPropertySources().addFirst(new MapPropertySource("dotenvProperties", dotenvMap));
 
-            System.out.println("✅ Successfully loaded .env file with " + loadedCount + " properties");
+            System.out.println("✅ Successfully loaded " + loadedCount + " environment variables");
 
             // Verify critical properties
             boolean hasDbUrl = dotenvMap.containsKey("SPRING_DATASOURCE_URL");
             boolean hasDbUser = dotenvMap.containsKey("SPRING_DATASOURCE_USERNAME");
             boolean hasDbPass = dotenvMap.containsKey("SPRING_DATASOURCE_PASSWORD");
 
-            System.out.println("📊 Database URL configured: " + (hasDbUrl ? "✓" : "✗"));
-            System.out.println("📊 Database Username configured: " + (hasDbUser ? "✓" : "✗"));
-            System.out.println("📊 Database Password configured: " + (hasDbPass ? "✓" : "✗"));
+            System.out.println("📊 Database URL: " + (hasDbUrl ? "✓ Configured" : "✗ Missing"));
+            System.out.println("📊 Database Username: " + (hasDbUser ? "✓ Configured" : "✗ Missing"));
+            System.out.println("📊 Database Password: " + (hasDbPass ? "✓ Configured" : "✗ Missing"));
 
             if (!hasDbUrl || !hasDbUser || !hasDbPass) {
-                System.err.println("⚠️ WARNING: Missing required database configuration in .env file!");
-                System.err.println("   Required: SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD");
+                System.err.println("⚠️ WARNING: Missing required database configuration!");
+                System.err.println("   Required in backend/.env: SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD");
+            } else {
+                System.out.println("🎉 Database configuration complete!");
             }
 
         } catch (Exception e) {
             System.err.println("⚠️ Error loading .env file: " + e.getMessage());
-            System.err.println("   Application will use system environment variables or defaults");
+            System.err.println("   Application will use system environment variables");
             e.printStackTrace();
         }
     }
