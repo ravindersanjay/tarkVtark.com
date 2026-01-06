@@ -31,3 +31,7 @@ frontend/.env.production
 # Temporary folders
 debate-frontend/
 
+# User-uploaded files
+backend/uploads/
+# User-uploaded files
+uploads/
