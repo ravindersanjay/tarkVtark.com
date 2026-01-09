@@ -1,7 +1,12 @@
-Admin:
-edit not working in question and answer
-email message are stored in localstorage
-guidelines created are visible to user but not to admin
+ADMIN:
+2. edit not working in question and answer
+3. email message are stored in localstorage
+4. guidelines created are visible to user but not to admin
 
 
-User:
+USER:
+
+
+
+DATABASE:
+1. attachment are stored with incorrect image url

@@ -81,7 +81,16 @@ const Card = ({
       return;
     }
 
-    // For images, PDFs, and other viewable formats, open in new tab with proper content
+    // Check if dataUrl is an HTTP URL (from server) or a data URL (base64)
+    const isHttpUrl = file.dataUrl.startsWith('http://') || file.dataUrl.startsWith('https://');
+
+    if (isHttpUrl) {
+      // For HTTP URLs, simply open them directly in a new tab
+      window.open(file.dataUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    // For base64 data URLs, create custom HTML wrapper
     const newWindow = window.open('', '_blank');
     if (newWindow) {
       const fileType = file.type || '';
