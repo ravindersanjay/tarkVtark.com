@@ -1,27 +1,37 @@
 // ContactUs component styles are now modularized in styles/contact.css
 import '../styles/contact.css';
 import React, { useState } from 'react';
-
-const MESSAGES_KEY = 'contact_messages';
+import { contactAPI } from '../services/apiService.js';
 
 const ContactUs = ({ onBack }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Save message to localStorage for admin review
-    const messages = JSON.parse(localStorage.getItem(MESSAGES_KEY) || '[]');
-    const newMessage = {
-      ...formData,
-      timestamp: new Date().toLocaleString()
-    };
-    messages.push(newMessage);
-    localStorage.setItem(MESSAGES_KEY, JSON.stringify(messages));
+    if (isSubmitting) return;
 
-    // Clear form
-    setFormData({ name: '', email: '', message: '' });
-    alert('Thank you for contacting us! Your message has been received.');
+    try {
+      setIsSubmitting(true);
+
+      // Send message to backend API
+      await contactAPI.send({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject || 'General Inquiry',
+        message: formData.message
+      });
+
+      // Clear form
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      alert('Thank you for contacting us! Your message has been received.');
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      alert('Failed to send message. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -52,6 +62,13 @@ const ContactUs = ({ onBack }) => {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
+              <input
+                type="text"
+                placeholder="Subject (Optional)"
+                className="contact-input"
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+              />
               <textarea
                 placeholder="Your Message"
                 required
@@ -59,7 +76,9 @@ const ContactUs = ({ onBack }) => {
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               />
-              <button className="add-btn" type="submit">Send</button>
+              <button className="add-btn" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Sending...' : 'Send'}
+              </button>
             </form>
           </div>
         </div>
