@@ -602,6 +602,98 @@ const filesAPI = {
   },
 };
 
+/**
+ * =====================================================================
+ * AUTHENTICATION API
+ * =====================================================================
+ * Handles admin authentication with JWT tokens
+ */
+export const authAPI = {
+  /**
+   * Admin login - authenticate with username and password
+   * @param {string} username - Admin username
+   * @param {string} password - Admin password
+   * @returns {Promise<Object>} LoginResponse with token and user info
+   */
+  login: async (username, password) => {
+    logger.log('🔐 authAPI.login() - Authenticating user:', username);
+
+    return apiFetch('/admin/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+  },
+
+  /**
+   * Verify JWT token validity
+   * @param {string} token - JWT token to verify
+   * @returns {Promise<Object>} Verification result {valid: boolean, username?: string}
+   */
+  verifyToken: async (token) => {
+    logger.log('🔍 authAPI.verifyToken() - Verifying token');
+
+    return apiFetch('/admin/verify', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Get current authentication token from storage
+   * @returns {string|null} JWT token or null
+   */
+  getToken: () => {
+    return localStorage.getItem('admin_token');
+  },
+
+  /**
+   * Store authentication token
+   * @param {string} token - JWT token to store
+   */
+  setToken: (token) => {
+    localStorage.setItem('admin_token', token);
+  },
+
+  /**
+   * Remove authentication token (logout)
+   */
+  removeToken: () => {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_logged_in'); // Remove old flag
+  },
+
+  /**
+   * Store user information
+   * @param {Object} user - User info object
+   */
+  setUser: (user) => {
+    localStorage.setItem('admin_user', JSON.stringify(user));
+  },
+
+  /**
+   * Get current user information
+   * @returns {Object|null} User object or null
+   */
+  getUser: () => {
+    const userStr = localStorage.getItem('admin_user');
+    return userStr ? JSON.parse(userStr) : null;
+  },
+
+  /**
+   * Check if user is authenticated
+   * @returns {boolean} True if token exists
+   */
+  isAuthenticated: () => {
+    return !!authAPI.getToken();
+  },
+};
+
 // Export all APIs
 export { topicsAPI, questionsAPI, repliesAPI, adminAPI, contactAPI, filesAPI };
 
@@ -612,5 +704,6 @@ export default {
   admin: adminAPI,
   contact: contactAPI,
   files: filesAPI,
+  auth: authAPI,
 };
 

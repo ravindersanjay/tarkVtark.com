@@ -1,0 +1,7 @@
+Admin:
+edit not working in question and answer
+email message are stored in localstorage
+guidelines created are visible to user but not to admin
+
+
+User:
