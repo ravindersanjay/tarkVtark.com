@@ -1,0 +1,132 @@
+#!/bin/bash
+# =====================================================================
+# Admin Edit Function Test Script
+# =====================================================================
+# Quick test to verify the admin edit function is working
+# Date: January 10, 2026
+# =====================================================================
+
+echo "=========================================="
+echo "Admin Edit Function - Test Guide"
+echo "=========================================="
+echo ""
+
+# Check if services are running
+echo "Step 1: Checking services..."
+echo ""
+
+# Check frontend
+if curl -s http://localhost:5173 > /dev/null 2>&1; then
+    echo "✅ Frontend is running (http://localhost:5173)"
+else
+    echo "❌ Frontend is NOT running"
+    echo "   Run: cd frontend && npm run dev"
+    exit 1
+fi
+
+# Check backend
+if curl -s http://localhost:8080/api/v1/health > /dev/null 2>&1; then
+    echo "✅ Backend is running (http://localhost:8080)"
+else
+    echo "❌ Backend is NOT running"
+    echo "   Run: cd backend && ./mvnw spring-boot:run"
+    exit 1
+fi
+
+echo ""
+echo "=========================================="
+echo "✅ All systems operational!"
+echo "=========================================="
+echo ""
+
+echo "MANUAL TEST PROCEDURE:"
+echo "======================"
+echo ""
+echo "1. LOGIN TO ADMIN DASHBOARD"
+echo "   → Open: http://localhost:5173"
+echo "   → Click 'Admin' link in top navigation"
+echo "   → Login with admin credentials"
+echo ""
+echo "2. GO TO QUESTIONS & ANSWERS TAB"
+echo "   → Click 'Questions & Answers' tab"
+echo "   → Select a debate topic"
+echo ""
+echo "3. TEST EDITING A QUESTION"
+echo "   → Find any question"
+echo "   → Click 'Edit' button"
+echo "   → Change the text content"
+echo "   → Click 'Save' button"
+echo ""
+echo "   EXPECTED RESULT:"
+echo "   ✅ Success message: 'Updated successfully!'"
+echo "   ✅ Question text is updated in the list"
+echo "   ✅ Page reloads with updated data"
+echo "   ❌ NO 'Failed to update' error"
+echo ""
+echo "4. TEST EDITING A REPLY"
+echo "   → Find a question with replies"
+echo "   → Expand the replies section"
+echo "   → Click 'Edit' on a reply"
+echo "   → Change the reply text"
+echo "   → Click 'Save' button"
+echo ""
+echo "   EXPECTED RESULT:"
+echo "   ✅ Success message: 'Updated successfully!'"
+echo "   ✅ Reply text is updated"
+echo "   ✅ No errors in console"
+echo ""
+echo "5. VERIFY IN BROWSER CONSOLE"
+echo "   → Press F12 to open DevTools"
+echo "   → Go to Console tab"
+echo "   → Look for:"
+echo "     ✅ No red error messages"
+echo "     ✅ API calls returning 200 OK"
+echo "     ✅ Updated data in response"
+echo ""
+echo "=========================================="
+echo "WHAT WAS FIXED:"
+echo "=========================================="
+echo ""
+echo "❌ BEFORE:"
+echo "   - Frontend sent only: { text: 'new text' }"
+echo "   - Backend expected all fields"
+echo "   - Missing fields became null"
+echo "   - Update failed → 'Failed to update' error"
+echo ""
+echo "✅ AFTER:"
+echo "   - Frontend sends complete object:"
+echo "     { text, tag, side, author } for questions"
+echo "     { text, side, author } for replies"
+echo "   - Backend receives all required data"
+echo "   - Update succeeds → 'Updated successfully!'"
+echo ""
+echo "=========================================="
+echo "TROUBLESHOOTING:"
+echo "=========================================="
+echo ""
+echo "If you still see 'Failed to update':"
+echo ""
+echo "1. Check browser console (F12)"
+echo "   - Look for error messages"
+echo "   - Check Network tab for API calls"
+echo "   - Verify request payload includes all fields"
+echo ""
+echo "2. Hard refresh the page"
+echo "   - Press Ctrl+Shift+R (or Cmd+Shift+R on Mac)"
+echo "   - This clears cached JavaScript"
+echo ""
+echo "3. Check backend logs"
+echo "   - Look at Spring Boot console output"
+echo "   - Check for validation errors"
+echo "   - Verify database connection"
+echo ""
+echo "4. Verify file changes"
+echo "   - Confirm AdminDashboard.jsx has the updates"
+echo "   - Check line ~223: updatePost function has 4 parameters"
+echo "   - Check line ~688: question edit passes true and question"
+echo "   - Check line ~745: reply edit passes false and reply"
+echo ""
+echo "=========================================="
+echo "Test complete! Follow the manual steps above."
+echo "=========================================="
+

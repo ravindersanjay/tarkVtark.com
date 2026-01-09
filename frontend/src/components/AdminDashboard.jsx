@@ -220,14 +220,23 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   // Edit question/reply text
   const [editingPost, setEditingPost] = useState(null);
 
-  const updatePost = async (postId, newText, isQuestion) => {
+  const updatePost = async (postId, newText, isQuestion, originalPost) => {
     try {
       if (isQuestion) {
-        // Update question
-        await questionsAPI.update(postId, { text: newText });
+        // Update question - send complete object with all required fields
+        await questionsAPI.update(postId, {
+          text: newText,
+          tag: originalPost.tag,
+          side: originalPost.side,
+          author: originalPost.author
+        });
       } else {
-        // Update reply
-        await repliesAPI.update(postId, { text: newText });
+        // Update reply - send complete object with all required fields
+        await repliesAPI.update(postId, {
+          text: newText,
+          side: originalPost.side,
+          author: originalPost.author
+        });
       }
 
       await loadDebateData(selectedDebateTopic);
@@ -677,7 +686,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                                 onClick={() => {
                                   const newText = document.getElementById(`edit-${question.id}`).value;
                                   if (newText.trim()) {
-                                    updatePost(question.id, newText.trim());
+                                    updatePost(question.id, newText.trim(), true, question);
                                   }
                                 }}
                               >
@@ -733,7 +742,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                                         onClick={() => {
                                           const newText = document.getElementById(`edit-${reply.id}`).value;
                                           if (newText.trim()) {
-                                            updatePost(reply.id, newText.trim(), false); // false = isReply
+                                            updatePost(reply.id, newText.trim(), false, reply);
                                           }
                                         }}
                                       >
