@@ -84,15 +84,14 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       { q: 'Is my data saved?', a: 'All debates and topics are saved in your browser local storage.' }
     ]);
 
-    // Load guidelines from localStorage
-    const guidelinesData = localStorage.getItem('admin_guidelines');
-    setGuidelines(guidelinesData ? JSON.parse(guidelinesData) : [
-      'Be respectful and constructive in your arguments.',
-      'No hate speech, personal attacks, or discrimination.',
-      'Support your points with evidence where possible.',
-      'Stay on topic and avoid spamming.',
-      'Report inappropriate content to moderators.'
-    ]);
+    // Load guidelines from backend API (all guidelines including inactive)
+    try {
+      const guidelinesData = await adminAPI.getAllGuidelines();
+      setGuidelines(guidelinesData);
+    } catch (err) {
+      console.error('Failed to load guidelines from backend:', err);
+      setGuidelines([]);
+    }
   };
 
   // Topic Management
@@ -290,17 +289,49 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     }
   };
 
-  const updateGuideline = (index, text) => {
-    // Note: Backend API uses IDs, not indices
-    // For now, just reload the list
-    alert('Edit feature coming soon. Please delete and re-create the guideline.');
-    setEditingGuideline(null);
+  const updateGuideline = async (index, text) => {
+    const guideline = guidelines[index];
+    if (!guideline.id) {
+      alert('Cannot edit: Guideline ID not found');
+      setEditingGuideline(null);
+      return;
+    }
+
+    if (!text || !text.trim()) {
+      alert('Guideline text cannot be empty');
+      return;
+    }
+
+    try {
+      await adminAPI.updateGuideline(guideline.id, { text: text.trim() });
+      setEditingGuideline(null);
+      // Reload guidelines from backend
+      await loadData();
+      alert('Guideline updated successfully!');
+    } catch (err) {
+      console.error('Failed to update guideline:', err);
+      alert('Failed to update guideline. Please try again.');
+    }
   };
 
-  const deleteGuideline = (index) => {
-    // Note: Backend API uses IDs, not indices
-    // For now, just reload the list
-    alert('Delete feature coming soon. Guidelines persist in database.');
+  const deleteGuideline = async (index) => {
+    const guideline = guidelines[index];
+    if (!guideline.id) {
+      alert('Cannot delete: Guideline ID not found');
+      return;
+    }
+
+    if (window.confirm('Delete this guideline?')) {
+      try {
+        await adminAPI.deleteGuideline(guideline.id);
+        // Reload guidelines from backend
+        await loadData();
+        alert('Guideline deleted successfully!');
+      } catch (err) {
+        console.error('Failed to delete guideline:', err);
+        alert('Failed to delete guideline. Please try again.');
+      }
+    }
   };
 
   // Reports Management - Enhanced with aggregation
@@ -914,12 +945,12 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
             {/* Guidelines List */}
             <div className="admin-list">
               {guidelines.map((guideline, index) => (
-                <div key={index} className="admin-item">
+                <div key={guideline.id || index} className="admin-item">
                   {editingGuideline === index ? (
                     <div className="edit-form">
                       <input
                         type="text"
-                        defaultValue={guideline}
+                        defaultValue={typeof guideline === 'string' ? guideline : guideline.text}
                         className="edit-input"
                         id={`guideline-${index}`}
                       />
@@ -938,7 +969,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                     </div>
                   ) : (
                     <>
-                      <span className="item-text">{guideline}</span>
+                      <span className="item-text">
+                        {typeof guideline === 'string' ? guideline : guideline.text}
+                        {guideline.isActive === false && <span style={{color: 'red', marginLeft: '10px'}}>(Inactive)</span>}
+                      </span>
                       <div className="item-actions">
                         <button className="btn btn-small" onClick={() => setEditingGuideline(index)}>Edit</button>
                         <button className="btn btn-small btn-danger" onClick={() => deleteGuideline(index)}>Delete</button>

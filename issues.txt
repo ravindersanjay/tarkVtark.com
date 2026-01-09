@@ -1,7 +1,7 @@
 ADMIN:
 2. edit not working in question and answer - FIXED
 3. email message are stored in localstorage
-4. guidelines created are visible to user but not to admin
+4. guidelines created are visible to user but not to admin - FIXED
 
 
 USER:
