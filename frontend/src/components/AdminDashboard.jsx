@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/admin.css';
-import { topicsAPI, questionsAPI, repliesAPI, adminAPI } from '../services/apiService.js';
+import { topicsAPI, questionsAPI, repliesAPI, adminAPI, contactAPI } from '../services/apiService.js';
 
 const MESSAGES_KEY = 'contact_messages';
 const REPORTS_KEY = 'reported_posts';
@@ -66,9 +66,14 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       setAllQuestionsData([]);
     }
 
-    // Load messages (still from localStorage for now)
-    const messagesData = localStorage.getItem(MESSAGES_KEY);
-    setMessages(messagesData ? JSON.parse(messagesData) : []);
+    // Load contact messages from backend API
+    try {
+      const messagesData = await contactAPI.getAllMessages();
+      setMessages(messagesData);
+    } catch (err) {
+      console.error('Failed to load contact messages from backend:', err);
+      setMessages([]);
+    }
 
     // Load reports (still from localStorage for now)
     const reportsData = localStorage.getItem(REPORTS_KEY);
@@ -477,17 +482,77 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     }
   };
 
-  // Messages Management
-  const deleteMessage = (index) => {
-    const updated = messages.filter((_, i) => i !== index);
-    setMessages(updated);
-    localStorage.setItem(MESSAGES_KEY, JSON.stringify(updated));
+  // Messages Management - Using backend API
+  const deleteMessage = async (index) => {
+    const message = messages[index];
+    if (!message.id) {
+      alert('Cannot delete: Message ID not found');
+      return;
+    }
+
+    if (window.confirm('Delete this message?')) {
+      try {
+        await contactAPI.deleteMessage(message.id);
+        // Reload messages from backend
+        await loadData();
+        alert('Message deleted successfully!');
+      } catch (err) {
+        console.error('Failed to delete message:', err);
+        alert('Failed to delete message. Please try again.');
+      }
+    }
   };
 
-  const clearAllMessages = () => {
-    if (window.confirm('Clear all messages?')) {
-      setMessages([]);
-      localStorage.setItem(MESSAGES_KEY, JSON.stringify([]));
+  const clearAllMessages = async () => {
+    if (window.confirm('Delete ALL contact messages? This cannot be undone!')) {
+      try {
+        // Delete all messages one by one
+        for (const message of messages) {
+          if (message.id) {
+            await contactAPI.deleteMessage(message.id);
+          }
+        }
+        // Reload messages from backend
+        await loadData();
+        alert('All messages deleted successfully!');
+      } catch (err) {
+        console.error('Failed to delete messages:', err);
+        alert('Failed to delete messages. Please try again.');
+      }
+    }
+  };
+
+  const markMessageAsRead = async (index) => {
+    const message = messages[index];
+    if (!message.id) {
+      alert('Cannot update: Message ID not found');
+      return;
+    }
+
+    try {
+      await contactAPI.markAsRead(message.id);
+      // Reload messages from backend
+      await loadData();
+    } catch (err) {
+      console.error('Failed to mark message as read:', err);
+      alert('Failed to update message. Please try again.');
+    }
+  };
+
+  const markMessageAsUnread = async (index) => {
+    const message = messages[index];
+    if (!message.id) {
+      alert('Cannot update: Message ID not found');
+      return;
+    }
+
+    try {
+      await contactAPI.markAsUnread(message.id);
+      // Reload messages from backend
+      await loadData();
+    } catch (err) {
+      console.error('Failed to mark message as unread:', err);
+      alert('Failed to update message. Please try again.');
     }
   };
 
@@ -999,15 +1064,31 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                 <p className="empty-state">No messages received yet.</p>
               ) : (
                 messages.map((message, index) => (
-                  <div key={index} className="admin-item message-item">
+                  <div key={message.id || index} className="admin-item message-item">
                     <div className="message-details">
-                      <div><strong>From:</strong> {message.name} ({message.email})</div>
-                      <div><strong>Date:</strong> {message.timestamp}</div>
+                      <div>
+                        <strong>From:</strong> {message.name} ({message.email})
+                        {message.isRead === false && <span style={{color: 'red', marginLeft: '10px', fontWeight: 'bold'}}>● UNREAD</span>}
+                        {message.isRead === true && <span style={{color: 'green', marginLeft: '10px'}}>✓ Read</span>}
+                      </div>
+                      {message.subject && <div><strong>Subject:</strong> {message.subject}</div>}
+                      <div><strong>Date:</strong> {new Date(message.createdAt).toLocaleString()}</div>
                       <div className="message-text"><strong>Message:</strong> {message.message}</div>
                     </div>
-                    <button className="btn btn-small btn-danger" onClick={() => deleteMessage(index)}>
-                      Delete
-                    </button>
+                    <div className="item-actions">
+                      {message.isRead === false ? (
+                        <button className="btn btn-small" onClick={() => markMessageAsRead(index)}>
+                          Mark as Read
+                        </button>
+                      ) : (
+                        <button className="btn btn-small" onClick={() => markMessageAsUnread(index)}>
+                          Mark as Unread
+                        </button>
+                      )}
+                      <button className="btn btn-small btn-danger" onClick={() => deleteMessage(index)}>
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 ))
               )}

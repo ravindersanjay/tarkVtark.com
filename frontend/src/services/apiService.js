@@ -491,6 +491,69 @@ const contactAPI = {
     console.log('📧 contactAPI.send() - Message sent successfully');
     return result;
   },
+
+  /**
+   * Get all contact messages (admin only)
+   * @returns {Promise<Array>} Array of contact message objects
+   */
+  getAllMessages: async () => {
+    console.log('📬 contactAPI.getAllMessages() - Fetching all messages');
+    const result = await apiFetch('/contact/messages');
+    console.log('📬 contactAPI.getAllMessages() - Success:', result?.length || 0, 'messages');
+    return result;
+  },
+
+  /**
+   * Get unread contact messages (admin only)
+   * @returns {Promise<Array>} Array of unread contact message objects
+   */
+  getUnreadMessages: async () => {
+    console.log('📬 contactAPI.getUnreadMessages() - Fetching unread messages');
+    const result = await apiFetch('/contact/messages/unread');
+    console.log('📬 contactAPI.getUnreadMessages() - Success:', result?.length || 0, 'messages');
+    return result;
+  },
+
+  /**
+   * Mark a message as read
+   * @param {string} id - Message ID
+   * @returns {Promise<Object>} Updated message object
+   */
+  markAsRead: async (id) => {
+    console.log('✉️ contactAPI.markAsRead() - Marking message as read:', id);
+    const result = await apiFetch(`/contact/messages/${id}/read`, {
+      method: 'PUT',
+    });
+    console.log('✉️ contactAPI.markAsRead() - Success');
+    return result;
+  },
+
+  /**
+   * Mark a message as unread
+   * @param {string} id - Message ID
+   * @returns {Promise<Object>} Updated message object
+   */
+  markAsUnread: async (id) => {
+    console.log('📭 contactAPI.markAsUnread() - Marking message as unread:', id);
+    const result = await apiFetch(`/contact/messages/${id}/unread`, {
+      method: 'PUT',
+    });
+    console.log('📭 contactAPI.markAsUnread() - Success');
+    return result;
+  },
+
+  /**
+   * Delete a contact message
+   * @param {string} id - Message ID
+   * @returns {Promise<void>}
+   */
+  deleteMessage: async (id) => {
+    console.log('🗑️ contactAPI.deleteMessage() - Deleting message:', id);
+    await apiFetch(`/contact/messages/${id}`, {
+      method: 'DELETE',
+    });
+    console.log('🗑️ contactAPI.deleteMessage() - Deleted successfully');
+  },
 };
 
 /**
