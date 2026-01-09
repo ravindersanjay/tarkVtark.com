@@ -1,12 +1,12 @@
 ADMIN:
-2. edit not working in question and answer
+2. edit not working in question and answer - FIXED
 3. email message are stored in localstorage
 4. guidelines created are visible to user but not to admin
 
 
 USER:
-
+URL should contain full url in browser including debatetopic
 
 
 DATABASE:
-1. attachment are stored with incorrect image url
+1. attachment are stored with incorrect image url -fixed
