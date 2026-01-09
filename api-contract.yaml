@@ -474,6 +474,39 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  /admin/verify:
+    post:
+      tags: [Admin]
+      summary: Verify JWT token
+      description: Verify if the provided JWT token is valid and not expired
+      parameters:
+        - in: header
+          name: Authorization
+          required: true
+          schema:
+            type: string
+          description: Bearer token
+          example: "Bearer eyJhbGciOiJIUzUxMiJ9..."
+      responses:
+        '200':
+          description: Token verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                    description: Whether the token is valid
+                  username:
+                    type: string
+                    description: Username extracted from token (only if valid)
+                  message:
+                    type: string
+                    description: Error message if token is invalid
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /admin/guidelines:
     get:
       tags: [Admin]

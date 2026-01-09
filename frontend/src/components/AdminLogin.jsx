@@ -1,24 +1,61 @@
 import React, { useState } from 'react';
+import { authAPI } from '../services/apiService';
 
 /**
  * AdminLogin Component
- * Simple login form for admin authentication
- * In production, this would connect to a real backend auth system
+ * Handles admin authentication using backend JWT authentication
+ *
+ * Features:
+ * - Authenticates against backend API
+ * - Stores JWT token securely
+ * - Displays user-friendly error messages
+ * - Loading state during authentication
  */
 const AdminLogin = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
 
-    // Simple hardcoded auth (replace with real auth in production)
-    if (username === 'admin' && password === 'admin996') {
+    try {
+      console.log('🔐 Attempting login for user:', username);
+
+      // Call backend authentication API
+      const response = await authAPI.login(username, password);
+
+      console.log('✅ Login successful:', response);
+
+      // Store token and user info
+      if (response.token) {
+        authAPI.setToken(response.token);
+      }
+
+      if (response.user) {
+        authAPI.setUser(response.user);
+      }
+
+      // Set legacy flag for backward compatibility (will be removed later)
       localStorage.setItem('admin_logged_in', 'true');
+
+      // Notify parent component
       onLogin();
-    } else {
-      setError('Invalid credentials. Use admin/admin123');
+
+    } catch (err) {
+      console.error('❌ Login failed:', err);
+
+      // Display user-friendly error message
+      if (err.message) {
+        setError(err.message);
+      } else {
+        setError('Invalid credentials. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -51,6 +88,7 @@ const AdminLogin = ({ onLogin }) => {
               fontSize: '1rem'
             }}
             required
+            disabled={loading}
           />
         </div>
         <div style={{ marginBottom: '16px' }}>
@@ -69,23 +107,38 @@ const AdminLogin = ({ onLogin }) => {
               fontSize: '1rem'
             }}
             required
+            disabled={loading}
           />
         </div>
         {error && (
-          <div style={{ color: '#dc2626', marginBottom: '16px', fontSize: '0.9rem' }}>
+          <div style={{
+            color: '#dc2626',
+            marginBottom: '16px',
+            fontSize: '0.9rem',
+            padding: '8px',
+            backgroundColor: '#fee2e2',
+            borderRadius: '4px',
+            border: '1px solid #fecaca'
+          }}>
             {error}
           </div>
         )}
         <button
           type="submit"
           className="add-btn"
-          style={{ width: '100%', padding: '10px' }}
+          style={{
+            width: '100%',
+            padding: '10px',
+            opacity: loading ? 0.6 : 1,
+            cursor: loading ? 'not-allowed' : 'pointer'
+          }}
+          disabled={loading}
         >
-          Login
+          {loading ? 'Authenticating...' : 'Login'}
         </button>
       </form>
       <p style={{ marginTop: '16px', fontSize: '0.85rem', color: '#6b7280', textAlign: 'center' }}>
-        Default credentials: admin / admin123
+        Default: admin / Admin@2026
       </p>
     </div>
   );
