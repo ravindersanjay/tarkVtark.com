@@ -74,7 +74,16 @@ public class LocalFileStorageService implements FileStorageService {
         logger.info("File uploaded successfully: {} ({} bytes)", fileName, file.getSize());
 
         // Return public URL
-        return String.format("%s:%s/api/v1/files/%s", baseUrl, serverPort, fileName);
+        // Check if baseUrl already contains a port to avoid duplication
+        String fileUrl;
+        if (baseUrl.matches(".*:\\d+$")) {
+            // Base URL already has a port (e.g., http://localhost:8080)
+            fileUrl = String.format("%s/api/v1/files/%s", baseUrl, fileName);
+        } else {
+            // Base URL doesn't have a port, append it
+            fileUrl = String.format("%s:%s/api/v1/files/%s", baseUrl, serverPort, fileName);
+        }
+        return fileUrl;
     }
 
     /**
