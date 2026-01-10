@@ -37,20 +37,38 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 /**
  * Extract debate topic from the URL path
  *
- * URL format: /debate_Sanatan_vs_Islam.html
- * Returns: "Sanatan vs Islam"
+ * Supports multiple URL formats:
+ * - Clean URLs: /hindu_vs_muslim → "Hindu vs Muslim"
+ * - Legacy format: /debate_Sanatan_vs_Islam.html → "Sanatan vs Islam"
  *
- * This allows users to navigate directly to a specific debate via URL.
+ * This allows users to navigate directly to a specific debate via URL
+ * and share links to specific debates.
  *
- * @returns {string|null} - The debate topic, or null if not a debate URL
+ * @returns {string|null} - The debate topic with proper capitalization, or null if not a debate URL
  */
 function getDebateTopicFromUrl() {
-  const m = window.location.pathname.match(/debate_(.+)\.html$/);
-  if (m) {
-    // Replace underscores with spaces to get readable topic name
-    return m[1].replace(/_/g, ' ');
+  const path = window.location.pathname;
+
+  // Skip these special paths - they're not debate topics
+  const specialPaths = ['/', '', '/admin', '/contact', '/guidelines', '/faq'];
+  if (specialPaths.includes(path)) {
+    return null;
   }
-  return null;
+
+  // Legacy format: /debate_Topic_Name.html
+  const legacyMatch = path.match(/debate_(.+)\.html$/);
+  if (legacyMatch) {
+    return legacyMatch[1].replace(/_/g, ' ');
+  }
+
+  // Clean URL format: /hindu_vs_muslim
+  // Remove leading slash and convert underscores to spaces
+  const topic = path.slice(1).replace(/_/g, ' ');
+
+  // Capitalize each word properly: "hindu vs muslim" → "Hindu vs Muslim"
+  return topic.split(' ').map(word =>
+    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+  ).join(' ');
 }
 
 /**
@@ -89,16 +107,54 @@ function MainRouter() {
     }
   }, []);
 
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname;
+
+      // Determine which page to show based on URL
+      if (path === '/' || path === '') {
+        setPage({ type: 'home' });
+      } else if (path === '/admin') {
+        setPage({ type: 'admin' });
+      } else if (path === '/contact') {
+        setPage({ type: 'contact' });
+      } else if (path === '/guidelines') {
+        setPage({ type: 'guidelines' });
+      } else if (path === '/faq') {
+        setPage({ type: 'faq' });
+      } else {
+        // Assume it's a debate topic URL
+        const topic = getDebateTopicFromUrl();
+        if (topic) {
+          setPage({ type: 'debate', topic });
+        } else {
+          // Invalid path, redirect to home
+          window.history.replaceState({}, '', '/');
+          setPage({ type: 'home' });
+        }
+      }
+    };
+
+    // Listen for browser back/forward navigation
+    window.addEventListener('popstate', handlePopState);
+
+    // Cleanup listener on unmount
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // Admin logout handler
   const handleAdminLogout = () => {
     // TODO: Call backend logout API
     setIsAdminLoggedIn(false);
+    window.history.pushState({}, '', '/');
     setPage({ type: 'home' });
   };
 
   // Admin login handler
   const handleAdminLogin = () => {
     setIsAdminLoggedIn(true);
+    window.history.pushState({}, '', '/admin');
     setPage({ type: 'admin' });
   };
 
@@ -134,13 +190,29 @@ function MainRouter() {
   /**
    * Props for the TopNav component
    * These callbacks allow TopNav to trigger navigation
+   * Each navigation also updates the URL for shareability
    */
   const navProps = {
-    onHome: () => setPage({ type: 'home' }),
-    onContact: () => setPage({ type: 'contact' }),
-    onGuidelines: () => setPage({ type: 'guidelines' }),
-    onFAQ: () => setPage({ type: 'faq' }),
-    onAdmin: () => setPage({ type: 'admin' }),
+    onHome: () => {
+      window.history.pushState({}, '', '/');
+      setPage({ type: 'home' });
+    },
+    onContact: () => {
+      window.history.pushState({}, '', '/contact');
+      setPage({ type: 'contact' });
+    },
+    onGuidelines: () => {
+      window.history.pushState({}, '', '/guidelines');
+      setPage({ type: 'guidelines' });
+    },
+    onFAQ: () => {
+      window.history.pushState({}, '', '/faq');
+      setPage({ type: 'faq' });
+    },
+    onAdmin: () => {
+      window.history.pushState({}, '', '/admin');
+      setPage({ type: 'admin' });
+    },
     active: page.type,
     // Jump feature only available on debate pages
     onJump: page.type === 'debate' ? jumpToUniqueId : undefined
@@ -154,7 +226,14 @@ function MainRouter() {
       {/* Render the appropriate page based on current state */}
       {page.type === 'home' && (
         <DebateTopics
-          onSelectTopic={(topic) => setPage({ type: 'debate', topic })}
+          onSelectTopic={(topic) => {
+            // Convert topic to URL-friendly format: "Hindu vs Muslim" → "hindu_vs_muslim"
+            const urlTopic = topic.toLowerCase().replace(/\s+/g, '_');
+            // Update browser URL (makes it shareable)
+            window.history.pushState({}, '', `/${urlTopic}`);
+            // Update React state to show debate page
+            setPage({ type: 'debate', topic });
+          }}
         />
       )}
 

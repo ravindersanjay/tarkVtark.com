@@ -7,6 +7,9 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true, // Fail if port is already in use
-    host: true // Listen on all addresses
+    host: true, // Listen on all addresses
+    // Enable SPA fallback - all routes serve index.html
+    // This allows clean URLs like /hindu_vs_muslim to work
+    historyApiFallback: true
   }
 })

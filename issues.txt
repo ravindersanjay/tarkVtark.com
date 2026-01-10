@@ -5,7 +5,9 @@ ADMIN:
 
 
 USER:
-URL should contain full url in browser including debatetopic
+URL should contain full url in browser including debatetopic - FIXED
+user login using gmail
+
 
 DATABASE:
 1. attachment are stored with incorrect image url -fixed
