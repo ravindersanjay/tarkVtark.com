@@ -23,6 +23,8 @@
 
 import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider } from './contexts/AuthContext.jsx';
 import './index.css';
 import App from './App.jsx';
 import DebateTopics from './components/DebateTopics.jsx';
@@ -33,6 +35,8 @@ import FAQ from './components/FAQ.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import LoginModal from './components/LoginModal.jsx';
+import UserProfile from './components/UserProfile.jsx';
 
 /**
  * Extract debate topic from the URL path
@@ -221,7 +225,15 @@ function MainRouter() {
   return (
     <>
       {/* Navigation bar - appears on all pages except admin */}
-      {page.type !== 'admin' && <TopNav {...navProps} />}
+      {page.type !== 'admin' && (
+        <>
+          <TopNav {...navProps} />
+          <UserProfile />
+        </>
+      )}
+
+      {/* Login Modal - shown when guest tries protected actions */}
+      <LoginModal />
 
       {/* Render the appropriate page based on current state */}
       {page.type === 'home' && (
@@ -276,17 +288,24 @@ function MainRouter() {
 /**
  * Mount the React application to the DOM
  *
- * StrictMode is a development tool that:
- * - Identifies components with unsafe lifecycles
- * - Warns about legacy APIs
- * - Detects unexpected side effects
- *
- * It doesn't affect production builds.
+ * Wrapped with:
+ * - GoogleOAuthProvider: Enables Google Sign-In
+ * - AuthProvider: Manages authentication state
+ * - ErrorBoundary: Catches React errors
+ * - StrictMode: Development checks
  */
+
+// Google OAuth Client ID - Replace with your actual client ID
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1096065806294-your-client-id.apps.googleusercontent.com';
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
-      <MainRouter />
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <AuthProvider>
+          <MainRouter />
+        </AuthProvider>
+      </GoogleOAuthProvider>
     </ErrorBoundary>
   </StrictMode>
 );

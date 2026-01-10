@@ -41,6 +41,9 @@ async function apiFetch(url, options = {}) {
   const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const method = options.method || 'GET';
 
+  // Get user token from localStorage
+  const userToken = localStorage.getItem('user_token');
+
   // Log to both console and file
   logger.group(`🌐 API Request [${requestId}]`);
   logger.log('📍 Endpoint:', `${method} ${API_BASE_URL}${url}`);
@@ -59,6 +62,7 @@ async function apiFetch(url, options = {}) {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        ...(userToken ? { 'Authorization': `Bearer ${userToken}` } : {}),
         ...options.headers,
       },
     });

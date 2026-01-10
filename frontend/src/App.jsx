@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateUniqueId, deepCopy } from './utils/helpers.js';
 import { topicsAPI, questionsAPI, repliesAPI, filesAPI } from './services/apiService.js';
+import { useAuth } from './contexts/AuthContext.jsx';
 import Card from './components/Card.jsx';
 import './styles/app.css';
 
@@ -37,12 +38,9 @@ import './styles/app.css';
  *
  * STORAGE:
  * --------
- * All debate data is persisted to localStorage and loaded on mount.
- * Each topic has its own storage key to keep debates separate.
+ * All debate data is persisted to the backend database via API.
+ * User authentication managed via Google OAuth and JWT tokens.
  */
-
-// Constant for the current user (in production, this would come from auth)
-const CURRENT_USER = 'CurrentUser';
 
 /**
  * Find a post (question or reply) by its ID
@@ -112,6 +110,12 @@ const getLeftText = (item, isQuestion) => {
 
 
 const App = ({ topic }) => {
+  // =====================================================================
+  // AUTHENTICATION
+  // =====================================================================
+
+  const { user, isAuthenticated, showLoginModal } = useAuth();
+
   // =====================================================================
   // STATE MANAGEMENT
   // =====================================================================
@@ -379,8 +383,15 @@ const App = ({ topic }) => {
    *
    * Validates inputs, creates a new question object, and adds it to the debate data.
    * The question is added to the array and will appear at the bottom of the board.
+   * Requires authentication.
    */
   const addNewQuestion = async () => {
+    // Check authentication first
+    if (!isAuthenticated) {
+      showLoginModal('post a question');
+      return;
+    }
+
     try {
       const text = newQuestionText.trim();
       const tag = newTag.trim();
@@ -403,7 +414,7 @@ const App = ({ topic }) => {
         text,
         tag,
         side: newQuestionSide,
-        author: CURRENT_USER,
+        author: user?.name || 'Anonymous',
         uniqueId: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}`
       });
 
@@ -411,7 +422,7 @@ const App = ({ topic }) => {
       const uploadedAttachments = [];
       for (const file of newQuestionFiles) {
         try {
-          const attachment = await filesAPI.upload(file, savedQuestion.id, null, CURRENT_USER);
+          const attachment = await filesAPI.upload(file, savedQuestion.id, null, user?.name || 'Anonymous');
           uploadedAttachments.push(attachment);
         } catch (err) {
           console.error('Failed to upload file:', file.name, err);
@@ -482,10 +493,17 @@ const App = ({ topic }) => {
    * 4. Adds the reply to the parent's replies array
    * 5. Attaches evidence (files and URLs) if provided
    * 6. Converts files to base64 data URLs for download/viewing
+   * Requires authentication.
    *
    * @param {string} parentId - The ID of the post being replied to
    */
   const postReply = async (parentId) => {
+    // Check authentication first
+    if (!isAuthenticated) {
+      showLoginModal('reply to this post');
+      return;
+    }
+
     const text = drafts[parentId] || '';
     if (!text.trim()) return alert('Enter reply');
 
@@ -520,7 +538,7 @@ const App = ({ topic }) => {
       const replyData = {
         text: text.trim(),
         side: replySide,
-        author: CURRENT_USER,
+        author: user?.name || 'Anonymous',
         depth: isQuestion ? 0 : (parent.depth || 0) + 1,
         uniqueId: generateUniqueId('r')
       };
@@ -541,7 +559,7 @@ const App = ({ topic }) => {
       const uploadedAttachments = [];
       for (const file of files) {
         try {
-          const attachment = await filesAPI.upload(file, null, savedReply.id, CURRENT_USER);
+          const attachment = await filesAPI.upload(file, null, savedReply.id, user?.name || 'Anonymous');
           uploadedAttachments.push(attachment);
         } catch (err) {
           console.error('Failed to upload file:', file.name, err);
@@ -608,12 +626,19 @@ const App = ({ topic }) => {
    *
    * Prevents duplicate voting by the same user on the same post during this session.
    * In production, this would be enforced server-side.
+   * Requires authentication.
    *
    * @param {'up'|'down'} type - Type of vote
    * @param {string} id - ID of the post being voted on
    */
   const handleVote = async (type, id) => {
-    const key = id + '-' + CURRENT_USER;
+    // Check authentication first
+    if (!isAuthenticated) {
+      showLoginModal('vote on this post');
+      return;
+    }
+
+    const key = id + '-' + (user?.name || 'Anonymous');
 
     // Check if user already voted on this post
     if (voteSet.current.has(key)) return alert('Already voted');
