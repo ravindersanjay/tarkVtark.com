@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { topicsAPI } from '../services/apiService.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
 /**
  * =====================================================================
@@ -12,13 +13,15 @@ import { topicsAPI } from '../services/apiService.js';
  * FEATURES:
  * - Display list of debate topics from PostgreSQL database (via API)
  * - Click a topic to navigate to that debate
- * - Add new topics (format: "X vs Y")
+ * - Add new topics (format: "X vs Y") - requires authentication
  * - Topics persist in database
  *
  * @param {Function} onSelectTopic - Callback when a topic is clicked: (topic: string) => void
  * @param {Function} onContact - Optional callback for Contact Us navigation
  */
 const DebateTopics = ({ onSelectTopic, onContact }) => {
+  const { isAuthenticated, showLoginModal } = useAuth();
+
   // Load topics from backend API
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,8 +53,15 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
   /**
    * Add a new debate topic to the list
    * Validates format (must be "X vs Y") and checks for duplicates
+   * Requires authentication
    */
   const addTopic = async () => {
+    // Check authentication first
+    if (!isAuthenticated) {
+      showLoginModal('create a new debate topic');
+      return;
+    }
+
     const t = newTopic.trim();
 
     // Validate format

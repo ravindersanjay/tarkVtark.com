@@ -1,5 +1,6 @@
 package com.debatearena.util;
 
+import com.debatearena.model.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,12 +16,13 @@ import java.util.UUID;
  * JWT Utility Class
  * =====================================================================
  *
- * Handles JWT token generation and validation for admin authentication.
+ * Handles JWT token generation and validation for authentication.
+ * Supports both admin users and regular users (Google OAuth).
  *
  * Features:
  * - Generate JWT tokens with user details
  * - Validate JWT tokens
- * - Extract username from token
+ * - Extract user info from token
  * - Check token expiration
  *
  * Configuration (from .env):
@@ -54,6 +56,31 @@ public class JwtUtil {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("userId", userId.toString())
+                .claim("type", "admin")  // Mark as admin token
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS512)
+                .compact();
+    }
+
+    /**
+     * Generate JWT token for regular user (Google OAuth)
+     *
+     * @param user User entity
+     * @return JWT token string
+     */
+    public String generateUserToken(User user) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
+
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+
+        return Jwts.builder()
+                .setSubject(user.getEmail())
+                .claim("userId", user.getId().toString())
+                .claim("name", user.getName())
+                .claim("email", user.getEmail())
+                .claim("type", "user")  // Mark as user token
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS512)
@@ -81,6 +108,31 @@ public class JwtUtil {
         Claims claims = parseToken(token);
         String userIdStr = claims.get("userId", String.class);
         return UUID.fromString(userIdStr);
+    }
+
+    /**
+     * Extract user ID from JWT token (alias for consistency)
+     *
+     * @param token JWT token
+     * @return User UUID
+     */
+    public UUID extractUserIdFromToken(String token) {
+        return getUserIdFromToken(token);
+    }
+
+    /**
+     * Get token type (admin or user)
+     *
+     * @param token JWT token
+     * @return "admin" or "user"
+     */
+    public String getTokenType(String token) {
+        try {
+            Claims claims = parseToken(token);
+            return claims.get("type", String.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**
