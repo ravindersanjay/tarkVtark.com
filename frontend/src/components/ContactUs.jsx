@@ -44,7 +44,7 @@ const ContactUs = ({ onBack }) => {
         <div className="main-content">
           <div className="contact-section">
             <h2>Contact Us</h2>
-            <p>For any queries, suggestions, or support, please email us at <a href="mailto:support@debatearena.com">support@debatearena.com</a> or fill out the form below:</p>
+            <p>For any queries, suggestions, or support, please email us at <a href="mailto:support@debateManch.com">support@debateManch.com</a> or fill out the form below:</p>
             <form className="contact-form" onSubmit={handleSubmit}>
               <input
                 type="text"
