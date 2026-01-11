@@ -1,0 +1,38 @@
+# Render.com Deployment Configuration for TarkVtark Backend
+
+# Build Configuration
+build:
+  # Use Maven from system instead of wrapper
+  buildCommand: cd backend && mvn clean package -DskipTests
+
+# Runtime Configuration
+services:
+  - type: web
+    name: tarkvtark-backend
+    env: java
+    region: singapore
+    plan: free
+    buildCommand: cd backend && mvn clean package -DskipTests
+    startCommand: cd backend && java -jar target/*.jar
+
+    # Environment Variables
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: SERVER_PORT
+        value: 8080
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+
