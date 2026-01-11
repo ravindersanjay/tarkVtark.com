@@ -1,17 +1,16 @@
-# Use Java 17 (recommended for Spring Boot)
-FROM eclipse-temurin:17-jdk-alpine
+# ---------- BUILD STAGE ----------
+FROM maven:3.9.6-eclipse-temurin-17 AS build
 
-# Set working directory inside container
-WORKDIR /app
-
-# Copy backend source code into container
+WORKDIR /build
 COPY . .
+RUN mvn clean package -DskipTests
 
-# Make mvnw executable and build the app
-RUN chmod +x mvnw && ./mvnw clean package -DskipTests
+# ---------- RUNTIME STAGE ----------
+FROM eclipse-temurin:17-jre-alpine
 
-# Expose Spring Boot default port
+WORKDIR /app
+COPY --from=build /build/target/*.jar app.jar
+
 EXPOSE 8080
 
-# Run the Spring Boot jar
-CMD ["java", "-jar", "target/*.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
