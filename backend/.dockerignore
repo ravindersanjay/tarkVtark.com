@@ -1,0 +1,17 @@
+# Backend .dockerignore
+target/
+!target/*.jar
+.mvn/wrapper/maven-wrapper.jar
+.git
+.gitignore
+*.md
+.env
+.env.local
+.env.*.local
+*.log
+*.iml
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+

@@ -25,7 +25,13 @@ import logger from '../utils/logger.js';
 // API base URL - will be served by Spring Boot backend
 // API Base URL - loaded from frontend/.env file
 // Vite exposes env variables as import.meta.env.VITE_*
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+//const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+if (!API_BASE_URL) {
+  throw new Error("VITE_API_URL is not defined");
+}
+
 
 // Debug: Log the API URL being used
 console.log('🔧 API Configuration:', {

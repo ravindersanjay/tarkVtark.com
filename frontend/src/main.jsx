@@ -295,8 +295,11 @@ function MainRouter() {
  * - StrictMode: Development checks
  */
 
-// Google OAuth Client ID - Replace with your actual client ID
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '1096065806294-your-client-id.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+if (!GOOGLE_CLIENT_ID) {
+  throw new Error("VITE_GOOGLE_CLIENT_ID is not defined");
+}
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
