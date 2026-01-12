@@ -18,9 +18,12 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * =====================================================================
@@ -110,10 +113,22 @@ public class UserAuthService {
             return extractPayloadWithoutVerification(idTokenString);
         }
 
+        // Support comma-separated list of client IDs (allows frontend and backend IDs)
+        List<String> audiences = Arrays.stream(googleClientId.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
+        if (audiences.isEmpty()) {
+            // Fallback to original behavior
+            System.out.println("⚠️ google.client-id resolved to empty after parsing. Skipping verification.");
+            return extractPayloadWithoutVerification(idTokenString);
+        }
+
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
                 new GsonFactory())
-                .setAudience(Collections.singletonList(googleClientId))
+                .setAudience(audiences)
                 .build();
 
         GoogleIdToken idToken = verifier.verify(idTokenString);
