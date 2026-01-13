@@ -138,7 +138,7 @@ const AdminLogin = ({ onLogin }) => {
         </button>
       </form>
       <p style={{ marginTop: '16px', fontSize: '0.85rem', color: '#6b7280', textAlign: 'center' }}>
-        Default: admin / Admin@2026
+        Default: admin / Admin@1234
       </p>
     </div>
   );
