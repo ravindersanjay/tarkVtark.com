@@ -9,6 +9,9 @@ COPY mvnw.cmd .
 COPY .mvn .mvn
 COPY pom.xml .
 
+# Ensure wrapper uses LF line endings and is executable (fixes Permission denied in Linux containers when file has CRLF)
+RUN sed -i 's/\r$//' mvnw && chmod +x mvnw
+
 # Download dependencies (cached layer)
 RUN ./mvnw dependency:go-offline -B
 
@@ -39,4 +42,3 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
 
 # Run application
 ENTRYPOINT ["java", "-jar", "app.jar"]
-
