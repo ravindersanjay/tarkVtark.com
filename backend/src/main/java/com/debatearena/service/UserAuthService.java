@@ -43,8 +43,6 @@ import java.util.stream.Collectors;
  * @author TarkVtark Team
  */
 @Service
-@Slf4j
-@Service
 @RequiredArgsConstructor
 public class UserAuthService {
     private final UserRepository userRepository;

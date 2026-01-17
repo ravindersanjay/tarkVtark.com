@@ -1,5 +1,5 @@
 ADMIN:
-1. Admin Password is exposed. it should be hidden and available in environment variables -pending
+1. Admin Password is exposed. it should be hidden and available in environment variables -FIXED
 2. edit not working in question and answer - FIXED
 3. email message are stored in localstorage - FIXED
 4. guidelines created are visible to user but not to admin - FIXED
