@@ -11,6 +11,7 @@ import { authAPI } from '../services/apiService';
  * - Displays user-friendly error messages
  * - Loading state during authentication
  */
+
 const AdminLogin = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
