@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('🔐 Logging in with Google...');
 
-      const response = await fetch('http://localhost:8080/api/v1/auth/google', {
+      const response = await fetch('${API_BASE_URL}/api/v1/auth/google', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
