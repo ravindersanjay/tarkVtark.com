@@ -298,17 +298,29 @@ function MainRouter() {
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 if (!GOOGLE_CLIENT_ID) {
-  throw new Error("VITE_GOOGLE_CLIENT_ID is not defined");
+  // Removed hard throw to avoid breaking production when env is missing.
+  // Instead log a clear message — the app will still render but Google login will be disabled.
+  console.error('VITE_GOOGLE_CLIENT_ID is not defined. Google Sign-In will be disabled.');
 }
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-        <AuthProvider>
-          <MainRouter />
-        </AuthProvider>
-      </GoogleOAuthProvider>
-    </ErrorBoundary>
-  </StrictMode>
-);
+function AppRoot() {
+  return (
+    <StrictMode>
+      <ErrorBoundary>
+        {GOOGLE_CLIENT_ID ? (
+          <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+            <AuthProvider>
+              <MainRouter />
+            </AuthProvider>
+          </GoogleOAuthProvider>
+        ) : (
+          <AuthProvider>
+            <MainRouter />
+          </AuthProvider>
+        )}
+      </ErrorBoundary>
+    </StrictMode>
+  );
+}
+
+createRoot(document.getElementById('root')).render(<AppRoot />);
