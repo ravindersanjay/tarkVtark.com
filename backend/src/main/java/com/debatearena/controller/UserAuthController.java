@@ -50,6 +50,8 @@ public class UserAuthController {
     @PostMapping("/google")
     public ResponseEntity<UserLoginResponse> loginWithGoogle(@RequestBody GoogleTokenRequest request) {
         System.out.println("📱 POST /auth/google - Google OAuth login attempt");
+        System.out.println("🔑 Google token: " + request.getToken());
+
 
         if (request.getToken() == null || request.getToken().isEmpty()) {
             System.out.println("❌ Missing Google token");
