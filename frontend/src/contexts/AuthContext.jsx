@@ -1,21 +1,8 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
-/**
- * =====================================================================
- * Authentication Context
- * =====================================================================
- *
- * Manages user authentication state across the application.
- * Handles Google OAuth login, logout, and session persistence.
- *
- * Usage:
- * - Wrap app with <AuthProvider>
- * - Use useAuth() hook to access auth state and methods
- *
- * @author TarkVtark Team
- */
-
 const AuthContext = createContext();
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -32,7 +19,6 @@ export const AuthProvider = ({ children }) => {
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginAction, setLoginAction] = useState('');
 
-  // Check for existing token on mount
   useEffect(() => {
     checkAuth();
   }, []);
@@ -40,47 +26,54 @@ export const AuthProvider = ({ children }) => {
   const checkAuth = async () => {
     const token = localStorage.getItem('user_token');
 
-    if (token) {
-      try {
-        const response = await fetch('http://localhost:8080/api/v1/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+    if (!token) {
+      setLoading(false);
+      return;
+    }
 
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          setIsAuthenticated(true);
-          console.log('✅ User authenticated:', userData.email);
-        } else {
-          // Token invalid, clear it
-          localStorage.removeItem('user_token');
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error('❌ Error checking auth:', error);
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+        setIsAuthenticated(true);
+        console.log('✅ User authenticated:', userData.email);
+      } else {
         localStorage.removeItem('user_token');
         setUser(null);
         setIsAuthenticated(false);
       }
+    } catch (error) {
+      console.error('❌ Error checking auth:', error);
+      localStorage.removeItem('user_token');
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const loginWithGoogle = async (credential) => {
     try {
       console.log('🔐 Logging in with Google...');
+      console.log('AUTH URL =>', `${API_BASE_URL}/auth/google`);
 
-      const response = await fetch('${API_BASE_URL}/api/v1/auth/google', {
+      const response = await fetch(`${API_BASE_URL}/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ token: credential }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
       const data = await response.json();
 
@@ -91,11 +84,9 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user_token', data.token);
         setLoginModalOpen(false);
         return true;
-      } else {
-        console.error('❌ Login failed:', data.message);
-        alert('Login failed: ' + data.message);
-        return false;
       }
+
+      throw new Error(data.message || 'Login failed');
     } catch (error) {
       console.error('❌ Login error:', error);
       alert('Login failed. Please try again.');
@@ -108,11 +99,11 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('user_token');
 
       if (token) {
-        await fetch('http://localhost:8080/api/v1/auth/logout', {
+        await fetch(`${API_BASE_URL}/auth/logout`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
       }
     } catch (error) {
@@ -144,24 +135,23 @@ export const AuthProvider = ({ children }) => {
     return true;
   };
 
-  const value = {
-    user,
-    isAuthenticated,
-    loading,
-    loginModalOpen,
-    loginAction,
-    loginWithGoogle,
-    logout,
-    showLoginModal,
-    closeLoginModal,
-    requireAuth,
-    checkAuth
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        loading,
+        loginModalOpen,
+        loginAction,
+        loginWithGoogle,
+        logout,
+        showLoginModal,
+        closeLoginModal,
+        requireAuth,
+        checkAuth,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
-
