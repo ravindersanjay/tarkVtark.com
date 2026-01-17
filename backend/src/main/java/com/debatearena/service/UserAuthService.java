@@ -47,11 +47,6 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class UserAuthService {
-
-    log.info("Google OAuth login attempt");
-    log.debug("Google token received");
-    log.warn("Invalid Google token");
-
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
 
