@@ -125,6 +125,8 @@ public class UserAuthService {
             return extractPayloadWithoutVerification(idTokenString);
         }
 
+        System.out.println("🔍 Verifying Google token against clientId: [" + googleClientId + "]");
+
         GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
                 new NetHttpTransport(),
                 new GsonFactory())
