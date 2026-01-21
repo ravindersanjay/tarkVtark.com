@@ -42,21 +42,20 @@ public class SecurityConfig {
      * Configure HTTP security rules
      */
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for API with JWT
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                .csrf(csrf -> csrf.disable())   // IMPORTANT for multipart
                 .authorizeHttpRequests(auth -> auth
-                        // Allow all requests for backward compatibility
-                        // In future, you can add specific protections for admin endpoints
-                        .anyRequest().permitAll()
+                        .requestMatchers(
+                                "/api/v1/files/upload"
+                        ).permitAll()
+                        .anyRequest().authenticated()
                 );
 
         return http.build();
     }
+
 
     /**
      * CORS configuration to allow frontend requests
