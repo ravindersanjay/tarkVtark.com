@@ -92,13 +92,17 @@ public class FileUploadController {
      * @param uploadedBy Name of uploader (optional)
      * @return AttachmentDTO with storage URL
      */
-    @PostMapping("/upload")
+    @PostMapping(
+            value = "/upload",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) UUID questionId,
             @RequestParam(required = false) UUID replyId,
             @RequestParam(required = false) String uploadedBy
     ) {
+
         try {
             // Validation
             if (file.isEmpty()) {
