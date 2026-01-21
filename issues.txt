@@ -9,6 +9,12 @@ USER:
 URL should contain full url in browser including debatetopic - FIXED
 user login using gmail - FIXED
 attachment are stored with incorrect image url -pending
+logo needs to be changed -pending
+spam protection -pending
+
 
 DATABASE:
 1. attachment are stored with incorrect image url -fixed
+2. soft delete -pending
+
+
