@@ -41,10 +41,20 @@ server:
     context-path: /api/v1
 
 file:
+  provider: ${FILE_PROVIDER:local}   # local | r2
   upload-dir: ./uploads
   max-size: 10485760
   base-url: ${FILE_BASE_URL:http://localhost}
   allowed-types: image/*,video/*,audio/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document
+
+# Cloudflare R2 / S3-compatible settings (used when file.provider=r2)
+r2:
+  access-key-id: ${R2_ACCESS_KEY_ID:}
+  secret-access-key: ${R2_SECRET_ACCESS_KEY:}
+  bucket: ${R2_BUCKET:}
+  endpoint: ${R2_ENDPOINT:}
+  public-base-url: ${R2_PUBLIC_BASE_URL:}
+  region: ${R2_REGION:us-east-1}
 
 # Admin User Configuration - Loaded from environment variables
 admin:

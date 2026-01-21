@@ -3,6 +3,7 @@ package com.debatearena.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -30,6 +31,7 @@ import java.util.UUID;
  * @author TarkVtark Team
  */
 @Service
+@ConditionalOnProperty(name = "file.provider", havingValue = "local", matchIfMissing = true)
 public class LocalFileStorageService implements FileStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalFileStorageService.class);
@@ -112,4 +114,3 @@ public class LocalFileStorageService implements FileStorageService {
         return "local";
     }
 }
-
