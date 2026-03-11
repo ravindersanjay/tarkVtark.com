@@ -165,50 +165,28 @@ public class FileUploadController {
     /**
      * Download or view a file
      *
-     * Supports both local and remote storage:
-     * - Local: Serves file from disk
-     * - Remote (R2/S3): Redirects to cloud URL
+     * Redirects to the remote storage URL (R2/S3).
+     * File is stored in cloud, not on local filesystem.
      *
      * @param filename Name of the file
-     * @return File content or redirect to remote URL
+     * @return HTTP 302 redirect to remote storage URL
      */
     @GetMapping("/{filename}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {
         try {
-            // For local storage, serve from filesystem
-            if ("local".equals(fileStorageService.getProviderName())) {
-                Path filePath = Paths.get(uploadDir).resolve(filename).normalize();
-                Resource resource = new FileSystemResource(filePath);
-
-                if (!resource.exists()) {
-                    return ResponseEntity.notFound().build();
-                }
-
-                // Determine content type
-                String contentType = Files.probeContentType(filePath);
-                if (contentType == null) {
-                    contentType = "application/octet-stream";
-                }
-
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(contentType))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                        .body(resource);
+            // Look up attachment by filename to get the remote storage URL
+            Attachment attachment = attachmentRepository.findByFileName(filename);
+            if (attachment != null && attachment.getStorageUrl() != null) {
+                logger.info("Redirecting to remote storage URL for file: {}", filename);
+                return ResponseEntity.status(HttpStatus.FOUND)
+                        .header(HttpHeaders.LOCATION, attachment.getStorageUrl())
+                        .build();
             } else {
-                // For remote storage (R2, S3), redirect to storage URL
-                Attachment attachment = attachmentRepository.findByFileName(filename);
-                if (attachment != null && attachment.getStorageUrl() != null) {
-                    logger.info("Redirecting to remote storage URL for file: {}", filename);
-                    return ResponseEntity.status(HttpStatus.FOUND)
-                            .header(HttpHeaders.LOCATION, attachment.getStorageUrl())
-                            .build();
-                } else {
-                    logger.warn("File not found in database: {}", filename);
-                    return ResponseEntity.notFound().build();
-                }
+                logger.warn("File not found in database: {}", filename);
+                return ResponseEntity.notFound().build();
             }
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("File download failed", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
