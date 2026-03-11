@@ -43,12 +43,14 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
-                .csrf(csrf -> csrf.disable())   // IMPORTANT for multipart
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/v1/files/upload"
+                                "/api/v1/files/upload",
+                                "/api/v1/admin/login",
+                                "/api/v1/topics/**"
                         ).permitAll()
                         .anyRequest().authenticated()
                 );
