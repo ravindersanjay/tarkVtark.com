@@ -14,3 +14,7 @@ echo Starting backend...
 cd backend-java
 call mvn clean compile spring-boot:run
 
+
+
+$proc = Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1; if ($proc) { Get-Process -Id $proc; Stop-Process -Id $proc -Force }
+
