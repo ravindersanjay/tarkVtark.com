@@ -1,0 +1,2 @@
+find process running on port 8080 and kill that process to free the port
+$proc = Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -First 1; if ($proc) { Get-Process -Id $proc; Stop-Process -Id $proc -Force }
