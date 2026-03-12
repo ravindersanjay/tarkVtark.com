@@ -67,5 +67,12 @@ public interface AttachmentRepository extends JpaRepository<Attachment, UUID> {
      */
     @Query("SELECT COUNT(a) FROM Attachment a WHERE a.reply.id = :replyId")
     long countByReplyId(@Param("replyId") UUID replyId);
+
+    /**
+     * Find attachment by filename
+     * Used by download endpoint to get storage URL for redirect
+     */
+    @Query("SELECT a FROM Attachment a WHERE a.fileName = :fileName")
+    Attachment findByFileName(@Param("fileName") String fileName);
 }
 

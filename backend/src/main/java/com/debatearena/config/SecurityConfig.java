@@ -47,13 +47,21 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/v1/files/upload",
-                                "/api/v1/admin/login",
-                                "/api/v1/topics/**"
-                        ).permitAll()
+                        // Allow OPTIONS requests for CORS preflight - must come first
+                        .requestMatchers("OPTIONS", "/**").permitAll()
+                        // Public endpoints - no authentication required
+                        .requestMatchers("/api/v1/files/upload").permitAll()
+                        .requestMatchers("/api/v1/admin/login").permitAll()
+                        .requestMatchers("GET", "/api/v1/topics/**").permitAll()
+                        .requestMatchers("GET", "/api/v1/debates/**").permitAll()
+                        .requestMatchers("GET", "/api/v1/questions/**").permitAll()
+                        .requestMatchers("GET", "/api/v1/replies/**").permitAll()
+                        .requestMatchers("GET", "/api/v1/files/**").permitAll()
+                        // All other requests require authentication
                         .anyRequest().authenticated()
                 );
+
+        http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
 
         return http.build();
     }
