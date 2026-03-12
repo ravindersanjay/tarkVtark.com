@@ -11,6 +11,7 @@ import com.debatearena.repository.EvidenceUrlRepository;
 import com.debatearena.repository.QuestionRepository;
 import com.debatearena.repository.ReplyRepository;
 import com.debatearena.service.FileStorageService;
+import com.debatearena.service.S3FileStorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +66,9 @@ public class FileUploadController {
     @Autowired
     private FileStorageService fileStorageService;
 
+    @Autowired(required = false)
+    private S3FileStorageService s3FileStorageService;
+
     @Autowired
     private AttachmentRepository attachmentRepository;
 
@@ -82,6 +86,9 @@ public class FileUploadController {
 
     @Value("${file.max-size:10485760}") // 10MB default
     private long maxFileSize;
+
+    @Value("${file.provider:local}")
+    private String fileProvider; // Values: "local", "r2", "s3"
 
     /**
      * Upload a file and create attachment record
@@ -121,8 +128,23 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body("Cannot attach to both question and reply");
             }
 
-            // Upload file to storage
-            String storageUrl = fileStorageService.uploadFile(file, null);
+            // Upload file to storage (local, R2, or S3)
+            String storageUrl;
+            String provider;
+
+            if ("s3".equalsIgnoreCase(fileProvider)) {
+                logger.info("📤 Uploading to AWS S3 (FILE_PROVIDER=s3)");
+                if (s3FileStorageService == null) {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("S3 storage not configured. Set file.provider=s3 and provide AWS credentials");
+                }
+                storageUrl = s3FileStorageService.uploadFile(file, "attachments");
+                provider = s3FileStorageService.getProviderName();
+            } else {
+                logger.info("📤 Uploading to local storage or R2 (FILE_PROVIDER={})", fileProvider);
+                storageUrl = fileStorageService.uploadFile(file, null);
+                provider = fileStorageService.getProviderName();
+            }
 
             // Create attachment record
             Attachment attachment = new Attachment();
@@ -130,7 +152,7 @@ public class FileUploadController {
             attachment.setFileSize(file.getSize());
             attachment.setFileType(file.getContentType());
             attachment.setStorageUrl(storageUrl);
-            attachment.setStorageProvider(fileStorageService.getProviderName());
+            attachment.setStorageProvider(provider);
             attachment.setUploadedBy(uploadedBy != null ? uploadedBy : "Anonymous");
 
             // Set parent (question or reply)

@@ -31,7 +31,6 @@ import java.util.UUID;
  * @author TarkVtark Team
  */
 @Service
-@ConditionalOnProperty(name = "file.provider", havingValue = "local", matchIfMissing = true)
 public class LocalFileStorageService implements FileStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalFileStorageService.class);
