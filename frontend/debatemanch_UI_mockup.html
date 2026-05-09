@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tarkVtark - Social Debate Drill-Down</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel-left: #161b22;
+            --panel-right: #0d1117;
+            --accent: #58a6ff;
+            --pro: #238636;
+            --con: #da3633;
+            --text: #c9d1d9;
+            --border: #30363d;
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- BREADCRUMBS --- */
+        .breadcrumbs {
+            padding: 12px 25px;
+            background: #010409;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            overflow-x: auto;
+        }
+        .breadcrumb-item { color: var(--accent); cursor: pointer; padding: 4px 8px; border-radius: 4px; }
+        .breadcrumb-item:hover { background: #21262d; }
+        .breadcrumb-sep { color: #484f58; }
+
+        /* --- LAYOUT --- */
+        .main-view { display: flex; flex: 1; overflow: hidden; }
+        .panel { flex: 1; padding: 35px; overflow-y: auto; }
+        .panel-left { background: var(--panel-left); border-right: 1px solid var(--border); }
+        .panel-right { background: var(--panel-right); }
+
+        /* --- SIBLING SWITCHER --- */
+        .switcher-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            background: #21262d;
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .nav-btn {
+            background: #30363d;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 6px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .nav-btn:hover:not(:disabled) { border-color: var(--accent); }
+        .nav-btn:disabled { opacity: 0.2; cursor: not-allowed; }
+
+        /* --- CARDS --- */
+        .card {
+            background: #1c2128;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            transition: transform 0.2s;
+        }
+        .clickable-card { cursor: pointer; }
+        .clickable-card:hover { transform: translateX(8px); border-color: var(--accent); }
+        .pro-border { border-left: 5px solid var(--pro); }
+        .con-border { border-left: 5px solid var(--con); }
+        .card-author { font-weight: bold; color: var(--accent); margin-bottom: 10px; display: flex; justify-content: space-between; }
+        .level-tag { font-size: 0.65rem; background: #30363d; padding: 2px 6px; border-radius: 4px; color: #8b949e; }
+        .card-body { font-size: 0.95rem; line-height: 1.5; }
+
+        /* --- MINIMAP --- */
+        .minimap {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: rgba(1, 4, 9, 0.9);
+            border: 1px solid var(--border);
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            gap: 5px;
+        }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #30363d; }
+        .dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    </style>
+</head>
+<body>
+
+    <nav class="breadcrumbs" id="breadcrumb-nav"></nav>
+
+    <main class="main-view">
+        <section class="panel panel-left">
+            <div class="switcher-header">
+                <button class="nav-btn" id="prev-btn">← Previous</button>
+                <span id="sibling-indicator" style="font-size: 0.75rem; color: #8b949e;">CONTEXT</span>
+                <button class="nav-btn" id="next-btn">Next →</button>
+            </div>
+            <div id="left-content"></div>
+        </section>
+
+        <section class="panel panel-right">
+            <h3 style="margin-top: 0; font-size: 0.85rem; color: #8b949e; text-transform: uppercase;">Counter Replies</h3>
+            <div id="right-content"></div>
+        </section>
+    </main>
+
+    <div class="minimap" id="depth-dots"></div>
+
+    <script>
+        // EASY EXAMPLES DATA GENERATOR
+        const simpleDebates = {
+            "root": "Should facial coverings (like the burka) be allowed in all public spaces?",
+            "L1": ["It is a matter of religious freedom and personal choice.", "Public safety requires faces to be visible for identification.", "It can be seen as a barrier to social integration and communication."],
+            "L2": ["The state should not dictate a woman's wardrobe.", "Facial expressions are vital for building trust in a community.", "Security cameras cannot function if faces are hidden."],
+            "L3": ["Freedom implies the right to be 'different' without penalty.", "In a secular state, religious symbols should be private, not public.", "Communication happens through many ways, not just facial sight."],
+            "L4": ["Secularism should mean neutrality, not the banning of faith.", "Masks for health are allowed, so why not for religion?", "Integration is achieved through education, not clothing bans."],
+            "L5": ["Individual safety is compromised if people are unrecognizable.", "Human rights should protect the minority from the majority's taste.", "Legal consistency: you can't ban one veil and allow sunglasses."],
+            "L6": ["The law must be blind to religion to remain fair.", "Choice is only valid if it's truly free from family pressure.", "Ultimately, a free society must tolerate things it dislikes."]
+        };
+
+        function generateData(level, idPrefix, authorBase) {
+            if (level > 6) return [];
+            let children = [];
+            const suffixes = ["A", "B", "C"];
+            const content = simpleDebates[`L${level}`];
+            
+            for (let i = 0; i < 3; i++) {
+                const id = `${idPrefix}_${i}`;
+                const stance = i === 0 ? "PRO" : "CON"; // Mix stances
+                children.push({
+                    id: id,
+                    level: level,
+                    author: `User L${level} ${suffixes[i]}`,
+                    body: content[i] || `Level ${level} deeper analysis on point ${suffixes[i]}.`,
+                    stance: stance,
+                    children: generateData(level + 1, id, `User L${level+1}`)
+                });
+            }
+            return children;
+        }
+
+        const rootData = {
+            id: "root",
+            level: 0,
+            author: "Moderator_Ravinder",
+            body: simpleDebates.root,
+            stance: "PRO",
+            children: generateData(1, "root", "User L1")
+        };
+
+        let path = [rootData];
+        let currentNode = rootData;
+
+        function render() {
+            const leftContent = document.getElementById('left-content');
+            const rightContent = document.getElementById('right-content');
+            const breadcrumbNav = document.getElementById('breadcrumb-nav');
+            const depthDots = document.getElementById('depth-dots');
+
+            breadcrumbNav.innerHTML = path.map((node, i) => 
+                `<span class="breadcrumb-item" onclick="jumpTo(${i})">${node.author}</span>`
+            ).join('<span class="breadcrumb-sep">/</span>');
+
+            leftContent.innerHTML = `
+                <div class="card ${currentNode.stance === 'PRO' ? 'pro-border' : 'con-border'}">
+                    <div class="card-author">
+                        ${currentNode.author} 
+                        <span class="level-tag">Depth: ${currentNode.level}</span>
+                    </div>
+                    <div class="card-body">${currentNode.body}</div>
+                </div>
+            `;
+
+            rightContent.innerHTML = currentNode.children.length > 0 ? 
+                currentNode.children.map(child => `
+                    <div class="card clickable-card ${child.stance === 'PRO' ? 'pro-border' : 'con-border'}" onclick="goDown('${child.id}')">
+                        <div class="card-author">${child.author}</div>
+                        <div class="card-body">${child.body}</div>
+                    </div>
+                `).join('') : `<p style="color:#484f58; text-align:center;">Maximum depth reached.</p>`;
+
+            const parent = path.length > 1 ? path[path.length - 2] : null;
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const indicator = document.getElementById('sibling-indicator');
+
+            if (parent) {
+                const idx = parent.children.findIndex(c => c.id === currentNode.id);
+                indicator.innerText = `REPLY ${idx + 1} OF 3`;
+                prevBtn.disabled = idx === 0;
+                nextBtn.disabled = idx === parent.children.length - 1;
+                prevBtn.onclick = () => switchSibling(parent.children[idx - 1]);
+                nextBtn.onclick = () => switchSibling(parent.children[idx + 1]);
+            } else {
+                indicator.innerText = "ROOT TOPIC";
+                prevBtn.disabled = nextBtn.disabled = true;
+            }
+
+            depthDots.innerHTML = Array(7).fill(0).map((_, i) => 
+                `<div class="dot ${i <= currentNode.level ? 'active' : ''}"></div>`
+            ).join('');
+        }
+
+        function goDown(id) {
+            const target = currentNode.children.find(c => c.id === id);
+            path.push(target);
+            currentNode = target;
+            render();
+        }
+
+        function switchSibling(node) {
+            path[path.length - 1] = node;
+            currentNode = node;
+            render();
+        }
+
+        function jumpTo(index) {
+            path = path.slice(0, index + 1);
+            currentNode = path[path.length - 1];
+            render();
+        }
+
+        render();
+    </script>
+</body>
+</html>

@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
@@ -40,6 +42,8 @@ import java.util.UUID;
  *
  * @author TarkVtark Team
  */
+@Service
+@ConditionalOnProperty(name = "file.provider", havingValue = "s3")
 public class S3FileStorageService implements FileStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(S3FileStorageService.class);
@@ -62,28 +66,26 @@ public class S3FileStorageService implements FileStorageService {
             @Value("${aws.access-key-id:}") String accessKeyId,
             @Value("${aws.secret-access-key:}") String secretAccessKey,
             @Value("${aws.region:us-east-1}") String regionName) {
-        
         try {
-            if (accessKeyId != null && !accessKeyId.isEmpty() && 
-                secretAccessKey != null && !secretAccessKey.isEmpty()) {
-                
-                logger.info("✅ Initializing AWS S3 storage service (file.provider=s3)");
+            logger.info("✅ Initializing AWS S3 storage service (file.provider=s3)");
 
+            if (accessKeyId != null && !accessKeyId.isEmpty() && secretAccessKey != null && !secretAccessKey.isEmpty()) {
                 AwsBasicCredentials credentials = AwsBasicCredentials.create(accessKeyId, secretAccessKey);
-                
                 this.s3Client = S3Client.builder()
                         .region(Region.of(regionName))
                         .credentialsProvider(StaticCredentialsProvider.create(credentials))
                         .build();
-                        
             } else {
-                logger.warn("⚠️ AWS credentials not configured for S3 storage");
-                logger.warn("⚠️ If you need S3, set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY");
-                this.s3Client = null;
+                // Use default provider chain (IAM role, environment, profile, etc.)
+                this.s3Client = S3Client.builder()
+                        .region(Region.of(regionName))
+                        .credentialsProvider(DefaultCredentialsProvider.create())
+                        .build();
             }
+
         } catch (Exception e) {
             logger.error("❌ Failed to initialize S3 client", e);
-            this.s3Client = null;
+            throw new RuntimeException("Failed to initialize S3 client", e);
         }
     }
 

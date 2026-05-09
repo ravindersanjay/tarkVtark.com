@@ -31,6 +31,7 @@ import java.util.UUID;
  * @author TarkVtark Team
  */
 @Service
+@org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(name = "file.provider", havingValue = "local", matchIfMissing = true)
 public class LocalFileStorageService implements FileStorageService {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalFileStorageService.class);
@@ -48,7 +49,7 @@ public class LocalFileStorageService implements FileStorageService {
      * Upload a file to local storage
      */
     @Override
-    public String uploadFile(MultipartFile file, String customFileName) throws IOException {
+    public String uploadFile(MultipartFile file, String folder) throws IOException {
         // Create uploads directory if it doesn't exist
         Path uploadPath = Paths.get(uploadDir);
         if (!Files.exists(uploadPath)) {
@@ -56,35 +57,33 @@ public class LocalFileStorageService implements FileStorageService {
             logger.info("Created upload directory: {}", uploadPath.toAbsolutePath());
         }
 
-        // Generate unique filename
+        // Ensure folder is safe
+        String safeFolder = (folder == null || folder.isBlank()) ? "" : folder.replaceAll("[^a-zA-Z0-9/_-]", "_");
+        Path destFolder = safeFolder.isEmpty() ? uploadPath : uploadPath.resolve(safeFolder);
+        if (!Files.exists(destFolder)) {
+            Files.createDirectories(destFolder);
+        }
+
+        // Generate unique filename preserving extension
         String originalFilename = file.getOriginalFilename();
         String fileExtension = "";
         if (originalFilename != null && originalFilename.contains(".")) {
             fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
 
-        String fileName = customFileName != null ? customFileName : UUID.randomUUID().toString() + fileExtension;
-
-        // Ensure filename is safe (remove path traversal attempts)
+        String fileName = UUID.randomUUID().toString() + fileExtension;
+        // Ensure filename is safe
         fileName = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
 
         // Save file
-        Path filePath = uploadPath.resolve(fileName);
+        Path filePath = destFolder.resolve(fileName);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        logger.info("File uploaded successfully: {} ({} bytes)", fileName, file.getSize());
+        logger.info("File uploaded successfully: {} ({} bytes)", filePath.toAbsolutePath(), file.getSize());
 
-        // Return public URL
-        // Check if baseUrl already contains a port to avoid duplication
-        String fileUrl;
-        if (baseUrl.matches(".*:\\d+$")) {
-            // Base URL already has a port (e.g., http://localhost:8080)
-            fileUrl = String.format("%s/api/v1/files/%s", baseUrl, fileName);
-        } else {
-            // Base URL doesn't have a port, append it
-            fileUrl = String.format("%s:%s/api/v1/files/%s", baseUrl, serverPort, fileName);
-        }
-        return fileUrl;
+        // Return storage key relative to uploadDir (e.g., attachments/uuid.png or uuid.png)
+        String storageKey = (safeFolder.isEmpty() ? "" : safeFolder + "/") + fileName;
+        return storageKey;
     }
 
     /**
