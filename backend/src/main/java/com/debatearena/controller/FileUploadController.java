@@ -23,6 +23,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -66,8 +67,8 @@ public class FileUploadController {
     @Autowired
     private FileStorageService fileStorageService;
 
-    @Autowired(required = false)
-    private S3FileStorageService s3FileStorageService;
+    // Use FileStorageService abstraction. The actual implementation (local or s3)
+    // is provided by Spring based on `file.provider` property.
 
     @Autowired
     private AttachmentRepository attachmentRepository;
@@ -128,23 +129,11 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body("Cannot attach to both question and reply");
             }
 
-            // Upload file to storage (local, R2, or S3)
-            String storageUrl;
-            String provider;
-
-            if ("s3".equalsIgnoreCase(fileProvider)) {
-                logger.info("📤 Uploading to AWS S3 (FILE_PROVIDER=s3)");
-                if (s3FileStorageService == null) {
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body("S3 storage not configured. Set file.provider=s3 and provide AWS credentials");
-                }
-                storageUrl = s3FileStorageService.uploadFile(file, "attachments");
-                provider = s3FileStorageService.getProviderName();
-            } else {
-                logger.info("📤 Uploading to local storage or R2 (FILE_PROVIDER={})", fileProvider);
-                storageUrl = fileStorageService.uploadFile(file, null);
-                provider = fileStorageService.getProviderName();
-            }
+            // Upload file to storage (local or S3). The concrete implementation
+            // of FileStorageService is selected by Spring via `file.provider`.
+            logger.info("📤 Uploading file using provider: {}", fileProvider);
+            String storageUrl = fileStorageService.uploadFile(file, "attachments");
+            String provider = fileStorageService.getProviderName();
 
             // Create attachment record
             Attachment attachment = new Attachment();
@@ -185,6 +174,51 @@ public class FileUploadController {
     }
 
     /**
+     * Download by storage key (supports slashes without encoding).
+     * Example: GET /api/v1/files/key/attachments/uuid.jpg
+     */
+    @GetMapping("/key/**")
+    public ResponseEntity<Resource> downloadByKey(HttpServletRequest request) {
+        try {
+            String uri = request.getRequestURI(); // e.g. /api/v1/files/key/attachments/uuid.jpg
+            // find '/files/key/' segment
+            String marker = "/files/key/";
+            int idx = uri.indexOf(marker);
+            if (idx < 0) {
+                return ResponseEntity.badRequest().build();
+            }
+            String storageKey = uri.substring(idx + marker.length());
+            // storageKey is like attachments/uuid.jpg
+
+            // Try to find by storage key
+            Attachment byKey = attachmentRepository.findByStorageUrl(storageKey);
+            if (byKey == null) {
+                logger.warn("Attachment not found for storage key: {}", storageKey);
+                return ResponseEntity.notFound().build();
+            }
+
+            if ("local".equalsIgnoreCase(byKey.getStorageProvider())) {
+                Path filePath = Paths.get(uploadDir).resolve(byKey.getStorageUrl()).normalize();
+                if (!Files.exists(filePath)) return ResponseEntity.notFound().build();
+                Resource resource = new FileSystemResource(filePath);
+                String contentType = Files.probeContentType(filePath);
+                if (contentType == null) contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + byKey.getFileName() + "\"")
+                        .body(resource);
+            }
+
+            // Remote provider (S3) -> redirect to URL
+            return ResponseEntity.status(HttpStatus.FOUND).header(HttpHeaders.LOCATION, byKey.getStorageUrl()).build();
+
+        } catch (Exception e) {
+            logger.error("File download by key failed", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
      * Download or view a file
      *
      * Redirects to the remote storage URL (R2/S3).
@@ -196,17 +230,49 @@ public class FileUploadController {
     @GetMapping("/{filename}")
     public ResponseEntity<Resource> downloadFile(@PathVariable String filename) {
         try {
-            // Look up attachment by filename to get the remote storage URL
+            // First try to find attachment by original filename (backwards compatibility)
             Attachment attachment = attachmentRepository.findByFileName(filename);
             if (attachment != null && attachment.getStorageUrl() != null) {
+                logger.info("Preparing download for file: {} (provider={})", filename, attachment.getStorageProvider());
+                if ("local".equalsIgnoreCase(attachment.getStorageProvider())) {
+                    Path filePath = Paths.get(uploadDir).resolve(attachment.getStorageUrl()).normalize();
+                    if (!Files.exists(filePath)) {
+                        logger.warn("Local file not found: {}", filePath);
+                        return ResponseEntity.notFound().build();
+                    }
+                    Resource resource = new FileSystemResource(filePath);
+                    String contentType = Files.probeContentType(filePath);
+                    if (contentType == null) contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.parseMediaType(contentType))
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + attachment.getFileName() + "\"")
+                            .body(resource);
+                }
                 logger.info("Redirecting to remote storage URL for file: {}", filename);
                 return ResponseEntity.status(HttpStatus.FOUND)
                         .header(HttpHeaders.LOCATION, attachment.getStorageUrl())
                         .build();
-            } else {
-                logger.warn("File not found in database: {}", filename);
-                return ResponseEntity.notFound().build();
             }
+
+            // If not found by filename, try to treat the path as a storage key (attachments/uuid.png)
+            Attachment byKey = attachmentRepository.findByStorageUrl(filename);
+            if (byKey != null) {
+                if ("local".equalsIgnoreCase(byKey.getStorageProvider())) {
+                    Path filePath = Paths.get(uploadDir).resolve(byKey.getStorageUrl()).normalize();
+                    if (!Files.exists(filePath)) return ResponseEntity.notFound().build();
+                    Resource resource = new FileSystemResource(filePath);
+                    String contentType = Files.probeContentType(filePath);
+                    if (contentType == null) contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.parseMediaType(contentType))
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + byKey.getFileName() + "\"")
+                            .body(resource);
+                }
+                return ResponseEntity.status(HttpStatus.FOUND).header(HttpHeaders.LOCATION, byKey.getStorageUrl()).build();
+            }
+
+            logger.warn("File not found in database: {}", filename);
+            return ResponseEntity.notFound().build();
 
         } catch (Exception e) {
             logger.error("File download failed", e);

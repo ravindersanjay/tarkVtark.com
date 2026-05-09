@@ -74,5 +74,11 @@ public interface AttachmentRepository extends JpaRepository<Attachment, UUID> {
      */
     @Query("SELECT a FROM Attachment a WHERE a.fileName = :fileName")
     Attachment findByFileName(@Param("fileName") String fileName);
+
+    /**
+     * Find attachment by storage URL/key (used for local storage keys like 'attachments/uuid.png')
+     */
+    @Query("SELECT a FROM Attachment a WHERE a.storageUrl = :storageUrl")
+    Attachment findByStorageUrl(@Param("storageUrl") String storageUrl);
 }
 
