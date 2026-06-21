@@ -36,8 +36,27 @@
  * generateUniqueId('q')  // Returns: "q-1702475844123-456"
  * generateUniqueId('r')  // Returns: "r-1702475844567-789"
  */
+// Helper to pad numbers with leading zeros
+const pad = (n, len = 2) => String(n).padStart(len, '0');
+
+// Format timestamp as DD.MM.YYYY.HH.MM.SS.MS
+const formatTimestampForId = (date = new Date()) => {
+  const dd = pad(date.getDate());
+  const mm = pad(date.getMonth() + 1);
+  const yyyy = date.getFullYear();
+  const hh = pad(date.getHours());
+  const min = pad(date.getMinutes());
+  const ss = pad(date.getSeconds());
+  const ms = String(date.getMilliseconds());
+  return `${dd}.${mm}.${yyyy}.${hh}.${min}.${ss}.${ms}`;
+};
+
+/**
+ * Generate a pseudo-unique ID for posts using a human-readable timestamp.
+ * Example: "r21.06.2026.02.59.12.123-837"
+ */
 export const generateUniqueId = (prefix = 'id') =>
-  prefix + Date.now() + '-' + Math.floor(Math.random() * 1000);
+  `${prefix}${formatTimestampForId(new Date())}-${Math.floor(Math.random() * 1000)}`;
 
 /**
  * Escape HTML special characters to prevent XSS attacks
