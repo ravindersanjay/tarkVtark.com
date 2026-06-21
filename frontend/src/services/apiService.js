@@ -590,6 +590,14 @@ const filesAPI = {
     logger.log('📤 filesAPI.upload() - Uploading file:', file.name);
 
     // Don't use apiFetch for multipart/form-data, use fetch directly
+    // Debug: log FormData entries to help diagnose missing/malformed IDs
+    for (const pair of formData.entries()) {
+      try {
+        console.log('FormData:', pair[0], pair[1]);
+      } catch (e) {
+        console.log('FormData entry', pair[0], '(value omitted for blob)');
+      }
+    }
     const response = await fetch(`${API_BASE_URL}/files/upload`, {
       method: 'POST',
       body: formData, // Don't set Content-Type, browser will set it with boundary

@@ -83,7 +83,7 @@ public class ReplyController {
      * @return The created reply
      */
     @PostMapping
-    public ResponseEntity<Reply> createReply(@RequestBody Map<String, Object> requestBody) {
+    public ResponseEntity<ReplyDTO> createReply(@RequestBody Map<String, Object> requestBody) {
         // LOG INPUT
         System.out.println("📥 ReplyController.createReply() - Request body: " + requestBody);
 
@@ -136,7 +136,27 @@ public class ReplyController {
             Reply savedReply = replyRepository.save(reply);
             System.out.println("✅ Reply saved successfully: " + savedReply.getId());
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedReply);
+            // Build DTO to return attachments and evidence URLs together with reply
+            ReplyDTO dto = ReplyDTO.fromEntity(savedReply);
+
+            // Load attachments and evidence URLs for this reply and attach to DTO
+            try {
+                var attachments = attachmentRepository.findByReplyId(savedReply.getId())
+                        .stream().map(AttachmentDTO::fromEntity).toList();
+                dto.setAttachments(attachments);
+            } catch (Exception ex) {
+                System.err.println("⚠️ Warning: failed to load attachments for reply " + savedReply.getId() + " - " + ex.getMessage());
+            }
+
+            try {
+                var urls = evidenceUrlRepository.findByReplyId(savedReply.getId())
+                        .stream().map(EvidenceUrlDTO::fromEntity).toList();
+                dto.setEvidenceUrls(urls);
+            } catch (Exception ex) {
+                System.err.println("⚠️ Warning: failed to load evidence URLs for reply " + savedReply.getId() + " - " + ex.getMessage());
+            }
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
         } catch (Exception e) {
             System.err.println("❌ Error creating reply: " + e.getMessage());
             e.printStackTrace();

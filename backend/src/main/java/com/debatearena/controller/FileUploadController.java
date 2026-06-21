@@ -106,14 +106,17 @@ public class FileUploadController {
     )
     public ResponseEntity<?> uploadFile(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(required = false) UUID questionId,
-            @RequestParam(required = false) UUID replyId,
+            @RequestParam(required = false) String questionId,
+            @RequestParam(required = false) String replyId,
             @RequestParam(required = false) String uploadedBy
     ) {
 
         try {
+            // Defensive logging to help diagnose issues where replyId may be missing or sent as the string "null"
+            logger.info("uploadFile called: questionId='{}' replyId='{}' uploadedBy='{}' filename='{}'", questionId, replyId, uploadedBy, file != null ? file.getOriginalFilename() : "(none)");
+
             // Validation
-            if (file.isEmpty()) {
+            if (file == null || file.isEmpty()) {
                 return ResponseEntity.badRequest().body("File is empty");
             }
 
@@ -121,11 +124,31 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body("File size exceeds maximum allowed: " + maxFileSize + " bytes");
             }
 
-            if (questionId == null && replyId == null) {
+            // Normalize incoming id strings - treat literal "null"/"undefined"/blank as not provided
+            UUID qId = null;
+            UUID rId = null;
+
+            if (questionId != null && !questionId.trim().isEmpty() && !"null".equalsIgnoreCase(questionId) && !"undefined".equalsIgnoreCase(questionId)) {
+                try {
+                    qId = UUID.fromString(questionId.trim());
+                } catch (IllegalArgumentException iae) {
+                    return ResponseEntity.badRequest().body("Invalid questionId: " + questionId);
+                }
+            }
+
+            if (replyId != null && !replyId.trim().isEmpty() && !"null".equalsIgnoreCase(replyId) && !"undefined".equalsIgnoreCase(replyId)) {
+                try {
+                    rId = UUID.fromString(replyId.trim());
+                } catch (IllegalArgumentException iae) {
+                    return ResponseEntity.badRequest().body("Invalid replyId: " + replyId);
+                }
+            }
+
+            if (qId == null && rId == null) {
                 return ResponseEntity.badRequest().body("Either questionId or replyId must be provided");
             }
 
-            if (questionId != null && replyId != null) {
+            if (qId != null && rId != null) {
                 return ResponseEntity.badRequest().body("Cannot attach to both question and reply");
             }
 
@@ -145,13 +168,17 @@ public class FileUploadController {
             attachment.setUploadedBy(uploadedBy != null ? uploadedBy : "Anonymous");
 
             // Set parent (question or reply)
-            if (questionId != null) {
-                Question question = questionRepository.findById(questionId)
-                        .orElseThrow(() -> new RuntimeException("Question not found: " + questionId));
+            // Make final copies for use inside lambda expressions (lambdas require captured vars to be final/effectively final)
+            final UUID qLookup = qId;
+            final UUID rLookup = rId;
+
+            if (qLookup != null) {
+                Question question = questionRepository.findById(qLookup)
+                        .orElseThrow(() -> new RuntimeException("Question not found: " + qLookup));
                 attachment.setQuestion(question);
             } else {
-                Reply reply = replyRepository.findById(replyId)
-                        .orElseThrow(() -> new RuntimeException("Reply not found: " + replyId));
+                Reply reply = replyRepository.findById(rLookup)
+                        .orElseThrow(() -> new RuntimeException("Reply not found: " + rLookup));
                 attachment.setReply(reply);
             }
 
