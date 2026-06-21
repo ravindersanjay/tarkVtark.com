@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * =====================================================================
@@ -128,7 +130,7 @@ public class ReplyController {
             reply.setSide(requestBody.get("side").toString());
             reply.setAuthor(requestBody.get("author") != null ? requestBody.get("author").toString() : "Anonymous");
             reply.setDepth(requestBody.get("depth") != null ? Integer.parseInt(requestBody.get("depth").toString()) : 0);
-            reply.setUniqueId(requestBody.get("uniqueId") != null ? requestBody.get("uniqueId").toString() : null);
+            reply.setUniqueId(requestBody.get("uniqueId") != null ? requestBody.get("uniqueId").toString() : generateUniqueId("r"));
             reply.setVotesUp(0);
             reply.setVotesDown(0);
 
@@ -246,6 +248,18 @@ public class ReplyController {
      */
     public static class VoteRequest {
         public String voteType; // "up" or "down"
+    }
+
+    // Helper: format timestamp as DD.MM.YYYY.HH.mm.ss.SSS
+    private static String formatTimestampForId(LocalDateTime dateTime) {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy.HH.mm.ss.SSS");
+        return dateTime.format(fmt);
+    }
+
+    private static String generateUniqueId(String prefix) {
+        String ts = formatTimestampForId(LocalDateTime.now());
+        int suffix = (int) (Math.random() * 1000);
+        return prefix + ts + "-" + suffix;
     }
 }
 
