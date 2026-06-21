@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>DebateManch - Realistic Debate Tree Demo</title>
+<style>
+body{margin:0;font-family:Segoe UI;background:#0d1117;color:#c9d1d9}
+.header{padding:15px 20px;background:#111827;border-bottom:1px solid #30363d}
+.topic{font-size:24px;font-weight:bold}
+.container{display:flex;height:calc(100vh - 70px)}
+.sidebar{width:350px;background:#161b22;border-right:1px solid #30363d;overflow:auto;padding:15px}
+.content{flex:1;padding:20px;overflow:auto}
+.node{padding:8px;border-radius:6px;margin:4px 0;cursor:pointer}
+.node:hover{background:#21262d}
+.active{background:#1f6feb33;border-left:3px solid #58a6ff}
+.card{background:#1c2128;padding:18px;border-radius:8px;border:1px solid #30363d;margin-bottom:15px}
+.pro{border-left:5px solid #238636}
+.con{border-left:5px solid #da3633}
+.children .card{cursor:pointer}
+.small{font-size:12px;color:#8b949e}
+</style>
+</head>
+<body>
+
+<div class="header">
+<div class="topic">Should facial coverings (such as the burka) be allowed in all public spaces?</div>
+<div class="small">Realistic Debate Tree Demo for DebateManch</div>
+</div>
+
+<div class="container">
+<div class="sidebar">
+<h3>Debate Map</h3>
+<div id="tree"></div>
+</div>
+
+<div class="content">
+<div id="current"></div>
+<h3>Counter Arguments / Replies</h3>
+<div id="children" class="children"></div>
+</div>
+</div>
+
+<script>
+const debate = {
+ id:"root",
+ title:"Main Topic",
+ body:"Should facial coverings (such as the burka) be allowed in all public spaces?",
+ stance:"PRO",
+ children:[
+ {
+  id:"religious",
+  title:"Religious Freedom",
+  body:"Citizens should be free to practice their religion and wear religious attire.",
+  stance:"PRO",
+  children:[
+   {
+    id:"personal_choice",
+    title:"Personal Choice",
+    body:"The state should not dictate what adults choose to wear.",
+    stance:"PRO",
+    children:[
+      {id:"human_rights",title:"Human Rights",body:"Freedom of expression and religion are protected rights.",stance:"PRO",children:[]},
+      {id:"coercion",title:"Counter: Family Pressure",body:"Choice may not always be voluntary due to social pressure.",stance:"CON",children:[
+        {id:"education",title:"Education Not Ban",body:"Support education and empowerment rather than banning clothing.",stance:"PRO",children:[]}
+      ]}
+    ]
+   },
+   {
+    id:"minority",
+    title:"Minority Protection",
+    body:"Democracies should protect minority practices even if unpopular.",
+    stance:"PRO",
+    children:[]
+   }
+  ]
+ },
+ {
+  id:"safety",
+  title:"Public Safety",
+  body:"Authorities may need facial visibility for identification.",
+  stance:"CON",
+  children:[
+   {
+    id:"identification",
+    title:"Identification Requirements",
+    body:"Police and security staff need to identify individuals.",
+    stance:"CON",
+    children:[
+      {id:"limited_checks",title:"Limited Verification",body:"Identity checks can happen when required without a blanket ban.",stance:"PRO",children:[]}
+    ]
+   },
+   {
+    id:"cameras",
+    title:"Security Cameras",
+    body:"Facial recognition systems become less effective.",
+    stance:"CON",
+    children:[
+      {id:"privacy",title:"Privacy Concerns",body:"Facial recognition itself raises privacy issues.",stance:"PRO",children:[]},
+      {id:"alternative_security",title:"Alternative Security",body:"Security can rely on IDs, badges and checkpoints.",stance:"PRO",children:[]}
+    ]
+   }
+  ]
+ },
+ {
+  id:"integration",
+  title:"Social Integration",
+  body:"Facial visibility helps communication and trust.",
+  stance:"CON",
+  children:[
+   {
+    id:"communication",
+    title:"Communication",
+    body:"Facial expressions help people understand each other.",
+    stance:"CON",
+    children:[
+      {id:"other_forms",title:"Other Forms of Communication",body:"People communicate effectively through voice and gestures too.",stance:"PRO",children:[]}
+    ]
+   },
+   {
+    id:"trust",
+    title:"Community Trust",
+    body:"Visible faces may increase social trust.",
+    stance:"CON",
+    children:[
+      {id:"tolerance",title:"Tolerance in Diverse Societies",body:"Trust should not depend on appearance or clothing.",stance:"PRO",children:[]}
+    ]
+   }
+  ]
+ }
+ ]
+};
+
+let current=debate;
+
+function renderTree(node,depth=0){
+ let active=current.id===node.id?'active':'';
+ let html=`<div class="node ${active}" style="margin-left:${depth*15}px" onclick="selectNode('${node.id}')">
+ <strong>${node.title}</strong><br>
+ <span class='small'>${node.body.substring(0,50)}...</span>
+ </div>`;
+ node.children.forEach(c=>html+=renderTree(c,depth+1));
+ return html;
+}
+
+function find(node,id){
+ if(node.id===id) return node;
+ for(let c of node.children){
+   let r=find(c,id);
+   if(r) return r;
+ }
+ return null;
+}
+
+function selectNode(id){
+ current=find(debate,id);
+ render();
+}
+
+function render(){
+ document.getElementById('tree').innerHTML=renderTree(debate);
+
+ document.getElementById('current').innerHTML=`
+ <div class="card ${current.stance==='PRO'?'pro':'con'}">
+ <h2>${current.title}</h2>
+ <p>${current.body}</p>
+ </div>`;
+
+ document.getElementById('children').innerHTML=
+ current.children.length?
+ current.children.map(c=>`
+ <div class="card ${c.stance==='PRO'?'pro':'con'}" onclick="selectNode('${c.id}')">
+ <h3>${c.title}</h3>
+ <p>${c.body}</p>
+ </div>`).join('')
+ : '<div class="small">No further replies in this branch.</div>';
+}
+
+render();
+</script>
+</body>
+</html>

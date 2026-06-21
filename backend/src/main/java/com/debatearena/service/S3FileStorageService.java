@@ -216,22 +216,49 @@ public class S3FileStorageService implements FileStorageService {
      * @return The S3 key
      */
     private String extractKeyFromUrl(String fileUrl) {
-        try {
-            // URL format: https://s3.amazonaws.com/bucket-name/key
-            if (fileUrl == null || fileUrl.isEmpty()) {
-                return null;
-            }
+        if (fileUrl == null || fileUrl.isEmpty()) {
+            return null;
+        }
 
-            // Find the bucket name and extract key after it
+        // If it's already a plain key (no scheme), return as-is
+        if (!fileUrl.startsWith("http://") && !fileUrl.startsWith("https://") && !fileUrl.contains("/")) {
+            return fileUrl;
+        }
+
+        try {
+            java.net.URI uri = java.net.URI.create(fileUrl);
+            String path = uri.getPath(); // e.g. "/bucket-name/attachments/uuid.png" or "/attachments/uuid.png"
+            if (path != null) {
+                if (path.startsWith("/")) {
+                    path = path.substring(1);
+                }
+                // If path starts with the bucket name, strip it
+                if (bucketName != null && !bucketName.isBlank() && path.startsWith(bucketName + "/")) {
+                    path = path.substring(bucketName.length() + 1);
+                }
+                return path;
+            }
+        } catch (IllegalArgumentException e) {
+            logger.debug("Not a URI, falling back to heuristic extraction for key: {}", fileUrl);
+            // fall through to heuristic
+        }
+
+        // Heuristic: try splitting at bucketName + '/'
+        try {
             String[] parts = fileUrl.split(bucketName + "/");
             if (parts.length > 1) {
                 return parts[1];
             }
-            return null;
-        } catch (Exception e) {
-            logger.error("Error extracting S3 key from URL", e);
-            return null;
+        } catch (Exception ignored) {
         }
+
+        // As a last resort, if the URL contains '/', take the substring after the first occurrence of bucketName or the last '/'
+        int lastSlash = fileUrl.lastIndexOf('/');
+        if (lastSlash >= 0 && lastSlash < fileUrl.length() - 1) {
+            return fileUrl.substring(lastSlash + 1);
+        }
+
+        return null;
     }
 
     /**
