@@ -10,10 +10,9 @@ URL should contain full url in browser including debatetopic - FIXED
 user login using gmail - FIXED
 attachment are stored with incorrect image url -fixed
 logo needs to be changed -FIXED
-spam protection -pending
-u
-reply count should be updated when user reply -pending
-
+toast message instead of alert -pending
+show/hide n replies count on each post should be displayed when user reply -pending
+fix the voting logic -pending
 
 
 DATABASE:
@@ -24,7 +23,8 @@ DATABASE:
 others:
 three environments - pending
 folder for attachments in local and S3 - pending - high priority
-
+spam protection -pending
+ddos protection -pending
 
 README:
 Frontend:

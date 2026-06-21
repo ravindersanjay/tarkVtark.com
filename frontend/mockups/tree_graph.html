@@ -1,0 +1,94 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>DebateManch V3 - Knowledge Graph</title>
+<style>
+body{margin:0;background:#0d1117;color:#c9d1d9;font-family:Segoe UI}
+.header{padding:15px 20px;background:#111827;border-bottom:1px solid #30363d}
+.graph{position:relative;height:90vh;overflow:auto}
+.node{
+ position:absolute;
+ width:220px;
+ background:#1c2128;
+ border:1px solid #30363d;
+ border-radius:10px;
+ padding:12px;
+ cursor:pointer;
+}
+.node:hover{border-color:#58a6ff}
+.pro{border-left:5px solid #238636}
+.con{border-left:5px solid #da3633}
+.center{background:#17202a}
+svg{position:absolute;top:0;left:0;width:1600px;height:1000px;pointer-events:none}
+line{stroke:#4b5563;stroke-width:2}
+.label{font-size:12px;color:#8b949e}
+</style>
+</head>
+<body>
+<div class="header">
+<h2>DebateManch V3 — Knowledge Graph Style</h2>
+<div>Arguments can support multiple branches instead of being locked into a tree.</div>
+</div>
+
+<div class="graph">
+<svg>
+<line x1="760" y1="130" x2="450" y2="250"/>
+<line x1="760" y1="130" x2="760" y2="250"/>
+<line x1="760" y1="130" x2="1080" y2="250"/>
+
+<line x1="450" y1="310" x2="250" y2="470"/>
+<line x1="450" y1="310" x2="650" y2="470"/>
+
+<line x1="760" y1="310" x2="650" y2="470"/>
+<line x1="760" y1="310" x2="900" y2="470"/>
+
+<line x1="1080" y1="310" x2="900" y2="470"/>
+<line x1="1080" y1="310" x2="1280" y2="470"/>
+
+<line x1="650" y1="530" x2="900" y2="470"/>
+</svg>
+
+<div class="node center" style="left:650px;top:70px">
+<b>Main Debate</b><br>
+Should facial coverings be allowed in all public spaces?
+</div>
+
+<div class="node pro" style="left:340px;top:250px">
+<b>Religious Freedom</b><br>
+Freedom to practice religion.
+</div>
+
+<div class="node con" style="left:650px;top:250px">
+<b>Public Safety</b><br>
+Need visibility for identification.
+</div>
+
+<div class="node con" style="left:970px;top:250px">
+<b>Social Integration</b><br>
+Face visibility improves communication.
+</div>
+
+<div class="node pro" style="left:140px;top:470px">
+<b>Human Rights</b><br>
+Supports Religious Freedom.
+</div>
+
+<div class="node pro" style="left:540px;top:470px">
+<b>Personal Choice</b><br>
+Supports both Religious Freedom and challenges Safety concerns.
+</div>
+
+<div class="node con" style="left:800px;top:470px">
+<b>Identification Requirements</b><br>
+Supports Public Safety and Social Integration arguments.
+</div>
+
+<div class="node pro" style="left:1170px;top:470px">
+<b>Tolerance</b><br>
+Challenges Social Integration concerns.
+</div>
+</div>
+</body>
+</html>

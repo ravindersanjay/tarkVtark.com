@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mirror Debate — PRO ⇄ CON</title>
+<style>
+  /* ---------- Design tokens ---------- */
+  :root{
+    --bg:#f4f6fb;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --line:#e2e8f0;
+    --pro:#0d9488;        /* teal */
+    --pro-soft:#ccfbf1;
+    --pro-ink:#0f766e;
+    --con:#e11d48;        /* rose */
+    --con-soft:#ffe4e6;
+    --con-ink:#be123c;
+    --card:#ffffff;
+    --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.05);
+    --radius:14px;
+    --gutter:64px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- Topic header ---------- */
+  .topbar{
+    background:linear-gradient(180deg,#0b1220,#111a2e);
+    color:#fff;
+    padding:18px 24px 16px;
+    border-bottom:3px solid #1e293b;
+  }
+  .topbar .eyebrow{
+    font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    color:#93c5fd;font-weight:700;margin-bottom:6px;
+  }
+  .topbar h1{font-size:22px;margin:0 0 6px;font-weight:800;}
+  .topbar p{margin:0;color:#cbd5e1;font-size:13.5px;max-width:920px;}
+  .stats{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap;}
+  .stat{font-size:12.5px;color:#cbd5e1;}
+  .stat b{color:#fff;font-size:15px;}
+
+  /* ---------- Sticky column headers ---------- */
+  .colhead{
+    position:sticky;top:0;z-index:30;
+    display:grid;grid-template-columns:1fr var(--gutter) 1fr;
+    background:rgba(244,246,251,.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    box-shadow:0 4px 10px rgba(15,23,42,.04);
+  }
+  .colhead .side{
+    display:flex;align-items:center;gap:10px;
+    padding:12px 22px;font-weight:800;font-size:15px;letter-spacing:.02em;
+  }
+  .colhead .side.pro{color:var(--pro-ink);justify-content:flex-end;}
+  .colhead .side.con{color:var(--con-ink);justify-content:flex-start;}
+  .dot{width:11px;height:11px;border-radius:50%;}
+  .dot.pro{background:var(--pro);}
+  .dot.con{background:var(--con);}
+  .colhead .mid{
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;color:var(--muted);font-weight:700;
+  }
+
+  /* ---------- Helper banner ---------- */
+  .hint{
+    display:flex;align-items:center;gap:10px;justify-content:center;
+    background:#eef2ff;color:#3730a3;font-size:12.5px;
+    padding:8px 16px;border-bottom:1px solid #e0e7ff;
+  }
+  .hint kbd{background:#fff;border:1px solid #c7d2fe;border-radius:6px;padding:1px 7px;font-size:11px;}
+
+  /* ---------- Debate list ---------- */
+  .board{padding:14px 8px 80px;max-width:1280px;margin:0 auto;}
+
+  .row{
+    display:grid;
+    grid-template-columns:1fr var(--gutter) 1fr;
+    align-items:stretch;
+    margin:2px 0;
+  }
+  .col{display:flex;padding:6px 16px;min-width:0;}
+  .col.left{justify-content:flex-end;}
+  .col.right{justify-content:flex-start;}
+  .gutter{
+    display:flex;align-items:center;justify-content:center;
+    position:relative;color:#cbd5e1;font-size:18px;font-weight:700;
+  }
+  .gutter.linked{color:#94a3b8;}
+  .gutter::before{
+    content:"";position:absolute;top:0;bottom:0;width:2px;
+    background:repeating-linear-gradient(#e2e8f0 0 6px, transparent 6px 12px);
+  }
+  /* single "Answer" arrow pointing toward the reply */
+  .answer-arrow{
+    position:relative;z-index:1;display:flex;align-items:center;gap:4px;
+    background:var(--bg);padding:3px 2px;
+    font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:#94a3b8;
+  }
+  .answer-arrow.pro{color:var(--pro-ink);flex-direction:row;}
+  .answer-arrow.con{color:var(--con-ink);flex-direction:row;}
+  .answer-arrow .glyph{font-size:16px;line-height:1;}
+  .answer-arrow .lbl{white-space:nowrap;}
+
+  /* ---------- Cards ---------- */
+  .card{
+    width:100%;max-width:96%;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:12px 14px;
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .card.active.pro{border-left:5px solid var(--pro);}
+  .card.active.con{border-right:5px solid var(--con);}
+  .card.active:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(15,23,42,.10);}
+
+  .card.ghost{
+    background:#fbfdff;border-style:dashed;box-shadow:none;opacity:.85;
+    max-width:90%;
+  }
+  .card.ghost .ctext{color:var(--muted);font-size:13px;}
+
+  .meta{display:flex;align-items:center;gap:8px;margin-bottom:7px;flex-wrap:wrap;}
+  .avatar{
+    width:26px;height:26px;border-radius:50%;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;color:#fff;
+  }
+  .avatar.pro{background:var(--pro);}
+  .avatar.con{background:var(--con);}
+  .author{font-weight:700;font-size:13px;}
+  .tag{
+    font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    padding:2px 8px;border-radius:999px;
+  }
+  .tag.pro{background:var(--pro-soft);color:var(--pro-ink);}
+  .tag.con{background:var(--con-soft);color:var(--con-ink);}
+  .depth{
+    margin-left:auto;font-size:10.5px;font-weight:700;color:var(--muted);
+    background:#f1f5f9;border-radius:6px;padding:2px 7px;
+  }
+  .ctext-label{font-size:10.5px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+  .body{font-size:14px;color:var(--ink);}
+
+  .foot{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .btn{
+    border:1px solid var(--line);background:#fff;color:var(--ink);
+    font-size:12px;font-weight:600;border-radius:8px;padding:5px 10px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;transition:background .12s,border-color .12s;
+  }
+  .btn:hover{background:#f8fafc;}
+  .btn.reply.pro:hover{border-color:var(--pro);color:var(--pro-ink);}
+  .btn.reply.con:hover{border-color:var(--con);color:var(--con-ink);}
+  .btn.toggle{font-weight:700;}
+  .btn.toggle .chev{transition:transform .15s;}
+  .btn.toggle.open .chev{transform:rotate(90deg);}
+
+  /* placeholder for opening statements */
+  .placeholder{
+    width:100%;max-width:90%;border:1px dashed var(--line);border-radius:var(--radius);
+    padding:14px;color:#94a3b8;font-size:12.5px;background:#fbfdff;display:flex;align-items:center;
+  }
+  .placeholder.left{justify-content:flex-end;text-align:right;}
+
+  /* ---------- Composer ---------- */
+  .composer{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
+  .composer textarea{
+    width:100%;border:1px solid var(--line);border-radius:10px;padding:9px;
+    font-family:inherit;font-size:13px;resize:vertical;min-height:62px;outline:none;
+  }
+  .composer textarea:focus{border-color:#94a3b8;}
+  .composer .side-note{font-size:11.5px;margin-bottom:6px;font-weight:600;}
+  .composer .side-note.pro{color:var(--pro-ink);}
+  .composer .side-note.con{color:var(--con-ink);}
+  .composer .actions{display:flex;gap:8px;margin-top:8px;}
+  .btn.primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .btn.primary:hover{background:#1e293b;}
+
+  .new-badge{animation:flash 1.6s ease;}
+  @keyframes flash{0%{box-shadow:0 0 0 3px rgba(99,102,241,.45);}100%{box-shadow:var(--shadow);}}
+
+  @media(max-width:760px){
+    :root{--gutter:34px;}
+    .col{padding:5px 8px;}
+    .card{max-width:99%;}
+  }
+
+/* View Switcher */
+.view-switcher{margin-top:12px;display:flex;gap:8px;align-items:center}
+  .view-btn{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:8px;padding:6px 12px;cursor:pointer;font-weight:600}
+  .view-btn.active{outline:2px solid #93c5fd}
+  body.right-view .card{border-radius:6px;box-shadow:none}
+  body.right-view .topbar{background:#334155}
+  body.face-view .card{border-radius:14px}
+
+  /* Questions shown under header */
+  .questions{max-width:1280px;margin:12px auto;padding:0 16px}
+  .question-item{padding:10px 12px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,transparent,rgba(255,255,255,.2));}
+  .question-item .meta{margin:0;padding:0}
+  .search-box{margin-left:auto}
+
+</style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="eyebrow"><h1>AI vs Human</h1></div>
+    <h1>AI vs Human</h1>
+    <p>Every argument sits in the same row as its direct reply — PRO on the left, CON on the right — so each point is answered <b>face&nbsp;to&nbsp;face</b>. Replies always appear on the opposite side and stay aligned at every depth.</p>
+    
+    <div class="view-switcher">
+      <button class="view-btn active" onclick="switchView('face')">Face to Face view</button>
+      <button class="view-btn" onclick="switchView('right')">Replies on Right view</button>
+      <div class="search-box">
+        <input id="searchBox" placeholder="Search posts or tags" style="padding:8px;border-radius:8px;border:1px solid var(--line);min-width:220px;" />
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="statTotal">0</b> arguments</div>
+      <div class="stat"><b>5</b> PRO debaters</div>
+      <div class="stat"><b>5</b> CON debaters</div>
+      <div class="stat"><b id="statDepth">3</b> levels deep</div>
+    </div>
+  </header>
+
+  <div class="colhead">
+    <div class="side pro"><span>PRO — In Favor</span><span class="dot pro"></span></div>
+    <div class="mid">⇄</div>
+    <div class="side con"><span class="dot con"></span><span>CON — Against</span></div>
+  </div>
+
+  <div class="questions" id="questionsList" aria-live="polite"></div>
+
+  <div class="hint">
+    <span>Tip: click <kbd>▸ replies</kbd> to expand a thread, or <kbd>↩ Reply</kbd> — your reply lands on the opposite side, in the same row.</span>
+  </div>
+
+  <main class="board" id="board"></main>
+
+<script>
+/* =========================================================
+   DATA MODEL
+   Each node: { id, side:'pro'|'con', depth, parentId, author, text, children:[] }
+   A node always replies to its parent, which lives on the OPPOSITE side.
+   ========================================================= */
+let idCounter = 0;
+
+const AUTHORS = {
+  pro:["Ava","Ben","Chloe","Diego","Esha"],
+  con:["Frank","Grace","Hassan","Ines","Jon"]
+};
+
+const POOL = {
+  pro:[
+    "Government oversight is essential to keep powerful AI systems safe and accountable to the public.",
+    "Clear rules protect citizens from biased, opaque automated decisions that affect their lives.",
+    "Independent audits would catch harmful or unsafe models before they ever reach the public.",
+    "Regulation creates a level playing field and builds the public trust AI desperately needs.",
+    "Safety standards transformed aviation and medicine — high-impact AI deserves the same rigor."
+  ],
+  con:[
+    "Premature regulation slows innovation and pushes the best talent and research overseas.",
+    "Existing consumer-protection, privacy and liability laws already cover most real AI harms.",
+    "Rigid rules simply can't keep pace with how fast this technology actually evolves.",
+    "Heavy compliance costs crush startups and entrench the very incumbents we worry about.",
+    "Flexible industry standards adapt far faster than slow-moving government mandates."
+  ]
+};
+
+const LEADIN = ["", "In response — ", "But consider: ", "Pushing back — "];
+
+const opposite = s => s === "pro" ? "con" : "pro";
+
+function pickAuthor(side, i){ return AUTHORS[side][i % 5] + " (" + side.toUpperCase() + ")"; }
+function pickText(side, depth, i){
+  return LEADIN[Math.min(depth, LEADIN.length-1)] + POOL[side][(i + depth) % 5];
+}
+
+function makeNode(side, depth, parentId, levelsLeft, seed){
+  const node = {
+    id: ++idCounter,
+    side, depth, parentId,
+    author: pickAuthor(side, seed),
+    text: pickText(side, depth, seed),
+    votes: 0,
+    uid: formatTimestamp(new Date()),
+    tags: [],
+    children: []
+  };
+  if(levelsLeft > 0){
+    for(let i=0;i<5;i++){
+      node.children.push(makeNode(opposite(side), depth+1, node.id, levelsLeft-1, i));
+    }
+  }
+  return node;
+}
+
+function formatTimestamp(d){
+  const pad = (n, z=2)=>String(n).padStart(z,'0');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return pad(d.getDate()) + '.' + months[d.getMonth()] + '.' + d.getFullYear() + '.' + pad(d.getHours()) + '.' + pad(d.getMinutes()) + '.' + pad(d.getSeconds()) + '.' + String(d.getMilliseconds()).padStart(3,'0');
+}
+
+/* Two opening statements (one per side), each a full 5 × 5 × 5 tree */
+const ROOTS = [
+  makeNode("pro", 0, null, 3, 0),
+  makeNode("con", 0, null, 3, 2)
+];
+
+/* ----- collapse state: collapse everything below the first reply level ----- */
+const collapsed = new Set();
+let nodeIndex = {};
+(function indexAndCollapse(list){
+  list.forEach(n=>{
+    nodeIndex[n.id] = n;
+    if(n.depth >= 1 && n.children.length) collapsed.add(n.id);
+    indexAndCollapse(n.children);
+  });
+})(ROOTS);
+
+let openComposerId = null;
+let editModeId = null;
+
+// Questions collection: each question has { id, title, tags, uid, attachments:[], roots: [nodes...] }
+const initialQuestionTitle = document.querySelector('.topbar h1') ? document.querySelector('.topbar h1').textContent : 'Debate Topic';
+const QUESTIONS = [ { id: 1, title: initialQuestionTitle, tags: [], uid: formatTimestamp(new Date()), attachments: [], roots: ROOTS } ];
+
+// remove the original H1 header text to let each question own its header
+const h1 = document.querySelector('.topbar h1'); if(h1) h1.remove();
+
+/* =========================================================
+   RENDERING
+   ========================================================= */
+const mainBoard = document.getElementById("board");
+let renderTarget = mainBoard; // where rows are appended by walk()
+
+function initials(author){
+  const name = author.split(" ")[0];
+  return name.slice(0,2).toUpperCase();
+}
+
+function avatar(side, author){
+  const a = document.createElement("div");
+  a.className = "avatar " + side;
+  a.textContent = initials(author);
+  return a;
+}
+
+function activeCard(node){
+  const card = document.createElement("div");
+  card.className = "card active " + node.side;
+  const indent = Math.min(node.depth,4) * 16;
+  if(node.side === "pro") card.style.marginLeft = indent + "px";
+  else card.style.marginRight = indent + "px";
+
+  // meta
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.appendChild(avatar(node.side, node.author));
+  const author = document.createElement("span");
+  author.className = "author"; author.textContent = node.author.split(" (")[0];
+  const tag = document.createElement("span");
+  tag.className = "tag " + node.side; tag.textContent = node.side;
+  const depth = document.createElement("span");
+  depth.className = "depth"; depth.textContent = node.depth === 0 ? "Opening" : "L" + node.depth;
+  const pid = document.createElement("span"); pid.className = "depth"; pid.style.marginLeft = "8px"; pid.title = "Unique post id"; pid.textContent = node.uid;
+  meta.append(author, tag, depth);
+  meta.appendChild(pid);
+
+  const body = document.createElement("div");
+  body.className = "body"; body.textContent = node.text;
+  // show tags if present
+  if(node.tags && node.tags.length){
+    const tagline = document.createElement('div'); tagline.style.marginTop='8px'; tagline.style.fontSize='12px'; tagline.style.color='var(--muted)';
+    tagline.textContent = 'Tags: ' + node.tags.join(', ');
+    body.appendChild(tagline);
+  }
+  // show attachments if present
+  if(node.attachments && node.attachments.length){
+    const att = document.createElement('div'); att.style.marginTop='8px'; att.style.fontSize='13px'; att.style.color='var(--muted)';
+    att.innerHTML = 'Attachments: ' + node.attachments.map(a=>'<span>'+a+'</span>').join(', ');
+    body.appendChild(att);
+  }
+  if(node.evidenceUrl){
+    const ev = document.createElement('div'); ev.style.marginTop='6px'; ev.innerHTML = 'Evidence: <a href="'+node.evidenceUrl+'" target="_blank">'+node.evidenceUrl+'</a>'; ev.style.fontSize='13px'; ev.style.color='var(--muted)'; body.appendChild(ev);
+  }
+
+  const foot = document.createElement("div");
+  foot.className = "foot";
+
+  // Vote controls
+  const voteWrap = document.createElement('div'); voteWrap.style.display='inline-flex'; voteWrap.style.alignItems='center'; voteWrap.style.gap='6px';
+  const up = document.createElement('button'); up.className='btn'; up.textContent='▲'; up.title='Upvote';
+  const down = document.createElement('button'); down.className='btn'; down.textContent='▼'; down.title='Downvote';
+  const vcount = document.createElement('div'); vcount.style.minWidth='34px'; vcount.style.textAlign='center'; vcount.style.fontWeight='800'; vcount.textContent = node.votes || 0;
+  up.onclick = (e)=>{ e.stopPropagation(); vote(node.id, +1, vcount); };
+  down.onclick = (e)=>{ e.stopPropagation(); vote(node.id, -1, vcount); };
+  voteWrap.append(up, vcount, down);
+  foot.appendChild(voteWrap);
+
+  const replyBtn = document.createElement("button");
+  replyBtn.className = "btn reply " + node.side;
+  replyBtn.innerHTML = "↩ Reply on " + opposite(node.side).toUpperCase();
+  replyBtn.onclick = (e) => { e.stopPropagation(); openComposerId = (openComposerId === node.id ? null : node.id); editModeId = null; render(); };
+  foot.appendChild(replyBtn);
+
+  if(node.children.length){
+    const isOpen = !collapsed.has(node.id);
+    const toggle = document.createElement("button");
+    toggle.className = "btn toggle" + (isOpen ? " open" : "");
+    toggle.innerHTML = '<span class="chev">▸</span> ' + node.children.length + (isOpen ? " replies (hide)" : " replies");
+    toggle.onclick = () => {
+      if(collapsed.has(node.id)) collapsed.delete(node.id); else collapsed.add(node.id);
+      render();
+    };
+    foot.appendChild(toggle);
+  }
+
+  card.append(meta, body, foot);
+
+  // inline composer
+  if(openComposerId === node.id){
+    const replySide = opposite(node.side);
+    const comp = document.createElement("div");
+    comp.className = "composer";
+    const note = document.createElement("div");
+    note.className = "side-note " + replySide;
+    note.textContent = "Your reply will post as " + replySide.toUpperCase() + " — appearing on the " + (replySide==="pro"?"LEFT":"RIGHT") + ", in its own row opposite this card.";
+    const ta = document.createElement("textarea");
+    ta.placeholder = "Write your " + replySide.toUpperCase() + " response…";
+    ta.setAttribute('data-node-id', node.id);
+    const actions = document.createElement("div");
+    actions.className = "actions";
+
+    // evidence inputs (create before send handler so handler can read them)
+    const fileInput = document.createElement('input'); fileInput.type='file'; fileInput.accept='image/*,video/*,audio/*'; fileInput.multiple=true; fileInput.style.marginTop='8px';
+    const urlInput = document.createElement('input'); urlInput.type='url'; urlInput.placeholder='Evidence URL (optional)'; urlInput.style.marginTop='8px'; urlInput.style.width='100%';
+    const preview = document.createElement('div'); preview.style.marginTop='8px';
+    fileInput.addEventListener('change', ()=>{
+      preview.innerHTML='';
+      Array.from(fileInput.files).forEach(f=>{
+        const item = document.createElement('div'); item.style.fontSize='12px'; item.textContent = f.name + ' (' + Math.round(f.size/1024) + 'KB)';
+        if(f.type.startsWith('image/')){
+          const img = document.createElement('img'); img.style.maxWidth='120px'; img.style.display='block'; img.style.marginTop='6px';
+          const rdr = new FileReader(); rdr.onload = e=> img.src=e.target.result; rdr.readAsDataURL(f);
+          item.appendChild(img);
+        }
+        preview.appendChild(item);
+      });
+    });
+    urlInput.addEventListener('input', ()=>{
+      const v = urlInput.value.trim();
+      let link = preview.querySelector('.ev-url');
+      if(!v){ if(link) link.remove(); return; }
+      if(!link){ link = document.createElement('div'); link.className='ev-url'; link.style.marginTop='6px'; preview.appendChild(link); }
+      link.innerHTML = 'URL evidence: <a href="'+v+'" target="_blank">'+v+'</a>';
+    });
+
+    const send = document.createElement("button");
+    send.className = "btn primary"; send.textContent = "Post reply";
+    send.disabled = true;
+    send.onclick = () => {
+      const txt = ta.value.trim();
+      if(!txt) { ta.focus(); return; }
+      const attachments = Array.from(fileInput.files).map(f=>f.name);
+      const evidenceUrl = urlInput.value.trim() || null;
+      addReply(node, txt, attachments, evidenceUrl);
+    };
+    ta.addEventListener('input',()=>{ send.disabled = !ta.value.trim(); });
+    const cancel = document.createElement("button");
+    cancel.className = "btn"; cancel.textContent = "Cancel";
+    cancel.onclick = () => { openComposerId = null; render(); };
+    actions.append(send, cancel);
+    comp.append(note, ta, fileInput, urlInput, preview, actions);
+    card.appendChild(comp);
+    setTimeout(()=>ta.focus(),0);
+  }
+
+  // Edit and Copy actions for the card
+  const editBtn = document.createElement('button'); editBtn.className='btn'; editBtn.textContent='Edit';
+  editBtn.onclick = (e)=>{ e.stopPropagation(); editModeId = (editModeId === node.id ? null : node.id); openComposerId = null; render(); };
+  const copyBtn = document.createElement('button'); copyBtn.className='btn'; copyBtn.textContent='Copy';
+  copyBtn.onclick = (e)=>{ e.stopPropagation(); navigator.clipboard?.writeText(node.text).then(()=>{ copyBtn.textContent='Copied'; setTimeout(()=>copyBtn.textContent='Copy',900); }); };
+  foot.appendChild(editBtn); foot.appendChild(copyBtn);
+
+  // edit composer (inline edit)
+  if(editModeId === node.id){
+    const em = document.createElement('div'); em.className='composer';
+    const ta2 = document.createElement('textarea'); ta2.value = node.text; ta2.style.minHeight='72px';
+    const save = document.createElement('button'); save.className='btn primary'; save.textContent='Save';
+    save.onclick = ()=>{ const t=ta2.value.trim(); if(!t) return ta2.focus(); node.text = t; editModeId = null; render(); };
+    const c2 = document.createElement('button'); c2.className='btn'; c2.textContent='Cancel'; c2.onclick=()=>{ editModeId=null; render(); };
+    em.append(ta2, document.createElement('div')); const acts=document.createElement('div'); acts.className='actions'; acts.append(save,c2); em.appendChild(acts);
+    card.appendChild(em); setTimeout(()=>ta2.focus(),0);
+  }
+
+  return card;
+}
+
+function ghostCard(parent){
+  const card = document.createElement("div");
+  card.className = "card ghost " + parent.side;
+  const indent = Math.min(parent.depth,4) * 16;
+  if(parent.side === "pro") card.style.marginLeft = indent + "px";
+  else card.style.marginRight = indent + "px";
+
+  const label = document.createElement("div");
+  label.className = "ctext-label";
+  label.textContent = "↳ in reply to · " + parent.author.split(" (")[0] + " · " + (parent.depth===0?"Opening":"L"+parent.depth);
+
+  const txt = document.createElement("div");
+  txt.className = "ctext";
+  txt.textContent = parent.text;
+
+  card.append(label, txt);
+  return card;
+}
+
+function placeholder(side){
+  const p = document.createElement("div");
+  p.className = "placeholder " + (side==="pro"?"left":"right");
+  p.textContent = side==="pro"
+    ? "Opening statement — awaiting a rebuttal"
+    : "Opening statement — awaiting a rebuttal";
+  return p;
+}
+
+function rowEl(node, parent){
+  const row = document.createElement("div");
+  row.className = "row";
+  row.id = "node-" + node.id;
+
+  const left = document.createElement("div"); left.className = "col left";
+  const gutter = document.createElement("div"); gutter.className = "gutter" + (parent ? " linked" : "");
+  if(parent){
+    // single arrow pointing toward the answer (the active card / reply)
+    const arrow = document.createElement("div");
+    arrow.className = "answer-arrow " + node.side;
+    // node.side === "pro" => answer is on the LEFT, point left; else point right
+    arrow.innerHTML = node.side === "pro"
+      ? '<span class="glyph">⟵</span><span class="lbl">Answer</span>'
+      : '<span class="lbl">Answer</span><span class="glyph">⟶</span>';
+    gutter.appendChild(arrow);
+  } else {
+    gutter.textContent = "·";
+  }
+  const right = document.createElement("div"); right.className = "col right";
+
+  if(node.side === "pro"){
+    left.appendChild(activeCard(node));
+    right.appendChild(parent ? ghostCard(parent) : placeholder("con"));
+  } else {
+    right.appendChild(activeCard(node));
+    left.appendChild(parent ? ghostCard(parent) : placeholder("pro"));
+  }
+
+  row.append(left, gutter, right);
+  return row;
+}
+
+function walk(node, parent){
+  renderTarget.appendChild(rowEl(node, parent));
+  if(!collapsed.has(node.id)){
+    node.children.forEach(c => walk(c, node));
+  }
+}
+
+function countNodes(list){
+  let n = 0;
+  list.forEach(x => { n += 1 + countNodes(x.children); });
+  return n;
+}
+
+function render(){
+  mainBoard.innerHTML = "";
+  // render each question as its own section with header and its own board
+  QUESTIONS.forEach(q=>{
+    const qWrap = document.createElement('div'); qWrap.className='question-wrap';
+    // header for question (highlighted)
+    const qhdr = document.createElement('div'); qhdr.className='card active pro'; qhdr.style.margin='10px 0 12px'; qhdr.style.padding='12px 16px';
+    const qtitle = document.createElement('div'); qtitle.style.fontWeight='800'; qtitle.style.fontSize='16px'; qtitle.textContent = q.title;
+    const qmeta = document.createElement('div'); qmeta.style.fontSize='12px'; qmeta.style.color='var(--muted)'; qmeta.textContent = q.uid + (q.tags && q.tags.length ? ' · Tags: '+q.tags.join(', ') : '');
+    qhdr.append(qtitle, qmeta);
+    if(q.attachments && q.attachments.length){
+      const att = document.createElement('div'); att.style.marginTop='6px'; att.style.fontSize='13px'; att.style.color='var(--muted)'; att.textContent = 'Attachments: ' + q.attachments.join(', ');
+      qhdr.appendChild(att);
+    }
+    qWrap.appendChild(qhdr);
+
+    // question-specific board
+    const qBoard = document.createElement('div'); qBoard.className='board'; qBoard.style.padding='6px 8px 36px';
+    renderTarget = qBoard;
+    q.roots.forEach(r => walk(r, null));
+    renderTarget = mainBoard; // reset
+
+    mainBoard.appendChild(qWrap);
+    mainBoard.appendChild(qBoard);
+  });
+
+  // update stats (total across questions)
+  const totalCount = QUESTIONS.reduce((s,q)=> s + countNodes(q.roots),0);
+  document.getElementById("statTotal").textContent = totalCount;
+  
+  // bottom composer form
+  let bottom = document.getElementById('bottom-form');
+  if(!bottom){
+    bottom = document.createElement('div'); bottom.id='bottom-form'; bottom.style.marginTop='28px';
+    bottom.innerHTML = `
+      <div class="card" style="padding:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <h3 style="margin:0;font-size:16px">Add a Question</h3>
+          <div style="font-size:13px;color:var(--muted)">Page title: <span id="pageTitleDisplay"></span></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px;">
+          <label style="display:flex;gap:6px;align-items:center"><input type="radio" name="newSide" value="pro" /> PRO</label>
+          <label style="display:flex;gap:6px;align-items:center"><input type="radio" name="newSide" value="con" /> CON</label>
+          <input id="newTags" placeholder="Tags (comma separated)" style="flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;" />
+        </div>
+        <textarea id="newText" placeholder="Enter your question or opening statement…" style="width:100%;min-height:80px;padding:10px;border:1px solid var(--line);border-radius:8px;"></textarea>
+        <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+          <input id="newFile" type="file" accept="image/*,video/*,audio/*" multiple />
+          <input id="newUrl" type="url" placeholder="Evidence URL (optional)" style="flex:1;padding:8px;border:1px solid var(--line);border-radius:8px;" />
+          <button id="newSubmit" class="btn primary" disabled>Submit</button>
+        </div>
+        <div id="newPreview" style="margin-top:8px;font-size:13px;color:var(--muted);"></div>
+      </div>
+    `;
+    board.parentNode.appendChild(bottom);
+
+    const newText = bottom.querySelector('#newText'); const newSubmit = bottom.querySelector('#newSubmit'); const newFile = bottom.querySelector('#newFile'); const newUrl = bottom.querySelector('#newUrl'); const newPreview = bottom.querySelector('#newPreview');
+    const pageTitleDisplay = bottom.querySelector('#pageTitleDisplay');
+    pageTitleDisplay.textContent = document.querySelector('.topbar h1').textContent || document.title;
+    // set document title to debate header
+    document.title = document.querySelector('.topbar h1').textContent || document.title;
+    newText.addEventListener('input', ()=> newSubmit.disabled = !newText.value.trim());
+    newFile.addEventListener('change', ()=>{
+      newPreview.innerHTML = Array.from(newFile.files).map(f=>`<div>${f.name} (${Math.round(f.size/1024)} KB)</div>`).join('');
+    });
+    newUrl.addEventListener('input', ()=>{ newPreview.querySelector('.ev-url')?.remove(); if(newUrl.value.trim()){ const d=document.createElement('div'); d.className='ev-url'; d.innerHTML='URL evidence: <a href="'+newUrl.value+'" target="_blank">'+newUrl.value+'</a>'; newPreview.appendChild(d); } });
+    newSubmit.addEventListener('click', ()=>{
+      const sideInput = bottom.querySelector('input[name="newSide"]:checked');
+      const side = sideInput ? sideInput.value : null;
+      const text = newText.value.trim(); const tags = bottom.querySelector('#newTags').value.split(',').map(s=>s.trim()).filter(Boolean);
+      if(!side) { alert('Please choose PRO or CON'); return; }
+      if(!text) return newText.focus();
+      // create opening node for the new question
+      const fileNames = Array.from(newFile.files).map(f=>f.name);
+      const opening = {
+        id: ++idCounter,
+        side,
+        depth:0,
+        parentId:null,
+        author: 'You ('+side.toUpperCase()+')',
+        text,
+        votes:0,
+        uid: formatTimestamp(new Date()),
+        tags: tags,
+        attachments: fileNames,
+        evidenceUrl: newUrl.value.trim() || null,
+        children: []
+      };
+      const q = {
+        id: ++idCounter,
+        title: text,
+        tags: tags,
+        uid: formatTimestamp(new Date()),
+        attachments: fileNames,
+        roots: [opening]
+      };
+      QUESTIONS.unshift(q);
+      // index the opening node
+      nodeIndex[opening.id] = opening;
+      newText.value=''; newPreview.innerHTML=''; newFile.value=''; newUrl.value=''; newSubmit.disabled=true; render();
+      setTimeout(()=>{ const el=document.getElementById('node-'+opening.id); if(el) el.scrollIntoView({behavior:'smooth', block:'center'}); },200);
+    });
+    setTimeout(()=> bottom.querySelector('#newText').focus(),50);
+  }
+}
+
+// voting helper
+function vote(nodeId, delta, vcountEl){
+  const node = nodeIndex[nodeId]; if(!node) return; node.votes = (node.votes||0) + delta; if(vcountEl) vcountEl.textContent = node.votes; else render();
+}
+
+// load saved view (default: face)
+window.addEventListener('load',()=>{ const saved=localStorage.getItem('debateView')||'face'; document.body.classList.add(saved+'-view'); });
+// search handler
+document.addEventListener('DOMContentLoaded', ()=>{
+  const sb = document.getElementById('searchBox'); if(!sb) return;
+  sb.addEventListener('input', ()=>{
+    const q = sb.value.trim().toLowerCase();
+    document.querySelectorAll('.row').forEach(r=>{
+      const id = r.id.replace('node-',''); const node = nodeIndex[id];
+      if(!node) return;
+      const hay = (node.text+' '+(node.tags||[]).join(' ')+' '+(node.uid||'')).toLowerCase();
+      r.style.display = (!q || hay.includes(q)) ? '' : 'none';
+    });
+  });
+});
+
+// add question display under title
+function addQuestionToHeader(q){
+  const list = document.getElementById('questionsList'); if(!list) return;
+  const item = document.createElement('div'); item.className='question-item';
+  const h = document.createElement('div'); h.style.fontWeight='700'; h.textContent = q.text;
+  const meta = document.createElement('div'); meta.style.fontSize='12px'; meta.style.color='var(--muted)'; meta.textContent = q.uid + (q.tags && q.tags.length ? ' · Tags: '+q.tags.join(', ') : '');
+  item.append(h, meta);
+  list.insertBefore(item, list.firstChild);
+}
+
+// expose switchView mapping
+function switchView(view){ document.body.classList.remove('old-view','new-view','face-view','right-view'); document.body.classList.add(view+'-view'); document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active')); const btn = [...document.querySelectorAll('.view-btn')].find(b=>b.textContent.toLowerCase().includes(view)); if(btn) btn.classList.add('active'); localStorage.setItem('debateView',view); }
+/* =========================================================
+   INTERACTION
+   ========================================================= */
+function addReply(parentNode, text, attachments=[], evidenceUrl=null){
+  const side = opposite(parentNode.side);
+  const child = {
+    id: ++idCounter,
+    side,
+    depth: parentNode.depth + 1,
+    parentId: parentNode.id,
+    author: "You (" + side.toUpperCase() + ")",
+    text,
+    votes:0,
+    uid: formatTimestamp(new Date()),
+    tags: [],
+    attachments: attachments || [],
+    evidenceUrl: evidenceUrl,
+    children: []
+  };
+  parentNode.children.unshift(child);   // newest reply on top
+  nodeIndex[child.id] = child;
+  collapsed.delete(parentNode.id);       // make sure the thread is open
+  openComposerId = null;
+  render();
+  const el = document.getElementById("node-" + child.id);
+  if(el){
+    const active = el.querySelector(".card.active");
+    if(active) active.classList.add("new-badge");
+    el.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+}
+
+render();
+</script>
+</body>
+</html>
