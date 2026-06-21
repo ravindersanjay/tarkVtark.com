@@ -3,6 +3,7 @@ package com.debatearena.controller;
 import com.debatearena.dto.AttachmentDTO;
 import com.debatearena.dto.EvidenceUrlDTO;
 import com.debatearena.dto.QuestionDTO;
+import com.debatearena.dto.ReplyDTO;
 import com.debatearena.model.DebateTopic;
 import com.debatearena.model.Question;
 import com.debatearena.model.Reply;
@@ -86,6 +87,35 @@ public class QuestionController {
                     .map(EvidenceUrlDTO::fromEntity)
                     .toList();
                 dto.setEvidenceUrls(evidenceUrls);
+
+                // Populate attachments and evidence URLs for each reply (including nested replies)
+                var populate = new java.util.function.Consumer<ReplyDTO>() {
+                    @Override
+                    public void accept(ReplyDTO rDto) {
+                        try {
+                            var atts = attachmentRepository.findByReplyId(rDto.getId())
+                                    .stream().map(AttachmentDTO::fromEntity).toList();
+                            rDto.setAttachments(atts);
+                        } catch (Exception ex) {
+                            // log and continue
+                            System.err.println("⚠️ Failed to load attachments for reply " + rDto.getId() + " - " + ex.getMessage());
+                        }
+
+                        try {
+                            var evs = evidenceUrlRepository.findByReplyId(rDto.getId())
+                                    .stream().map(EvidenceUrlDTO::fromEntity).toList();
+                            rDto.setEvidenceUrls(evs);
+                        } catch (Exception ex) {
+                            System.err.println("⚠️ Failed to load evidence URLs for reply " + rDto.getId() + " - " + ex.getMessage());
+                        }
+
+                        if (rDto.getReplies() != null) {
+                            rDto.getReplies().forEach(this);
+                        }
+                    }
+                };
+
+                if (dto.getReplies() != null) dto.getReplies().forEach(populate);
 
                 System.out.println("  Question " + q.getId() + " has " + attachments.size() + " attachments and " + evidenceUrls.size() + " evidence URLs");
 

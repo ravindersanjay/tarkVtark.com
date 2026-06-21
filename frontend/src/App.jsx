@@ -554,6 +554,13 @@ const App = ({ topic }) => {
 
       // Save to backend API
       const savedReply = await repliesAPI.create(replyData);
+      console.log('💬 Saved reply:', savedReply);
+
+      // Defensive check: ensure we have an id before attempting uploads
+      if (!savedReply || !savedReply.id) {
+        alert('Reply saved but no ID returned from server; cannot attach files.');
+        return;
+      }
 
       // Upload files to backend (instead of converting to base64)
       const uploadedAttachments = [];
@@ -576,15 +583,33 @@ const App = ({ topic }) => {
         }
       }
 
-      // Prepare evidence for local display
+      // Fetch canonical attachments and evidence URLs from backend to ensure UI shows saved data
+      let canonicalAttachments = uploadedAttachments;
+      let canonicalUrls = urls;
+
+      try {
+        const atts = await filesAPI.getAttachments(null, savedReply.id);
+        if (Array.isArray(atts)) canonicalAttachments = atts;
+      } catch (err) {
+        console.warn('Could not fetch attachments after upload, falling back to uploaded attachments:', err.message);
+      }
+
+      try {
+        const evs = await filesAPI.getEvidenceUrls(null, savedReply.id);
+        if (Array.isArray(evs)) canonicalUrls = evs.map(e => e.url);
+      } catch (err) {
+        console.warn('Could not fetch evidence URLs after upload, falling back to provided urls:', err.message);
+      }
+
+      // Prepare evidence for local display (use canonical data from backend)
       const evidence = {
-        files: uploadedAttachments.map(att => ({
+        files: (canonicalAttachments || []).map(att => ({
           name: att.fileName,
           size: att.fileSize,
           type: att.fileType,
           dataUrl: att.storageUrl  // Use storageUrl instead of base64
         })),
-        urls: urls
+        urls: canonicalUrls || []
       };
 
       // Add evidence to the saved reply for immediate display
