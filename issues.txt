@@ -9,8 +9,10 @@ USER:
 URL should contain full url in browser including debatetopic - FIXED
 user login using gmail - FIXED
 attachment are stored with incorrect image url -fixed
-logo needs to be changed -pending
+logo needs to be changed -FIXED
 spam protection -pending
+u
+reply count should be updated when user reply -pending
 
 
 
@@ -22,3 +24,48 @@ DATABASE:
 others:
 three environments - pending
 folder for attachments in local and S3 - pending - high priority
+
+
+README:
+Frontend:
+http://localhost:5173/
+
+Backend: 
+http://localhost:8080/api/v1/topics
+
+DB : 
+pgadmin >>  	myLocalServers >> Neon-Postges>> neondb >> schemas >> tables >> debate_topics
+
+--------------follow below and deploy ----------
+
+How to configure for Supabase
+Set environment variables (examples):
+SPRING_DATASOURCE_URL=jdbc:postgresql://db.<project>.supabase.co:5432/postgres?sslmode=require</project>
+SPRING_DATASOURCE_USERNAME=<db_user>
+SPRING_DATASOURCE_PASSWORD=<db_password>
+FILE_PROVIDER=supabase
+SUPABASE_URL=https://<project>.supabase.co</project>
+SUPABASE_SERVICE_ROLE_KEY=<your_service_role_key> (server-side secret!)
+SUPABASE_STORAGE_BUCKET=attachments
+If your bucket is private and you want downloads to work, you can:
+Keep storing the public URL only for public buckets.
+Or store the object path and expose a signed URL endpoint (Supabase supports signed URLs or you can proxy through the backend).
+Notes and caveats
+The implementation sends the whole file in memory to build the multipart body. For very large files you may want to stream the upload (use streaming multipart or S3 approach).
+The upload returns a public URL assuming the bucket is public. If the bucket is private, you should store the path (not a public URL) and generate signed URLs for clients when needed.
+The Supabase service_role key must remain server-side only — never expose to the browser.
+Next steps I can take for you
+Add streaming upload logic for large files.
+Add support for returning signed URLs when bucket is private.
+Add integration tests (optional) to upload + delete using a test Supabase project (you’d need to provide service_role key or allow me to run tests against a mock).
+Update documentation (README) with environment variables and example curl commands.
+Do you want me to:
+(A) Add signed URL generation for private buckets, or
+(B) Add streaming multipart upload to avoid buffering large files in memory, or
+(C) Add an integration test (requires test credentials), or
+(D) Finish — you're ready to deploy?
+Tell me which and I'll proceed.
+
+
+
+

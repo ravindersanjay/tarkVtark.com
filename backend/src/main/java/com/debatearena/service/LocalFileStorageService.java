@@ -91,16 +91,46 @@ public class LocalFileStorageService implements FileStorageService {
      */
     @Override
     public void deleteFile(String fileUrl) throws IOException {
-        // Extract filename from URL
-        String fileName = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+        // Attempt to resolve the full relative path first (handles folder prefixes like "attachments/uuid.png")
+        Path candidate = Paths.get(uploadDir).resolve(fileUrl);
+
+        if (Files.exists(candidate)) {
+            Files.delete(candidate);
+            logger.info("File deleted successfully: {}", candidate.toAbsolutePath());
+            return;
+        }
+
+        // If that didn't work, try interpreting fileUrl as a URL and extract the path segment
+        String fileName = fileUrl;
+        try {
+            java.net.URI uri = java.net.URI.create(fileUrl);
+            String path = uri.getPath(); // e.g. "/attachments/uuid.png" or "/bucket/attachments/uuid.png"
+            if (path != null) {
+                if (path.startsWith("/")) {
+                    path = path.substring(1);
+                }
+                // prefer the whole path (may include folders)
+                fileName = path;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // not a URI, fall back to provided value
+        }
 
         Path filePath = Paths.get(uploadDir).resolve(fileName);
 
         if (Files.exists(filePath)) {
             Files.delete(filePath);
-            logger.info("File deleted successfully: {}", fileName);
+            logger.info("File deleted successfully: {}", filePath.toAbsolutePath());
         } else {
-            logger.warn("File not found for deletion: {}", fileName);
+            // last resort: try filename only (old behavior)
+            String lastSeg = fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+            Path lastPath = Paths.get(uploadDir).resolve(lastSeg);
+            if (Files.exists(lastPath)) {
+                Files.delete(lastPath);
+                logger.info("File deleted successfully (last-seg): {}", lastPath.toAbsolutePath());
+            } else {
+                logger.warn("File not found for deletion: {} (tried full, path and last-seg)", fileUrl);
+            }
         }
     }
 

@@ -90,7 +90,25 @@ public class R2FileStorageService implements FileStorageService {
 
     @Override
     public void deleteFile(String fileUrl) throws IOException {
-        String key = fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
+        String key = fileUrl;
+
+        // If fileUrl looks like a full URL, extract the path and remove a leading bucket segment if present
+        try {
+            URI uri = URI.create(fileUrl);
+            String path = uri.getPath(); // e.g. "/bucket/attachments/uuid.png" or "/attachments/uuid.png"
+            if (path != null) {
+                if (path.startsWith("/")) {
+                    path = path.substring(1);
+                }
+                // If path starts with bucket name, strip it
+                if (bucket != null && !bucket.isBlank() && path.startsWith(bucket + "/")) {
+                    path = path.substring(bucket.length() + 1);
+                }
+                key = path;
+            }
+        } catch (IllegalArgumentException ignored) {
+            // not a URI, keep fileUrl as-is (assume it's already a key)
+        }
 
         DeleteObjectRequest delReq = DeleteObjectRequest.builder()
                 .bucket(bucket)
