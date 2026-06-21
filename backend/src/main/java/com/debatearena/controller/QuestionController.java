@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * =====================================================================
@@ -176,7 +178,7 @@ public class QuestionController {
         question.setTag(requestBody.get("tag") != null ? requestBody.get("tag").toString() : null);
         question.setSide(requestBody.get("side").toString());
         question.setAuthor(requestBody.get("author") != null ? requestBody.get("author").toString() : "Anonymous");
-        question.setUniqueId(requestBody.get("uniqueId") != null ? requestBody.get("uniqueId").toString() : null);
+        question.setUniqueId(requestBody.get("uniqueId") != null ? requestBody.get("uniqueId").toString() : generateUniqueId("q"));
         question.setVotesUp(0);
         question.setVotesDown(0);
 
@@ -267,6 +269,18 @@ public class QuestionController {
      */
     public static class VoteRequest {
         public String voteType; // "up" or "down"
+    }
+
+    // Helper: format timestamp as DD.MM.YYYY.HH.mm.ss.SSS
+    private static String formatTimestampForId(LocalDateTime dateTime) {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy.HH.mm.ss.SSS");
+        return dateTime.format(fmt);
+    }
+
+    private static String generateUniqueId(String prefix) {
+        String ts = formatTimestampForId(LocalDateTime.now());
+        int suffix = (int) (Math.random() * 1000);
+        return prefix + ts + "-" + suffix;
     }
 }
 

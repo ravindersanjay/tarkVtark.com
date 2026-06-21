@@ -415,7 +415,7 @@ const App = ({ topic }) => {
         tag,
         side: newQuestionSide,
         author: user?.name || 'Anonymous',
-        uniqueId: `q-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+        uniqueId: generateUniqueId('q')
       });
 
       // Upload files to backend (instead of converting to base64)
