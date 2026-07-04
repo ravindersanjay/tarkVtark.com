@@ -12,6 +12,7 @@ import com.debatearena.repository.QuestionRepository;
 import com.debatearena.repository.ReplyRepository;
 import com.debatearena.service.FileStorageService;
 import com.debatearena.service.S3FileStorageService;
+import com.debatearena.util.FileUrlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +67,9 @@ public class FileUploadController {
 
     @Autowired
     private FileStorageService fileStorageService;
+
+    @Autowired
+    private FileUrlUtil fileUrlUtil;
 
     // Use FileStorageService abstraction. The actual implementation (local or s3)
     // is provided by Spring based on `file.provider` property.
@@ -182,12 +186,20 @@ public class FileUploadController {
                 attachment.setReply(reply);
             }
 
-            // Save to database
-            Attachment saved = attachmentRepository.save(attachment);
+             // Save to database
+             Attachment saved = attachmentRepository.save(attachment);
 
-            logger.info("File uploaded successfully: {} ({})", file.getOriginalFilename(), saved.getId());
+             logger.info("File uploaded successfully: {} ({})", file.getOriginalFilename(), saved.getId());
 
-            return ResponseEntity.ok(AttachmentDTO.fromEntity(saved));
+             // Create response DTO, ensuring local file URLs include the port
+             AttachmentDTO dto = AttachmentDTO.fromEntity(saved);
+             if ("local".equalsIgnoreCase(provider)) {
+                 // Override the URL for local files to ensure it includes port
+                 String properUrl = fileUrlUtil.constructFileUrl(storageUrl);
+                 dto.setStorageUrl(properUrl);
+             }
+             
+             return ResponseEntity.ok(dto);
 
         } catch (IOException e) {
             logger.error("File upload failed", e);
@@ -441,8 +453,21 @@ public class FileUploadController {
                 return ResponseEntity.badRequest().body("Either questionId or replyId must be provided");
             }
 
-            List<AttachmentDTO> dtos = attachments.stream()
-                    .map(AttachmentDTO::fromEntity)
+             List<AttachmentDTO> dtos = attachments.stream()
+                     .map(AttachmentDTO::fromEntity)
+                     .map(dto -> {
+                         // Ensure local file URLs include the port
+                         if ("local".equalsIgnoreCase(dto.getStorageProvider())) {
+                             // Extract storageKey from the database
+                             // The storageUrl is stored as just the key (e.g., attachments/uuid.jpg)
+                             String storageKey = dto.getStorageUrl();
+                             // If it doesn't have :port yet, reconstruct it
+                             if (storageKey != null && !storageKey.contains("://")) {
+                                 dto.setStorageUrl(fileUrlUtil.constructFileUrl(storageKey));
+                             }
+                         }
+                         return dto;
+                     })
                     .collect(Collectors.toList());
 
             return ResponseEntity.ok(dtos);

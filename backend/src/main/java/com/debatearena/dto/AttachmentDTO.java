@@ -49,24 +49,28 @@ public class AttachmentDTO {
         String storage = attachment.getStorageUrl();
         if (provider != null && provider.equalsIgnoreCase("local")) {
             try {
-                String baseUrl = System.getProperty("file.base-url");
-                if (baseUrl == null || baseUrl.isEmpty()) baseUrl = System.getenv().getOrDefault("FILE_BASE_URL", "http://localhost");
-                String port = System.getProperty("server.port");
-                if ((port == null || port.isEmpty()) && System.getenv().get("SERVER_PORT") != null) port = System.getenv("SERVER_PORT");
-                // ensure baseUrl contains protocol
+                // Get configuration from environment (Spring properties converted to env vars)
+                String baseUrl = System.getenv("FILE_BASE_URL");
+                if (baseUrl == null || baseUrl.isEmpty()) baseUrl = "http://localhost";
+                
+                String port = System.getenv("SERVER_PORT");
+                if (port == null || port.isEmpty()) port = "8080";
+                
+                // Clean up baseUrl: remove trailing slashes and any existing port
+                baseUrl = baseUrl.replaceAll("/+$", "").replaceAll(":\\d+$", "");
+                
+                // Ensure baseUrl contains protocol
                 if (!baseUrl.startsWith("http")) baseUrl = "http://" + baseUrl;
-                String host = baseUrl;
-                // append port if baseUrl doesn't already include it
-                if (port != null && !port.isEmpty() && !baseUrl.matches(".*:\\d+$")) {
-                    host = baseUrl + ":" + port;
-                }
-                // Use the internal storage key endpoint for downloads (no encoded slashes)
+                
+                // Construct complete URL with port: http://localhost:8080/api/v1/files/key/attachments/uuid.jpg
                 String storageKey = attachment.getStorageUrl(); // e.g., attachments/uuid.jpg
-                dto.setStorageUrl(host + "/api/v1/files/key/" + storageKey);
+                dto.setStorageUrl(baseUrl + ":" + port + "/api/v1/files/key/" + storageKey);
             } catch (Exception e) {
+                // Fallback if anything goes wrong
                 dto.setStorageUrl(storage);
             }
         } else {
+            // Remote providers return full URLs
             dto.setStorageUrl(storage);
         }
         dto.setStorageProvider(attachment.getStorageProvider());
@@ -94,4 +98,3 @@ public class AttachmentDTO {
         return String.format("%.1f %s", size, units[unitIndex]);
     }
 }
-

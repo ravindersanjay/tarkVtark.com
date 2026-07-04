@@ -69,3 +69,14 @@ Tell me which and I'll proceed.
 
 
 
+To run in dev env
+frontend :
+PS D:\temp\tarkVtark.com\frontend> npm run dev
+http://localhost:5173/
+
+
+backend : http://localhost:8080/api/v1/topics
+PS D:\temp\tarkVtark.com\backend> mvn spring-boot:run  ==> when single profile is used
+PS D:\temp\tarkVtark.com\backend>  mvn spring-boot:run -D"spring-boot.run.profiles=dev"  ==> when multiple profiles are used
+
+

@@ -1,4 +1,7 @@
 spring:
+  config:
+    import:
+
   application:
     name: debate-arena-backend
 

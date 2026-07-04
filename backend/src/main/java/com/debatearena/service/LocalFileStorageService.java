@@ -45,6 +45,9 @@ public class LocalFileStorageService implements FileStorageService {
     @Value("${file.base-url:http://localhost}")
     private String baseUrl;
 
+    @Value("${server.servlet.context-path:/api/v1}")
+    private String contextPath;
+
     /**
      * Upload a file to local storage
      */
@@ -81,7 +84,7 @@ public class LocalFileStorageService implements FileStorageService {
 
         logger.info("File uploaded successfully: {} ({} bytes)", filePath.toAbsolutePath(), file.getSize());
 
-        // Return storage key relative to uploadDir (e.g., attachments/uuid.png or uuid.png)
+        // Construct the storage key relative to uploadDir (e.g., attachments/uuid.png or uuid.png)
         String storageKey = (safeFolder.isEmpty() ? "" : safeFolder + "/") + fileName;
         return storageKey;
     }
