@@ -80,3 +80,10 @@ PS D:\temp\tarkVtark.com\backend> mvn spring-boot:run  ==> when single profile i
 PS D:\temp\tarkVtark.com\backend>  mvn spring-boot:run -D"spring-boot.run.profiles=dev"  ==> when multiple profiles are used
 
 
+------------ 4 July  best strategy for storage and db ----------------------
+
+✅ TECH_STACK_DOCUMENTATION_INDEX.md (navigation hub)
+✅ TECH_STACK_QUICK_REFERENCE.md (1-page summary)
+✅ TECH_STACK_COMPREHENSIVE_ANALYSIS.md (full analysis)
+✅ ATTACHMENT_STORAGE_LOCATION_ANALYSIS.md (storage clarity)
+✅ TECH_STACK_IMPLEMENTATION_GUIDE.md (step-by-step)
