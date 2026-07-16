@@ -68,6 +68,12 @@ aws:
     base-url: ${AWS_S3_BASE_URL:https://s3.amazonaws.com}
   region: ${AWS_REGION:us-east-1}
 
+# Supabase Storage Configuration (used when file.provider=supabase)
+supabase:
+  url: ${SUPABASE_URL:}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+  storage-bucket: ${SUPABASE_STORAGE_BUCKET:attachments}
+
 # Admin User Configuration - Loaded from environment variables
 admin:
   username: ${ADMIN_USERNAME:admin}

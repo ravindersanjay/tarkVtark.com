@@ -78,12 +78,18 @@ public class SupabaseFileStorageService implements FileStorageService {
 
         String uploadUrl = supabaseUrl.replaceAll("/+$", "") + "/storage/v1/object/" + bucket;
 
-        HttpRequest request = HttpRequest.newBuilder()
+        // Log the upload URL (non-sensitive) for debugging
+        logger.debug("Supabase upload URL: {}", uploadUrl);
+
+        HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(uploadUrl))
                 .header("Authorization", "Bearer " + serviceRoleKey)
+                // Supabase also accepts the service role key via the "apikey" header; include both to be safe
+                .header("apikey", serviceRoleKey)
                 .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                .POST(HttpRequest.BodyPublishers.ofByteArray(body))
-                .build();
+                .POST(HttpRequest.BodyPublishers.ofByteArray(body));
+
+        HttpRequest request = reqBuilder.build();
 
         try {
             HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -95,6 +101,38 @@ public class SupabaseFileStorageService implements FileStorageService {
                 return publicUrl;
             } else {
                 logger.error("Supabase upload failed (status={}): {}", status, resp.body());
+
+                // If we got a 404, try a couple of tolerant fallback URL patterns and log responses to help debugging
+                if (status == 404) {
+                    String alt1 = supabaseUrl.replaceAll("/+$", "") + "/object/" + bucket;
+                    String alt2 = supabaseUrl.replaceAll("/+$", "") + "/storage/object/" + bucket;
+                    logger.warn("Received 404 from Supabase. Trying fallback endpoints: {}, {}", alt1, alt2);
+
+                    for (String alt : new String[]{alt1, alt2}) {
+                        try {
+                            HttpRequest altReq = HttpRequest.newBuilder()
+                                    .uri(URI.create(alt))
+                                    .header("Authorization", "Bearer " + serviceRoleKey)
+                                    .header("apikey", serviceRoleKey)
+                                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                                    .POST(HttpRequest.BodyPublishers.ofByteArray(body))
+                                    .build();
+
+                            HttpResponse<String> altResp = httpClient.send(altReq, HttpResponse.BodyHandlers.ofString());
+                            int altStatus = altResp.statusCode();
+                            logger.warn("Fallback upload to {} returned status {}: {}", alt, altStatus, altResp.body());
+                            if (altStatus >= 200 && altStatus < 300) {
+                                String publicUrl = supabaseUrl.replaceAll("/+$", "") + "/storage/v1/object/public/" + bucket + "/" + path;
+                                logger.info("Supabase upload succeeded via fallback: {} -> {}", originalFilename, publicUrl);
+                                return publicUrl;
+                            }
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            logger.warn("Fallback upload interrupted", ie);
+                        }
+                    }
+                }
+
                 throw new IOException("Supabase upload failed: " + status + " " + resp.body());
             }
         } catch (InterruptedException e) {
