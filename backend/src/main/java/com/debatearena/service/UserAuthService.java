@@ -117,6 +117,10 @@ public class UserAuthService {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
+        System.out.println("====================================");
+        System.out.println("googleClientId = [" + googleClientId + "]");
+        System.out.println("audiences = " + audiences);
+        System.out.println("====================================");
 
         if (audiences.isEmpty()) {
             // Fallback to original behavior
@@ -134,11 +138,13 @@ public class UserAuthService {
 
         GoogleIdToken idToken = verifier.verify(idTokenString);
 
-        if (idToken != null) {
-            return idToken.getPayload();
+        if (idToken == null) {
+            System.out.println("❌ Google token verification FAILED");
+            return null;
         }
 
-        return null;
+        System.out.println("✅ Google token verification SUCCESS");
+        return idToken.getPayload();
     }
 
     /**
