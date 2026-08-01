@@ -36,6 +36,9 @@ public class SupabaseFileStorageService implements FileStorageService {
     @Value("${supabase.service-role-key:}")
     private String serviceRoleKey;
 
+    @Value("${supabase.anon-key:}")
+    private String anonKey;
+
     @Value("${supabase.storage-bucket:attachments}")
     private String bucket;
 
@@ -43,8 +46,10 @@ public class SupabaseFileStorageService implements FileStorageService {
 
     @Override
     public String uploadFile(MultipartFile file, String folder) throws IOException {
-        if (supabaseUrl == null || supabaseUrl.isBlank() || serviceRoleKey == null || serviceRoleKey.isBlank()) {
-            throw new IOException("Supabase storage is not configured (supabase.url or supabase.service-role-key missing)");
+        // Use anon key if available, otherwise fall back to service role key
+        String apiKey = (anonKey != null && !anonKey.isBlank()) ? anonKey : serviceRoleKey;
+        if (supabaseUrl == null || supabaseUrl.isBlank() || apiKey == null || apiKey.isBlank()) {
+            throw new IOException("Supabase storage is not configured (supabase.url or supabase.anon-key/supabase.service-role-key missing)");
         }
 
         String originalFilename = file.getOriginalFilename();
@@ -54,7 +59,8 @@ public class SupabaseFileStorageService implements FileStorageService {
         }
 
         String uniqueFileName = UUID.randomUUID().toString() + ext;
-        String path = (folder != null && !folder.isBlank()) ? folder.replaceAll("[^a-zA-Z0-9/_-]", "_") + "/" + uniqueFileName : uniqueFileName;
+        // For Supabase, don't prepend folder to path since the bucket name already serves as the folder
+        String path = uniqueFileName;
 
         // Build multipart/form-data body where filename contains the path
         String boundary = "----DebateArenaBoundary" + UUID.randomUUID().toString();
@@ -76,20 +82,32 @@ public class SupabaseFileStorageService implements FileStorageService {
 
         byte[] body = baos.toByteArray();
 
-        String uploadUrl = supabaseUrl.replaceAll("/+$", "") + "/storage/v1/object/" + bucket;
+        String uploadUrl = supabaseUrl.replaceAll("/+$", "") + "/storage/v1/object/" + bucket + "/" + path;
 
         // Log the upload URL (non-sensitive) for debugging
         logger.debug("Supabase upload URL: {}", uploadUrl);
 
         HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(uploadUrl))
-                .header("Authorization", "Bearer " + serviceRoleKey)
-                // Supabase also accepts the service role key via the "apikey" header; include both to be safe
-                .header("apikey", serviceRoleKey)
+                .header("Authorization", "Bearer " + apiKey)
+                // Supabase also accepts the key via the "apikey" header; include both to be safe
+                .header("apikey", apiKey)
                 .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                 .POST(HttpRequest.BodyPublishers.ofByteArray(body));
 
         HttpRequest request = reqBuilder.build();
+
+        // Log request details for debugging
+        logger.info("Ravinder Supabase upload request details:");
+        logger.info("  URL: {}", uploadUrl);
+        logger.info("  Method: POST");
+        logger.info("  Using key type: {}", (anonKey != null && !anonKey.isBlank()) ? "anon" : "service_role");
+        logger.info("  Authorization header: Bearer {}", apiKey);
+        logger.info("  apikey header: {}", apiKey);
+        logger.info("  Content-Type: multipart/form-data; boundary={}", boundary);
+        logger.info("  Body size: {} bytes", body.length);
+        logger.info("  Filename in path: {}", path);
+        logger.info("  Content-Disposition: form-data; name=\"file\"; filename=\"{}\"", path);
 
         try {
             HttpResponse<String> resp = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -104,8 +122,8 @@ public class SupabaseFileStorageService implements FileStorageService {
 
                 // If we got a 404, try a couple of tolerant fallback URL patterns and log responses to help debugging
                 if (status == 404) {
-                    String alt1 = supabaseUrl.replaceAll("/+$", "") + "/object/" + bucket;
-                    String alt2 = supabaseUrl.replaceAll("/+$", "") + "/storage/object/" + bucket;
+                    String alt1 = supabaseUrl.replaceAll("/+$", "") + "/object/" + bucket + "/" + path;
+                    String alt2 = supabaseUrl.replaceAll("/+$", "") + "/storage/object/" + bucket + "/" + path;
                     logger.warn("Received 404 from Supabase. Trying fallback endpoints: {}, {}", alt1, alt2);
 
                     for (String alt : new String[]{alt1, alt2}) {

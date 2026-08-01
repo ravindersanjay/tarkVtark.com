@@ -72,6 +72,7 @@ aws:
 supabase:
   url: ${SUPABASE_URL:}
   service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+  anon-key: ${SUPABASE_ANON_KEY:}
   storage-bucket: ${SUPABASE_STORAGE_BUCKET:attachments}
 
 # Admin User Configuration - Loaded from environment variables

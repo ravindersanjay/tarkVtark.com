@@ -114,6 +114,9 @@ public class DotenvConfig implements ApplicationContextInitializer<ConfigurableA
             System.out.println("📊 Database URL: " + (hasDbUrl ? "✓ Configured" : "✗ Missing"));
             System.out.println("📊 Database Username: " + (hasDbUser ? "✓ Configured" : "✗ Missing"));
             System.out.println("📊 Database Password: " + (hasDbPass ? "✓ Configured" : "✗ Missing"));
+            System.out.println("📊 FILE_PROVIDER: " + (dotenvMap.containsKey("FILE_PROVIDER") ? dotenvMap.get("FILE_PROVIDER") : "✗ Missing"));
+            System.out.println("📊 SUPABASE_URL: " + (dotenvMap.containsKey("SUPABASE_URL") ? "✓ Configured" : "✗ Missing"));
+            System.out.println("📊 SUPABASE_SERVICE_ROLE_KEY: " + (dotenvMap.containsKey("SUPABASE_SERVICE_ROLE_KEY") ? "✓ Configured" : "✗ Missing"));
 
             if (!hasDbUrl || !hasDbUser || !hasDbPass) {
                 System.err.println("⚠️ WARNING: Missing required database configuration!");
