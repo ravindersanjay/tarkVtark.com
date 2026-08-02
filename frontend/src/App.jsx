@@ -414,7 +414,7 @@ const App = ({ topic }) => {
         text,
         tag,
         side: newQuestionSide,
-        author: user?.name || 'Anonymous',
+        author: user?.email || 'Anonymous',
         uniqueId: generateUniqueId('q')
       });
 
@@ -422,7 +422,7 @@ const App = ({ topic }) => {
       const uploadedAttachments = [];
       for (const file of newQuestionFiles) {
         try {
-          const attachment = await filesAPI.upload(file, savedQuestion.id, null, user?.name || 'Anonymous');
+          const attachment = await filesAPI.upload(file, savedQuestion.id, null, user?.email || 'Anonymous');
           uploadedAttachments.push(attachment);
         } catch (err) {
           console.error('Failed to upload file:', file.name, err);
@@ -579,7 +579,7 @@ const App = ({ topic }) => {
       const replyData = {
         text: text.trim(),
         side: replySide,
-        author: user?.name || 'Anonymous',
+        author: user?.email || 'Anonymous',
         depth: isQuestion ? 0 : (parent.depth || 0) + 1,
         uniqueId: generateUniqueId('r')
       };
@@ -607,7 +607,7 @@ const App = ({ topic }) => {
       const uploadedAttachments = [];
       for (const file of files) {
         try {
-          const attachment = await filesAPI.upload(file, null, savedReply.id, user?.name || 'Anonymous');
+          const attachment = await filesAPI.upload(file, null, savedReply.id, user?.email || 'Anonymous');
           uploadedAttachments.push(attachment);
         } catch (err) {
           console.error('Failed to upload file:', file.name, err);
@@ -704,7 +704,7 @@ const App = ({ topic }) => {
       return;
     }
 
-    const key = id + '-' + (user?.name || 'Anonymous');
+    const key = id + '-' + (user?.email || 'Anonymous');
 
     // Check if user already voted on this post
     if (voteSet.current.has(key)) return alert('Already voted');
