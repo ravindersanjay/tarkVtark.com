@@ -102,6 +102,16 @@ const Card = ({
 
   // Check if current user is the author of this post
   const canEdit = user && node.author === user.email;
+  
+  // Debug logging
+  console.log('Card Edit Check:', {
+    nodeId: node.id,
+    nodeAuthor: node.author,
+    userEmail: user?.email,
+    userName: user?.name,
+    canEdit,
+    isAuthenticated: !!user
+  });
 
   // Handler to open evidence files in a new tab properly
   const openFileInNewTab = (file, e) => {
