@@ -484,6 +484,47 @@ const App = ({ topic }) => {
   };
 
   /**
+   * Handle editing a question or reply
+   *
+   * This function:
+   * 1. Finds the post in the debate tree
+   * 2. Calls the appropriate API to update the post
+   * 3. Updates the local state with the new text
+   * Requires authentication and user must be the author.
+   *
+   * @param {string} postId - The ID of the post to edit
+   * @param {string} newText - The new text content
+   * @param {string} type - 'question' or 'reply'
+   */
+  const handleEditPost = async (postId, newText, type) => {
+    try {
+      if (!isAuthenticated) {
+        alert('Please login to edit posts');
+        return;
+      }
+
+      // Call the appropriate API
+      if (type === 'question') {
+        await questionsAPI.update(postId, { text: newText });
+      } else {
+        await repliesAPI.update(postId, { text: newText });
+      }
+
+      // Update local state
+      const post = findPostById(postId, debateData.questions);
+      if (post) {
+        post.text = newText;
+        setDebateData({ ...debateData });
+      }
+
+      alert('Post updated successfully!');
+    } catch (err) {
+      console.error('Failed to edit post:', err);
+      alert('Failed to edit post. Please try again.');
+    }
+  };
+
+  /**
    * Post a reply to a question or another reply
    *
    * This function:
@@ -730,6 +771,8 @@ const App = ({ topic }) => {
       setEvidenceFiles={setEvidenceFiles}
       evidenceUrls={evidenceUrls}
       setEvidenceUrls={setEvidenceUrls}
+      user={user}
+      onEdit={handleEditPost}
     />
   );
 

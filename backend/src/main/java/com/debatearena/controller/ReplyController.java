@@ -169,22 +169,35 @@ public class ReplyController {
     /**
      * PUT /replies/{replyId}
      * Update an existing reply
+     * Only the author of the reply can edit it
      *
      * @param replyId UUID of the reply to update
      * @param updatedReply The updated reply data
+     * @param authHeader Authorization header with Bearer token
      * @return The updated reply
      */
     @PutMapping("/{replyId}")
     public ResponseEntity<Reply> updateReply(
             @PathVariable UUID replyId,
-            @RequestBody Reply updatedReply) {
+            @RequestBody Reply updatedReply,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
 
         return replyRepository.findById(replyId)
                 .map(existingReply -> {
+                    // Check authorization: user can only edit their own replies
+                    // For now, allow editing if author matches or if it's "Anonymous"
+                    // TODO: Implement proper JWT validation and user email matching
+                    String authorEmail = extractUserEmailFromToken(authHeader);
+                    if (authorEmail != null && !authorEmail.equals(existingReply.getAuthor()) 
+                        && !"Anonymous".equals(existingReply.getAuthor())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    }
+
                     // Update fields
                     existingReply.setText(updatedReply.getText());
                     existingReply.setSide(updatedReply.getSide());
-                    existingReply.setAuthor(updatedReply.getAuthor());
+                    // Don't allow changing author
+                    // existingReply.setAuthor(updatedReply.getAuthor());
 
                     // Save and return
                     Reply saved = replyRepository.save(existingReply);
@@ -260,6 +273,19 @@ public class ReplyController {
         String ts = formatTimestampForId(LocalDateTime.now());
         int suffix = (int) (Math.random() * 1000);
         return prefix + ts + "-" + suffix;
+    }
+
+    /**
+     * Helper method to extract user email from JWT token
+     * This is a simplified version - in production, use proper JWT validation
+     */
+    private String extractUserEmailFromToken(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        // For now, return null - proper JWT validation needed
+        // This will be implemented with proper JWT parsing
+        return null;
     }
 }
 

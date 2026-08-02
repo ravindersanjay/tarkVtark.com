@@ -51,10 +51,16 @@ const Card = ({
   evidenceFiles = {},
   setEvidenceFiles = () => {},
   evidenceUrls = {},
-  setEvidenceUrls = () => {}
+  setEvidenceUrls = () => {},
+  user = null,
+  onEdit = () => {}
 }) => {
   // Local state to track if the Copy button was clicked (separate from uniqueId copy)
   const [textCopied, setTextCopied] = React.useState(false);
+  
+  // Local state for edit mode
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editText, setEditText] = React.useState(node.text || '');
 
   // Determine if this is a top-level question (depth 0) or a reply (depth > 0)
   const isQuestion = depth === 0;
@@ -71,6 +77,31 @@ const Card = ({
     setTextCopied(true);
     setTimeout(() => setTextCopied(false), 2000); // Hide message after 2 seconds
   };
+
+  // Handler for edit button
+  const handleEdit = () => {
+    setEditText(node.text || '');
+    setIsEditing(true);
+  };
+
+  // Handler for saving edit
+  const handleSaveEdit = () => {
+    if (!editText.trim()) {
+      alert('Text cannot be empty');
+      return;
+    }
+    onEdit(node.id, editText.trim(), depth === 0 ? 'question' : 'reply');
+    setIsEditing(false);
+  };
+
+  // Handler for canceling edit
+  const handleCancelEdit = () => {
+    setEditText(node.text || '');
+    setIsEditing(false);
+  };
+
+  // Check if current user is the author of this post
+  const canEdit = user && node.author === user.email;
 
   // Handler to open evidence files in a new tab properly
   const openFileInNewTab = (file, e) => {
@@ -207,8 +238,34 @@ const Card = ({
         </span>
       </div>
 
-      {/* Main content area - displays the question or reply text */}
-      <div className="content">{node.text}</div>
+      {/* Main content area - displays the question or reply text or edit form */}
+      {isEditing ? (
+        <div style={{ marginTop: '8px' }}>
+          <textarea
+            value={editText}
+            onChange={(e) => setEditText(e.target.value)}
+            style={{
+              width: '100%',
+              minHeight: '80px',
+              padding: '8px',
+              border: '1px solid #d1d5db',
+              borderRadius: '4px',
+              fontSize: '14px',
+              fontFamily: 'inherit'
+            }}
+          />
+          <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+            <button className="btn primary" onClick={handleSaveEdit}>
+              Save
+            </button>
+            <button className="btn" onClick={handleCancelEdit}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="content">{node.text}</div>
+      )}
 
       {/* Display evidence if available */}
       {node.evidence && (node.evidence.files?.length > 0 || node.evidence.urls?.length > 0) && (
@@ -297,6 +354,13 @@ const Card = ({
 
       {/* Control buttons section */}
       <div className="controls">
+        {/* Edit button - only shown if user is the author */}
+        {canEdit && !isEditing && (
+          <button className="btn" onClick={handleEdit}>
+            Edit
+          </button>
+        )}
+
         {/* Reply button - toggles the reply form for this card */}
         <button className="btn" onClick={() => toggleForm(node.id)}>
           Reply this {node.side === 'left' ? leftLabel : rightLabel} question

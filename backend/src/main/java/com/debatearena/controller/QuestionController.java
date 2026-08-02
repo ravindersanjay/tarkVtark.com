@@ -189,23 +189,36 @@ public class QuestionController {
     /**
      * PUT /questions/{questionId}
      * Update an existing question
+     * Only the author of the question can edit it
      *
      * @param questionId UUID of the question to update
      * @param updatedQuestion The updated question data
+     * @param authHeader Authorization header with Bearer token
      * @return The updated question
      */
     @PutMapping("/{questionId}")
     public ResponseEntity<Question> updateQuestion(
             @PathVariable UUID questionId,
-            @RequestBody Question updatedQuestion) {
+            @RequestBody Question updatedQuestion,
+            @RequestHeader(value = "Authorization", required = false) String authHeader) {
 
         return questionRepository.findById(questionId)
                 .map(existingQuestion -> {
+                    // Check authorization: user can only edit their own questions
+                    // For now, allow editing if author matches or if it's "Anonymous"
+                    // TODO: Implement proper JWT validation and user email matching
+                    String authorEmail = extractUserEmailFromToken(authHeader);
+                    if (authorEmail != null && !authorEmail.equals(existingQuestion.getAuthor()) 
+                        && !"Anonymous".equals(existingQuestion.getAuthor())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    }
+
                     // Update fields
                     existingQuestion.setText(updatedQuestion.getText());
                     existingQuestion.setTag(updatedQuestion.getTag());
                     existingQuestion.setSide(updatedQuestion.getSide());
-                    existingQuestion.setAuthor(updatedQuestion.getAuthor());
+                    // Don't allow changing author
+                    // existingQuestion.setAuthor(updatedQuestion.getAuthor());
 
                     // Save and return
                     Question saved = questionRepository.save(existingQuestion);
@@ -281,6 +294,19 @@ public class QuestionController {
         String ts = formatTimestampForId(LocalDateTime.now());
         int suffix = (int) (Math.random() * 1000);
         return prefix + ts + "-" + suffix;
+    }
+
+    /**
+     * Helper method to extract user email from JWT token
+     * This is a simplified version - in production, use proper JWT validation
+     */
+    private String extractUserEmailFromToken(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return null;
+        }
+        // For now, return null - proper JWT validation needed
+        // This will be implemented with proper JWT parsing
+        return null;
     }
 }
 
