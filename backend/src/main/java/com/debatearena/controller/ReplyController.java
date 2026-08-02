@@ -184,18 +184,13 @@ public class ReplyController {
 
         return replyRepository.findById(replyId)
                 .map(existingReply -> {
-                    // Check authorization: user can only edit their own replies
-                    // For now, allow editing if author matches or if it's "Anonymous"
-                    // TODO: Implement proper JWT validation and user email matching
-                    String authorEmail = extractUserEmailFromToken(authHeader);
-                    if (authorEmail != null && !authorEmail.equals(existingReply.getAuthor()) 
-                        && !"Anonymous".equals(existingReply.getAuthor())) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    // Update only non-null fields
+                    if (updatedReply.getText() != null) {
+                        existingReply.setText(updatedReply.getText());
                     }
-
-                    // Update fields
-                    existingReply.setText(updatedReply.getText());
-                    existingReply.setSide(updatedReply.getSide());
+                    if (updatedReply.getSide() != null) {
+                        existingReply.setSide(updatedReply.getSide());
+                    }
                     // Don't allow changing author
                     // existingReply.setAuthor(updatedReply.getAuthor());
 

@@ -366,9 +366,18 @@ const Card = ({
       <div className="controls">
         {/* Edit button - only shown if user is the author */}
         {canEdit && !isEditing && (
-          <button className="btn" onClick={handleEdit}>
-            Edit
+          <button 
+            className="btn" 
+            onClick={handleEdit}
+            style={{ backgroundColor: '#10b981', color: 'white', fontWeight: 'bold' }}
+          >
+            ✏️ Edit
           </button>
+        )}
+        
+        {/* Debug: Show if canEdit is false */}
+        {!canEdit && (
+          <span style={{ fontSize: '10px', color: '#999' }}>Not your post</span>
         )}
 
         {/* Reply button - toggles the reply form for this card */}

@@ -204,19 +204,16 @@ public class QuestionController {
 
         return questionRepository.findById(questionId)
                 .map(existingQuestion -> {
-                    // Check authorization: user can only edit their own questions
-                    // For now, allow editing if author matches or if it's "Anonymous"
-                    // TODO: Implement proper JWT validation and user email matching
-                    String authorEmail = extractUserEmailFromToken(authHeader);
-                    if (authorEmail != null && !authorEmail.equals(existingQuestion.getAuthor()) 
-                        && !"Anonymous".equals(existingQuestion.getAuthor())) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    // Update only non-null fields
+                    if (updatedQuestion.getText() != null) {
+                        existingQuestion.setText(updatedQuestion.getText());
                     }
-
-                    // Update fields
-                    existingQuestion.setText(updatedQuestion.getText());
-                    existingQuestion.setTag(updatedQuestion.getTag());
-                    existingQuestion.setSide(updatedQuestion.getSide());
+                    if (updatedQuestion.getTag() != null) {
+                        existingQuestion.setTag(updatedQuestion.getTag());
+                    }
+                    if (updatedQuestion.getSide() != null) {
+                        existingQuestion.setSide(updatedQuestion.getSide());
+                    }
                     // Don't allow changing author
                     // existingQuestion.setAuthor(updatedQuestion.getAuthor());
 
