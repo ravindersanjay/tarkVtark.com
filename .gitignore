@@ -23,10 +23,11 @@ Thumbs.db
 .env.local
 .env.*.local
 backend/.env
-backend/.env.local
+backend/.env.*
+!backend/.env.example
 frontend/.env
-frontend/.env.local
-frontend/.env.production
+frontend/.env.*
+!frontend/.env.example
 
 # Temporary folders
 debate-frontend/
@@ -35,3 +36,4 @@ debate-frontend/
 backend/uploads/
 # User-uploaded files
 uploads/
+nbackend/.env.prod
