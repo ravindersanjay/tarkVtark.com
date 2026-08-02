@@ -2,6 +2,8 @@ package com.debatearena.repository;
 
 import com.debatearena.model.DebateTopic;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -29,5 +31,12 @@ public interface DebateTopicRepository extends JpaRepository<DebateTopic, UUID> 
      * Check if a topic with the given name exists
      */
     boolean existsByTopic(String topic);
+
+    /**
+     * Find all topics with their question counts
+     * Uses a native query to efficiently count questions without loading them
+     */
+    @Query("SELECT t, COUNT(q) FROM DebateTopic t LEFT JOIN t.questions q WHERE t.isActive = true GROUP BY t")
+    List<Object[]> findAllTopicsWithQuestionCounts();
 }
 

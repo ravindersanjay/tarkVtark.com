@@ -1,5 +1,6 @@
 package com.debatearena.controller;
 
+import com.debatearena.dto.TopicDTO;
 import com.debatearena.model.DebateTopic;
 import com.debatearena.repository.DebateTopicRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * =====================================================================
@@ -36,14 +38,17 @@ public class TopicController {
 
     /**
      * GET /topics
-     * Get all debate topics
+     * Get all debate topics with question counts
      *
-     * @return List of all debate topics
+     * @return List of all debate topics with question counts
      */
     @GetMapping
-    public ResponseEntity<List<DebateTopic>> getAllTopics() {
-        List<DebateTopic> topics = debateTopicRepository.findAll();
-        return ResponseEntity.ok(topics);
+    public ResponseEntity<List<TopicDTO>> getAllTopics() {
+        List<Object[]> topicsWithCounts = debateTopicRepository.findAllTopicsWithQuestionCounts();
+        List<TopicDTO> topicDTOs = topicsWithCounts.stream()
+            .map(row -> TopicDTO.fromEntity((DebateTopic) row[0], (Long) row[1]))
+            .collect(Collectors.toList());
+        return ResponseEntity.ok(topicDTOs);
     }
 
     /**

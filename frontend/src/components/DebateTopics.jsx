@@ -40,7 +40,7 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
 
       // Fetch topics from backend API
       const data = await topicsAPI.getAll();
-      setTopics(data.map(t => t.topic));
+      setTopics(data);
     } catch (err) {
       console.error('Failed to load topics:', err);
       setError('Failed to load topics. Please make sure the backend is running.');
@@ -68,7 +68,7 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
     if (!t || !/^.+ vs .+$/.test(t)) return alert('Enter topic as "x vs y"');
 
     // Check for duplicates
-    if (topics.includes(t)) return alert('Topic already exists');
+    if (topics.some(topic => topic.topic === t)) return alert('Topic already exists');
 
     try {
       // Parse topic to extract labels
@@ -121,10 +121,13 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
                 </li>
               )}
               {topics.map((t) => (
-                <li key={t}>
+                <li key={t.id}>
                   {/* Click to navigate to debate - calls onSelectTopic callback */}
-                  <button className="topic-btn" onClick={() => onSelectTopic(t.trim())}>
-                    {t}
+                  <button className="topic-btn" onClick={() => onSelectTopic(t.topic.trim())}>
+                    {t.topic}
+                    <span className="question-count">
+                      {t.questionCount !== undefined ? `${t.questionCount} questions` : ''}
+                    </span>
                   </button>
                 </li>
               ))}
