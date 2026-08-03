@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import '../styles/admin.css';
 import { topicsAPI, questionsAPI, repliesAPI, adminAPI, contactAPI } from '../services/apiService.js';
 
@@ -108,7 +109,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
 
     if (!topicId) {
       console.error('Cannot delete: Topic ID not found', topicObj);
-      alert('Cannot delete: Topic ID not found');
+      toast.error('Cannot delete: Topic ID not found');
       return;
     }
 
@@ -122,12 +123,12 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         // Reload from backend to sync
         await loadData();
 
-        alert('Topic deleted successfully!');
+        toast.success('Topic deleted successfully!');
       } catch (err) {
         console.error('Failed to delete topic - Full error:', err);
         console.error('Error message:', err.message);
         console.error('Error response:', err.response);
-        alert(`Failed to delete topic. Error: ${err.message || 'Please try again.'}`);
+        toast.error(`Failed to delete topic. Error: ${err.message || 'Please try again.'}`);
       }
     }
   };
@@ -136,7 +137,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     const topicId = typeof oldTopicObj === 'object' ? oldTopicObj.id : null;
 
     if (!topicId) {
-      alert('Cannot update: Topic ID not found');
+      toast.error('Cannot update: Topic ID not found');
       return;
     }
 
@@ -160,10 +161,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       // Reload from backend to sync
       await loadData();
 
-      alert('Topic updated successfully!');
+      toast.success('Topic updated successfully!');
     } catch (err) {
       console.error('Failed to update topic:', err);
-      alert('Failed to update topic. Please try again.');
+      toast.error('Failed to update topic. Please try again.');
     }
   };
 
@@ -188,7 +189,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       console.error('Error message:', err.message);
       console.error('Error response:', err.response);
       setDebateQuestions([]);
-      alert(`Failed to load questions. Error: ${err.message || 'Please check console for details.'}`);
+      toast.error(`Failed to load questions. Error: ${err.message || 'Please check console for details.'}`);
     }
   };
 
@@ -199,10 +200,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         await questionsAPI.delete(questionId);
         await loadDebateData(selectedDebateTopic);
         await loadData(); // Reload to update reports
-        alert('Question deleted successfully!');
+        toast.success('Question deleted successfully!');
       } catch (err) {
         console.error('Failed to delete question:', err);
-        alert('Failed to delete question. Please try again.');
+        toast.error('Failed to delete question. Please try again.');
       }
     }
   };
@@ -213,10 +214,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         await repliesAPI.delete(replyId);
         await loadDebateData(selectedDebateTopic);
         await loadData(); // Reload to update reports
-        alert('Reply deleted successfully!');
+        toast.success('Reply deleted successfully!');
       } catch (err) {
         console.error('Failed to delete reply:', err);
-        alert('Failed to delete reply. Please try again.');
+        toast.error('Failed to delete reply. Please try again.');
       }
     }
   };
@@ -245,10 +246,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
 
       await loadDebateData(selectedDebateTopic);
       setEditingPost(null);
-      alert('Updated successfully!');
+      toast.success('Updated successfully!');
     } catch (err) {
       console.error('Failed to update:', err);
-      alert('Failed to update. Please try again.');
+      toast.error('Failed to update. Please try again.');
     }
   };
 
@@ -262,6 +263,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     if (newFaq.q.trim() && newFaq.a.trim()) {
       saveFaqItems([...faqItems, { ...newFaq }]);
       setNewFaq({ q: '', a: '' });
+      toast.success('FAQ added successfully!');
     }
   };
 
@@ -275,6 +277,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   const deleteFaq = (index) => {
     if (window.confirm('Delete this FAQ item?')) {
       saveFaqItems(faqItems.filter((_, i) => i !== index));
+      toast.success('FAQ deleted successfully!');
     }
   };
 
@@ -286,10 +289,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         setNewGuideline('');
         // Reload guidelines from backend
         await loadData();
-        alert('Guideline added successfully!');
+        toast.success('Guideline added successfully!');
       } catch (err) {
         console.error('Failed to add guideline:', err);
-        alert('Failed to add guideline. Please try again.');
+        toast.error('Failed to add guideline. Please try again.');
       }
     }
   };
@@ -297,13 +300,13 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   const updateGuideline = async (index, text) => {
     const guideline = guidelines[index];
     if (!guideline.id) {
-      alert('Cannot edit: Guideline ID not found');
+      toast.error('Cannot edit: Guideline ID not found');
       setEditingGuideline(null);
       return;
     }
 
     if (!text || !text.trim()) {
-      alert('Guideline text cannot be empty');
+      toast.error('Guideline text cannot be empty');
       return;
     }
 
@@ -312,17 +315,17 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       setEditingGuideline(null);
       // Reload guidelines from backend
       await loadData();
-      alert('Guideline updated successfully!');
+      toast.success('Guideline updated successfully!');
     } catch (err) {
       console.error('Failed to update guideline:', err);
-      alert('Failed to update guideline. Please try again.');
+      toast.error('Failed to update guideline. Please try again.');
     }
   };
 
   const deleteGuideline = async (index) => {
     const guideline = guidelines[index];
     if (!guideline.id) {
-      alert('Cannot delete: Guideline ID not found');
+      toast.error('Cannot delete: Guideline ID not found');
       return;
     }
 
@@ -331,10 +334,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         await adminAPI.deleteGuideline(guideline.id);
         // Reload guidelines from backend
         await loadData();
-        alert('Guideline deleted successfully!');
+        toast.success('Guideline deleted successfully!');
       } catch (err) {
         console.error('Failed to delete guideline:', err);
-        alert('Failed to delete guideline. Please try again.');
+        toast.error('Failed to delete guideline. Please try again.');
       }
     }
   };
@@ -418,10 +421,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       if (found) {
         // Remove all reports for this post
         deleteAllReportsForPost(postId);
-        alert('Post deleted successfully from all debates.');
+        toast.success('Post deleted successfully from all debates.');
         loadData();
       } else {
-        alert('Post not found in any debate.');
+        toast.error('Post not found in any debate.');
       }
     }
   };
@@ -430,7 +433,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
     const postReports = reports.filter(r => r.postId === postId);
     if (postReports.length > 0) {
       const reporterNames = [...new Set(postReports.map(r => r.reporter))].join(', ');
-      alert(`Warning sent to: ${reporterNames}\n\nNote: In production, this would send actual warnings to users.`);
+      toast.info(`Warning sent to: ${reporterNames}. Note: In production, this would send actual warnings to users.`);
     }
   };
 
@@ -467,10 +470,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       });
 
       if (found) {
-        alert('Post edited successfully. Consider dismissing the reports.');
+        toast.success('Post edited successfully. Consider dismissing the reports.');
         loadData();
       } else {
-        alert('Post not found in any debate.');
+        toast.error('Post not found in any debate.');
       }
     }
   };
@@ -486,7 +489,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   const deleteMessage = async (index) => {
     const message = messages[index];
     if (!message.id) {
-      alert('Cannot delete: Message ID not found');
+      toast.error('Cannot delete: Message ID not found');
       return;
     }
 
@@ -495,10 +498,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         await contactAPI.deleteMessage(message.id);
         // Reload messages from backend
         await loadData();
-        alert('Message deleted successfully!');
+        toast.success('Message deleted successfully!');
       } catch (err) {
         console.error('Failed to delete message:', err);
-        alert('Failed to delete message. Please try again.');
+        toast.error('Failed to delete message. Please try again.');
       }
     }
   };
@@ -514,10 +517,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         }
         // Reload messages from backend
         await loadData();
-        alert('All messages deleted successfully!');
+        toast.success('All messages deleted successfully!');
       } catch (err) {
         console.error('Failed to delete messages:', err);
-        alert('Failed to delete messages. Please try again.');
+        toast.error('Failed to delete messages. Please try again.');
       }
     }
   };
@@ -525,7 +528,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   const markMessageAsRead = async (index) => {
     const message = messages[index];
     if (!message.id) {
-      alert('Cannot update: Message ID not found');
+      toast.error('Cannot update: Message ID not found');
       return;
     }
 
@@ -535,14 +538,14 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       await loadData();
     } catch (err) {
       console.error('Failed to mark message as read:', err);
-      alert('Failed to update message. Please try again.');
+      toast.error('Failed to update message. Please try again.');
     }
   };
 
   const markMessageAsUnread = async (index) => {
     const message = messages[index];
     if (!message.id) {
-      alert('Cannot update: Message ID not found');
+      toast.error('Cannot update: Message ID not found');
       return;
     }
 
@@ -552,7 +555,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       await loadData();
     } catch (err) {
       console.error('Failed to mark message as unread:', err);
-      alert('Failed to update message. Please try again.');
+      toast.error('Failed to update message. Please try again.');
     }
   };
 

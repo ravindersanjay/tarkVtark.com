@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { toast } from 'react-toastify';
 
 const AuthContext = createContext();
 
@@ -89,7 +90,7 @@ export const AuthProvider = ({ children }) => {
       throw new Error(data.message || 'Login failed');
     } catch (error) {
       console.error('❌ Login error:', error);
-      alert('Login failed. Please try again.');
+      toast.error('Login failed. Please try again.');
       return false;
     }
   };

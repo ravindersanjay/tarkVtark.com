@@ -1,4 +1,5 @@
 import React from 'react';
+import { toast } from 'react-toastify';
 import ReplyForm from './ReplyForm';
 
 /**
@@ -87,7 +88,7 @@ const Card = ({
   // Handler for saving edit
   const handleSaveEdit = () => {
     if (!editText.trim()) {
-      alert('Text cannot be empty');
+      toast.error('Text cannot be empty');
       return;
     }
     onEdit(node.id, editText.trim(), depth === 0 ? 'question' : 'reply');
@@ -118,7 +119,7 @@ const Card = ({
     e.preventDefault();
 
     if (!file.dataUrl) {
-      alert('File data is not available');
+      toast.error('File data is not available');
       return;
     }
 
@@ -221,7 +222,7 @@ const Card = ({
         newWindow.location.href = file.dataUrl;
       }
     } else {
-      alert('Pop-up blocked. Please allow pop-ups for this site.');
+      toast.error('Pop-up blocked. Please allow pop-ups for this site.');
     }
   };
 
@@ -398,7 +399,7 @@ const Card = ({
               timestamp: new Date().toLocaleString()
             });
             localStorage.setItem('reported_posts', JSON.stringify(reports));
-            alert('Report submitted. Thank you! Our moderators will review this.');
+            toast.success('Report submitted. Thank you! Our moderators will review this.');
           }
         }}>
           Report

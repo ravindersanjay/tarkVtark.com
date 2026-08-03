@@ -1,6 +1,7 @@
 // ContactUs component styles are now modularized in styles/contact.css
 import '../styles/contact.css';
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { contactAPI } from '../services/apiService.js';
 
 const ContactUs = ({ onBack }) => {
@@ -25,10 +26,10 @@ const ContactUs = ({ onBack }) => {
 
       // Clear form
       setFormData({ name: '', email: '', subject: '', message: '' });
-      alert('Thank you for contacting us! Your message has been received.');
+      toast.success('Thank you for contacting us! Your message has been received.');
     } catch (error) {
       console.error('Failed to send message:', error);
-      alert('Failed to send message. Please try again later.');
+      toast.error('Failed to send message. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { topicsAPI } from '../services/apiService.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
@@ -65,10 +66,10 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
     const t = newTopic.trim();
 
     // Validate format
-    if (!t || !/^.+ vs .+$/.test(t)) return alert('Enter topic as "x vs y"');
+    if (!t || !/^.+ vs .+$/.test(t)) return toast.error('Enter topic as "x vs y"');
 
     // Check for duplicates
-    if (topics.some(topic => topic.topic === t)) return alert('Topic already exists');
+    if (topics.some(topic => topic.topic === t)) return toast.error('Topic already exists');
 
     try {
       // Parse topic to extract labels
@@ -91,10 +92,10 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
       // Reload from backend to ensure sync
       await loadTopics();
 
-      alert('Topic added successfully!');
+      toast.success('Topic added successfully!');
     } catch (err) {
       console.error('Failed to add topic:', err);
-      alert('Failed to add topic. Please try again.');
+      toast.error('Failed to add topic. Please try again.');
     }
   };
 

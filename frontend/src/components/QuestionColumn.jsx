@@ -1,9 +1,10 @@
 import React from "react";
+import { toast } from 'react-toastify';
 import ReplyCard from "./ReplyCard";
 
 const QuestionColumn = ({ debateData, setDebateData }) => {
   const handleReply = (parentId, text) => {
-    if (!text) return alert("Enter reply");
+    if (!text) return toast.error("Enter reply");
 
     const newReply = {
       id: Date.now(),

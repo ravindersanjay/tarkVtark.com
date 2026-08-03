@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-toastify';
 import { generateUniqueId, deepCopy } from './utils/helpers.js';
 import { topicsAPI, questionsAPI, repliesAPI, filesAPI } from './services/apiService.js';
 import { useAuth } from './contexts/AuthContext.jsx';
@@ -397,15 +398,15 @@ const App = ({ topic }) => {
       const tag = newTag.trim();
 
       // Validation
-      if (!text) return alert('Enter question');
-      if (!newQuestionSide) return alert('Please select a side (left or right) before adding a question');
+      if (!text) return toast.error('Enter question');
+      if (!newQuestionSide) return toast.error('Please select a side (left or right) before adding a question');
 
       // Save to backend API first
       const topics = await topicsAPI.getAll();
       const topicData = topics.find(t => t.topic === topic);
 
       if (!topicData) {
-        alert(`Topic "${topic}" not found in database. Please create it first.`);
+        toast.error(`Topic "${topic}" not found in database. Please create it first.`);
         return;
       }
 
@@ -426,7 +427,7 @@ const App = ({ topic }) => {
           uploadedAttachments.push(attachment);
         } catch (err) {
           console.error('Failed to upload file:', file.name, err);
-          alert(`Failed to upload ${file.name}. ${err.message}`);
+          toast.error(`Failed to upload ${file.name}. ${err.message}`);
         }
       }
 
@@ -463,7 +464,7 @@ const App = ({ topic }) => {
           return newData;
         } catch (innerErr) {
           console.error('Failed to add question', innerErr);
-          alert('Failed to add question — check console');
+          toast.error('Failed to add question — check console');
           return prev;
         }
       });
@@ -476,10 +477,10 @@ const App = ({ topic }) => {
       setNewQuestionUrls([]);
       setNewQuestionUrlInput('');
 
-      alert('Question added successfully!');
+      toast.success('Question added successfully!');
     } catch (err) {
       console.error('addNewQuestion error', err);
-      alert('Unexpected error when adding question — check console');
+      toast.error('Unexpected error when adding question — check console');
     }
   };
 
@@ -499,7 +500,7 @@ const App = ({ topic }) => {
   const handleEditPost = async (postId, newText, type) => {
     try {
       if (!isAuthenticated) {
-        alert('Please login to edit posts');
+        toast.error('Please login to edit posts');
         return;
       }
 
@@ -517,10 +518,10 @@ const App = ({ topic }) => {
         setDebateData({ ...debateData });
       }
 
-      alert('Post updated successfully!');
+      toast.success('Post updated successfully!');
     } catch (err) {
       console.error('Failed to edit post:', err);
-      alert('Failed to edit post. Please try again.');
+      toast.error('Failed to edit post. Please try again.');
     }
   };
 
@@ -546,7 +547,7 @@ const App = ({ topic }) => {
     }
 
     const text = drafts[parentId] || '';
-    if (!text.trim()) return alert('Enter reply');
+    if (!text.trim()) return toast.error('Enter reply');
 
     // Get evidence for this reply
     const files = evidenceFiles[parentId] || [];
@@ -555,7 +556,7 @@ const App = ({ topic }) => {
     // Find the parent post to determine if it's a question or reply
     const parent = findPostById(parentId, debateData.questions);
     if (!parent) {
-      alert('Parent post not found');
+      toast.error('Parent post not found');
       return;
     }
 
@@ -599,7 +600,7 @@ const App = ({ topic }) => {
 
       // Defensive check: ensure we have an id before attempting uploads
       if (!savedReply || !savedReply.id) {
-        alert('Reply saved but no ID returned from server; cannot attach files.');
+        toast.error('Reply saved but no ID returned from server; cannot attach files.');
         return;
       }
 
@@ -611,7 +612,7 @@ const App = ({ topic }) => {
           uploadedAttachments.push(attachment);
         } catch (err) {
           console.error('Failed to upload file:', file.name, err);
-          alert(`Failed to upload ${file.name}. ${err.message}`);
+          toast.error(`Failed to upload ${file.name}. ${err.message}`);
         }
       }
 
@@ -678,12 +679,12 @@ const App = ({ topic }) => {
       setEvidenceUrls(prev => ({ ...prev, [parentId]: [] }));
       setOpenForms(prev => ({ ...prev, [parentId]: false }));
 
-      alert('Reply posted successfully!');
+      toast.success('Reply posted successfully!');
     } catch (err) {
       console.error('Failed to save reply - Full error:', err);
       console.error('Error message:', err.message);
       console.error('Error stack:', err.stack);
-      alert(`Failed to post reply. Error: ${err.message || 'Please try again.'}`);
+      toast.error(`Failed to post reply. Error: ${err.message || 'Please try again.'}`);
     }
   };
 
@@ -707,7 +708,7 @@ const App = ({ topic }) => {
     const key = id + '-' + (user?.email || 'Anonymous');
 
     // Check if user already voted on this post
-    if (voteSet.current.has(key)) return alert('Already voted');
+    if (voteSet.current.has(key)) return toast.error('Already voted');
 
     // Send vote to backend API
     try {
@@ -720,7 +721,7 @@ const App = ({ topic }) => {
       }
     } catch (err) {
       console.error('Failed to vote:', err);
-      alert('Failed to register vote');
+      toast.error('Failed to register vote');
       return;
     }
 

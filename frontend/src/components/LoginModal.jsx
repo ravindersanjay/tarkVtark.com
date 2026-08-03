@@ -1,5 +1,6 @@
 import React from 'react';
 import { GoogleLogin } from '@react-oauth/google';
+import { toast } from 'react-toastify';
 import { useAuth } from '../contexts/AuthContext';
 import '../styles/loginModal.css';
 
@@ -15,6 +16,7 @@ import '../styles/loginModal.css';
  */
 const LoginModal = () => {
   const { loginModalOpen, loginAction, closeLoginModal, loginWithGoogle } = useAuth();
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
   if (!loginModalOpen) return null;
 
@@ -28,7 +30,7 @@ const LoginModal = () => {
 
   const handleGoogleError = () => {
     console.error('Google login failed');
-    alert('Google login failed. Please try again.');
+    toast.error('Google login failed. Please try again.');
   };
 
   return (
@@ -55,17 +57,23 @@ const LoginModal = () => {
             </ul>
           </div>
 
-          <div className="google-login-container">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={handleGoogleError}
-              useOneTap
-              theme="filled_blue"
-              size="large"
-              text="signin_with"
-              shape="rectangular"
-            />
-          </div>
+          {GOOGLE_CLIENT_ID ? (
+            <div className="google-login-container">
+              <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                useOneTap
+                theme="filled_blue"
+                size="large"
+                text="signin_with"
+                shape="rectangular"
+              />
+            </div>
+          ) : (
+            <div className="modal-error">
+              <p>Google Sign-In is not configured. Please contact the administrator.</p>
+            </div>
+          )}
 
           <p className="modal-note">
             Your information will only be used for authentication and displaying your name with your posts.

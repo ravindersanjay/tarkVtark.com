@@ -25,6 +25,8 @@ import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
 import App from './App.jsx';
 import DebateTopics from './components/DebateTopics.jsx';
@@ -187,7 +189,7 @@ function MainRouter() {
       el.classList.add('highlight-reply');
       setTimeout(() => el.classList.remove('highlight-reply'), 1800);
     } else {
-      alert('Unique ID not found on this page.');
+      toast.error('Unique ID not found on this page.');
     }
   };
 
@@ -318,6 +320,7 @@ function AppRoot() {
             <MainRouter />
           </AuthProvider>
         )}
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       </ErrorBoundary>
     </StrictMode>
   );
