@@ -5,6 +5,13 @@ spring:
   application:
     name: debate-arena-backend
 
+  # UTF-8 Encoding Configuration
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
   # PostgreSQL Database Configuration - Uses environment variables from .env file
   # Never hardcode credentials here - keep them in backend/.env (not committed to git)
   datasource:

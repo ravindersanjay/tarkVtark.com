@@ -32,7 +32,14 @@ import java.util.stream.Collectors;
  */
 @RestController
 @RequestMapping("/admin")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:3000",
+    "https://www.debatemanch.com",
+    "https://debatemanch.com"
+})
 @RequiredArgsConstructor
 public class AdminController {
 
