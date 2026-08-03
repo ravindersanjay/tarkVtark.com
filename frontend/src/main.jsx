@@ -64,12 +64,12 @@ function getDebateTopicFromUrl() {
   // Legacy format: /debate_Topic_Name.html
   const legacyMatch = path.match(/debate_(.+)\.html$/);
   if (legacyMatch) {
-    return legacyMatch[1].replace(/_/g, ' ');
+    return decodeURIComponent(legacyMatch[1]).replace(/_/g, ' ');
   }
 
   // Clean URL format: /hindu_vs_muslim
-  // Remove leading slash and convert underscores to spaces
-  const topic = path.slice(1).replace(/_/g, ' ');
+  // Remove leading slash, decode URI, and convert underscores to spaces
+  const topic = decodeURIComponent(path.slice(1)).replace(/_/g, ' ');
 
   // Capitalize each word properly: "hindu vs muslim" → "Hindu vs Muslim"
   return topic.split(' ').map(word =>
