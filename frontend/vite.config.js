@@ -4,6 +4,13 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  publicDir: 'public', // Ensure public directory is used
+  build: {
+    outDir: 'dist',
+    // Ensure _routes.json and _redirects are copied to dist root
+    // (Vite copies public/ contents to dist/ root automatically)
+    emptyOutDir: true,
+  },
   server: {
     port: 5173,
     strictPort: true, // Fail if port is already in use
