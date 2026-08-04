@@ -107,6 +107,74 @@
 	position: relative; /* for absolute-positioned logo */
 }
 
+/* Mobile navigation styles */
+@media (max-width: 768px) {
+  .topnav-inner {
+    padding: 0 16px;
+  }
+
+  .nav-logo {
+    height: 40px;
+  }
+
+  .topnav-link {
+    display: none; /* Hide desktop nav links on mobile */
+  }
+
+  .topnav-jump {
+    display: none; /* Hide jump input on mobile */
+  }
+
+  /* Hamburger menu button */
+  .mobile-menu-btn {
+    display: block;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px;
+    margin-left: auto;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-menu-btn {
+    display: none;
+  }
+}
+
+/* Mobile menu dropdown */
+.mobile-menu {
+  display: none;
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  background: #2563eb;
+  flex-direction: column;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.mobile-menu.open {
+  display: flex;
+}
+
+.mobile-menu-link {
+  color: white;
+  padding: 12px 16px;
+  text-decoration: none;
+  font-size: 16px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.mobile-menu-link:hover,
+.mobile-menu-link.active {
+  background: #174ea6;
+}
+
 /* logo in the nav - scaled down to fit smaller navbar */
 .nav-logo {
 	position: relative; /* changed from absolute to relative for proper flow */
@@ -160,6 +228,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ========================================
+   MOBILE OPTIMIZATION FOUNDATION
+   ======================================== */
+
+/* Mobile-first CSS variables */
+:root {
+  --mobile-padding: 16px;
+  --mobile-font-size: 16px;
+  --touch-target: 44px;
+}
+
+/* Global mobile breakpoints */
+@media (max-width: 768px) {
+  /* Tablet styles */
+}
+
+@media (max-width: 480px) {
+  /* Mobile styles */
+}
+
+@media (max-width: 320px) {
+  /* Small mobile styles */
+}
+
 /* Reset body spacing so layout is consistent across pages */
 html, body {
 	margin: 0;
@@ -182,6 +274,13 @@ body {
     margin: 0 auto;
     padding: 0 24px;
 }
+
+/* Responsive container for mobile */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+}
 /* Used by home and contact pages */
 .home-container {
 	max-width: 1600px;
@@ -202,6 +301,44 @@ body {
 	box-shadow: 0 2px 16px rgba(0,0,0,0.07);
 	padding: 32px 28px 40px 28px;
 	box-sizing: border-box;
+}
+
+/* Mobile responsive styles for content cards */
+@media (max-width: 768px) {
+  .home-container,
+  .contact-container,
+  .guidelines-container,
+  .faq-container {
+    margin: 20px auto;
+    padding: 20px 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .brand {
+    font-size: 1.5rem;
+  }
+
+  .add-topic-form {
+    flex-direction: column;
+  }
+
+  .topic-input {
+    width: 100%;
+  }
+
+  .add-btn {
+    width: 100%;
+  }
+
+  .contact-form input,
+  .contact-form textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
 }
 /* Used by header in home/contact */
 .header {

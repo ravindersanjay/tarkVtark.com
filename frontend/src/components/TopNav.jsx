@@ -17,6 +17,17 @@ import logoFallback from '../assets/react.svg';
  */
 const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJump }) => {
   const [jumpId, setJumpId] = useState('');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleNavClick = (callback) => {
+    callback();
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <nav className="topnav">
       <div className="topnav-inner">
@@ -28,13 +39,13 @@ const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJum
           onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = logoFallback; }}
           onClick={onHome}
         />
-        {/* Navigation links */}
+        {/* Navigation links - desktop */}
         <span className={`topnav-link${active === 'home' ? ' active' : ''}`} onClick={onHome}>Home</span>
         <span className={`topnav-link${active === 'guidelines' ? ' active' : ''}`} onClick={onGuidelines}>Guidelines</span>
         <span className={`topnav-link${active === 'faq' ? ' active' : ''}`} onClick={onFAQ}>FAQ</span>
         <span className={`topnav-link${active === 'contact' ? ' active' : ''}`} onClick={onContact}>Contact Us</span>
         <span className={`topnav-link${active === 'admin' ? ' active' : ''}`} onClick={onAdmin}>Admin</span>
-        {/* Jump to Unique ID */}
+        {/* Jump to Unique ID - desktop */}
         <div className="topnav-jump">
           <input
             type="text"
@@ -46,6 +57,18 @@ const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJum
           />
           <button className="btn primary" style={{ marginLeft: 4 }} onClick={() => onJump && onJump(jumpId.trim())}>Go</button>
         </div>
+        {/* Hamburger menu button - mobile */}
+        <button className="mobile-menu-btn" onClick={toggleMobileMenu}>
+          ☰
+        </button>
+      </div>
+      {/* Mobile menu dropdown */}
+      <div className={`mobile-menu${isMobileMenuOpen ? ' open' : ''}`}>
+        <a className={`mobile-menu-link${active === 'home' ? ' active' : ''}`} onClick={() => handleNavClick(onHome)}>Home</a>
+        <a className={`mobile-menu-link${active === 'guidelines' ? ' active' : ''}`} onClick={() => handleNavClick(onGuidelines)}>Guidelines</a>
+        <a className={`mobile-menu-link${active === 'faq' ? ' active' : ''}`} onClick={() => handleNavClick(onFAQ)}>FAQ</a>
+        <a className={`mobile-menu-link${active === 'contact' ? ' active' : ''}`} onClick={() => handleNavClick(onContact)}>Contact Us</a>
+        <a className={`mobile-menu-link${active === 'admin' ? ' active' : ''}`} onClick={() => handleNavClick(onAdmin)}>Admin</a>
       </div>
     </nav>
   );

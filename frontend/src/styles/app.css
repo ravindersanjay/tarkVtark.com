@@ -6,6 +6,128 @@
   to { transform: rotate(360deg); }
 }
 
+/* ========================================
+   MOBILE DEBATE PAGE STYLES
+   ======================================== */
+
+@media (max-width: 768px) {
+  /* Column headers - stack vertically on mobile */
+  .columns-header {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .columns-header .header-left,
+  .columns-header .header-right {
+    font-size: 1.2rem;
+    padding: 6px 12px;
+  }
+
+  /* Thread rows - single column on mobile */
+  .thread-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* Left and right cells - full width on mobile */
+  .left-cell,
+  .right-cell {
+    width: 100%;
+  }
+
+  /* Add side badges for mobile to indicate left/right */
+  .left-card {
+    border-left: 4px solid #2563eb;
+  }
+
+  .right-card {
+    border-left: 4px solid #f97316;
+  }
+
+  /* Hide arrow indicators on mobile */
+  .thread-row > div[style*="position: absolute"] {
+    display: none;
+  }
+
+  /* Add question section mobile styles */
+  .question-section {
+    padding: 12px;
+  }
+
+  /* Controls - stack vertically on mobile */
+  .controls {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  /* Vote buttons - larger touch targets */
+  .btn.vote {
+    padding: 8px 12px;
+    min-height: 44px;
+  }
+
+  /* Add question form - mobile friendly */
+  .add-question {
+    padding: 16px;
+  }
+
+  .add-question input,
+  .add-question textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  /* Side selector - stack vertically on mobile */
+  .side-selector {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .side-option {
+    justify-content: center;
+    padding: 12px;
+  }
+
+  /* Search input - full width on mobile */
+  #tagSearch {
+    width: 100%;
+  }
+
+  /* Evidence section - mobile friendly */
+  .evidence-row {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Smaller padding for very small screens */
+  .question-section {
+    padding: 8px;
+  }
+
+  .columns-header .header-left,
+  .columns-header .header-right {
+    font-size: 1rem;
+    padding: 4px 8px;
+  }
+
+  /* Even smaller buttons on very small screens */
+  .btn {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  /* Indent nested replies less on small screens */
+  .left-card,
+  .right-card {
+    margin-left: 0 !important;
+  }
+}
+
 /* Shared content card used by Home, Guidelines, FAQ, Contact and similar pages */
 .content-card {
   background: #fff;
