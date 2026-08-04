@@ -69,3 +69,7 @@ Thumbs.db
 ###############################################################################
 
 debate-frontend/
+
+# Documentation files are intentionally tracked
+!DEPLOYMENT_CHECKLIST.md
+!HINDI_ENCODING_FIX.md

@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "description": "SPA routing configuration for Cloudflare Pages",
+  "include": ["/*"],
+  "exclude": [
+    "/api/*",
+    "/health",
+    "/metrics",
+    "/_*",
+    "*.js",
+    "*.css",
+    "*.png",
+    "*.jpg",
+    "*.jpeg",
+    "*.gif",
+    "*.svg",
+    "*.ico",
+    "*.webp",
+    "*.woff",
+    "*.woff2",
+    "*.ttf",
+    "*.eot",
+    "*.json",
+    "*.txt"
+  ],
+  "routes": [
+    {
+      "src": "^([^.]+)$",
+      "dest": "/index.html",
+      "status": 200
+    }
+  ]
+}
+

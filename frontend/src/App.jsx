@@ -133,6 +133,7 @@ const App = ({ topic }) => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isPolling, setIsPolling] = useState(false);
 
   // Form inputs for adding a new question
   const [newTag, setNewTag] = useState('');           // Category tag input
@@ -235,81 +236,99 @@ const App = ({ topic }) => {
 
 
   /**
-   * Load debate data from backend API when component mounts
+   * Load debate data from backend API
+   * Extracted to reusable function for polling
    */
-  useEffect(() => {
-    const loadDebateData = async () => {
-      try {
-        console.log('🔄 Loading debate data for topic:', topic);
-        setLoading(true);
-        setError(null);
+  const loadDebateData = async (isPolling = false) => {
+    try {
+      console.log('🔄 Loading debate data for topic:', topic, isPolling ? '(polling)' : '(initial)');
+      if (!isPolling) setLoading(true);
+      setIsPolling(isPolling);
+      setError(null);
 
-        // Get all topics to find the matching one
-        console.log('📡 Fetching topics from API...');
-        const topics = await topicsAPI.getAll();
-        console.log('✅ Topics loaded:', topics.length, 'topics');
+      // Get all topics to find the matching one
+      console.log('📡 Fetching topics from API...');
+      const topics = await topicsAPI.getAll();
+      console.log('✅ Topics loaded:', topics.length, 'topics');
 
-        const topicData = topics.find(t => t.topic.toLowerCase() === topic.toLowerCase());
+      const topicData = topics.find(t => t.topic.toLowerCase() === topic.toLowerCase());
 
-        if (topicData) {
-          console.log('📡 Fetching questions for topic:', topicData.id);
-          const questions = await questionsAPI.getByTopic(topicData.id);
-          console.log('✅ Questions loaded:', questions.length, 'questions');
+      if (topicData) {
+        console.log('📡 Fetching questions for topic:', topicData.id);
+        const questions = await questionsAPI.getByTopic(topicData.id);
+        console.log('✅ Questions loaded:', questions.length, 'questions');
 
-          // Transform backend questions - evidence is now included in API response
-          const questionsWithEvidence = questions.map(q => {
-            const transformedQuestion = transformBackendToFrontend(q);
+        // Transform backend questions - evidence is now included in API response
+        const questionsWithEvidence = questions.map(q => {
+          const transformedQuestion = transformBackendToFrontend(q);
 
-            // Evidence comes from database now (attachments and evidenceUrls in API response)
-            const evidence = {
-              files: (q.attachments || []).map(att => ({
-                name: att.fileName,
-                size: att.fileSize,
-                type: att.fileType,
-                dataUrl: att.storageUrl  // Use storageUrl from backend
-              })),
-              urls: (q.evidenceUrls || []).map(ev => ev.url)
-            };
+          // Evidence comes from database now (attachments and evidenceUrls in API response)
+          const evidence = {
+            files: (q.attachments || []).map(att => ({
+              name: att.fileName,
+              size: att.fileSize,
+              type: att.fileType,
+              dataUrl: att.storageUrl  // Use storageUrl from backend
+            })),
+            urls: (q.evidenceUrls || []).map(ev => ev.url)
+          };
 
-            return {
-              ...transformedQuestion,
-              evidence,
-              replies: transformReplies(q.replies || [])
-            };
-          });
-
-          setDebateData({
-            topic: topicData.topic,
-            questions: questionsWithEvidence
-          });
-          console.log('✅ Debate data loaded successfully');
-        } else {
-          // Topic not found in database
-          console.warn('⚠️ Topic not found:', topic);
-          setDebateData({
-            topic: topic || 'Sanatan vs Islam',
-            questions: []
-          });
-          setError(`Topic "${topic}" not found in database. Available topics: ${topics.map(t => t.topic).join(', ')}`);
-        }
-      } catch (err) {
-        console.error('❌ Failed to load debate data:', err);
-        console.error('Error details:', {
-          message: err.message,
-          stack: err.stack,
-          response: err.response
+          return {
+            ...transformedQuestion,
+            evidence,
+            replies: transformReplies(q.replies || [])
+          };
         });
-        setError(`Failed to load debate. Error: ${err.message}. Please make sure the backend is running on http://localhost:8080`);
+
+        setDebateData({
+          topic: topicData.topic,
+          questions: questionsWithEvidence
+        });
+        console.log('✅ Debate data loaded successfully');
+      } else {
+        // Topic not found in database
+        console.warn('⚠️ Topic not found:', topic);
         setDebateData({
           topic: topic || 'Sanatan vs Islam',
           questions: []
         });
-      } finally {
-        setLoading(false);
+        setError(`Topic "${topic}" not found in database. Available topics: ${topics.map(t => t.topic).join(', ')}`);
       }
-    };
+    } catch (err) {
+      console.error('❌ Failed to load debate data:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack,
+        response: err.response
+      });
+      setError(`Failed to load debate. Error: ${err.message}. Please make sure the backend is running on http://localhost:8080`);
+      setDebateData({
+        topic: topic || 'Sanatan vs Islam',
+        questions: []
+      });
+    } finally {
+      if (!isPolling) setLoading(false);
+      setIsPolling(false);
+    }
+  };
 
+  /**
+   * Load debate data from backend API when component mounts
+   */
+  useEffect(() => {
     loadDebateData();
+  }, [topic]);
+
+  /**
+   * Poll for new data every 15 seconds to show real-time updates
+   * This allows users to see posts from other users without manual refresh
+   */
+  useEffect(() => {
+    const pollInterval = setInterval(() => {
+      loadDebateData(true);
+    }, 15000); // Poll every 15 seconds
+
+    return () => clearInterval(pollInterval);
   }, [topic]);
 
   /**
@@ -1036,13 +1055,22 @@ const App = ({ topic }) => {
       {/* Main container with top padding for spacing from navbar */}
       <div className="container" style={{ paddingTop: '24px' }}>
         {/* Search/filter input */}
-        <input
-          id="tagSearch"
-          placeholder="Search by tag"
-          value={filterTag}
-          onChange={(e) => setFilterTag(e.target.value)}
-          style={{ marginBottom: '12px', marginTop: '8px', padding: '6px', width: '300px', borderRadius: '4px', border: '1px solid #d1d5db' }}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', marginTop: '8px' }}>
+          <input
+            id="tagSearch"
+            placeholder="Search by tag"
+            value={filterTag}
+            onChange={(e) => setFilterTag(e.target.value)}
+            style={{ padding: '6px', width: '300px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+          />
+          {/* Auto-refresh indicator */}
+          {isPolling && (
+            <span style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ animation: 'spin 1s linear infinite' }}>↻</span>
+              Refreshing...
+            </span>
+          )}
+        </div>
 
         {/* Column headers showing left and right labels */}
         <div className="columns-header" style={{ marginBottom: '8px' }}>

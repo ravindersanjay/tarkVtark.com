@@ -1,5 +1,11 @@
 /* Centralized application styles extracted from App.jsx inline block */
 
+/* Spin animation for refresh indicator */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Shared content card used by Home, Guidelines, FAQ, Contact and similar pages */
 .content-card {
   background: #fff;
