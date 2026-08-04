@@ -249,7 +249,7 @@ const App = ({ topic }) => {
         const topics = await topicsAPI.getAll();
         console.log('✅ Topics loaded:', topics.length, 'topics');
 
-        const topicData = topics.find(t => t.topic === topic);
+        const topicData = topics.find(t => t.topic.toLowerCase() === topic.toLowerCase());
 
         if (topicData) {
           console.log('📡 Fetching questions for topic:', topicData.id);
