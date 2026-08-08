@@ -278,90 +278,55 @@ const Card = ({
         <div className="content">{node.text}</div>
       )}
 
-      {/* Display evidence if available */}
-      {node.evidence && (node.evidence.files?.length > 0 || node.evidence.urls?.length > 0) && (
-        <div style={{ marginTop: '8px', padding: '10px', background: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: '#0c4a6e', marginBottom: '8px' }}>
-            📚 Evidence Attached:
-          </div>
+       {/* Display evidence if available */}
+       {node.evidence && (node.evidence.files?.length > 0 || node.evidence.urls?.length > 0) && (
+         <div className="evidence-container">
+           <div className="evidence-title">📚 Evidence Attached:</div>
 
-          {/* Display file evidence */}
-          {node.evidence.files && node.evidence.files.length > 0 && (
-            <div style={{ marginBottom: '8px' }}>
-              {node.evidence.files.map((file, idx) => (
-                <div key={idx} style={{
-                  padding: '6px 10px',
-                  background: '#fff',
-                  borderRadius: '4px',
-                  marginBottom: '4px',
-                  border: '1px solid #e0f2fe',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <span style={{ fontSize: '16px' }}>📎</span>
-                  {file.dataUrl ? (
-                    <a
-                      href={file.dataUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        color: '#2563eb',
-                        textDecoration: 'underline',
-                        fontSize: '13px',
-                        flex: 1,
-                        cursor: 'pointer'
-                      }}
-                      onClick={(e) => openFileInNewTab(file, e)}
-                    >
-                      {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                    </a>
-                  ) : (
-                    <span style={{ fontSize: '13px', color: '#6b7280', flex: 1 }}>
-                      {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+           {/* Display file evidence */}
+           {node.evidence.files && node.evidence.files.length > 0 && (
+             <div>
+               {node.evidence.files.map((file, idx) => (
+                 <div key={idx} className="evidence-item">
+                   <span className="evidence-icon">📎</span>
+                   {file.dataUrl ? (
+                     <a
+                       href={file.dataUrl}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       onClick={(e) => openFileInNewTab(file, e)}
+                     >
+                       {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                     </a>
+                   ) : (
+                     <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                       {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                     </span>
+                   )}
+                 </div>
+               ))}
+             </div>
+           )}
 
-          {/* Display URL evidence */}
-          {node.evidence.urls && node.evidence.urls.length > 0 && (
-            <div>
-              {node.evidence.urls.map((url, idx) => (
-                <div key={idx} style={{
-                  padding: '6px 10px',
-                  background: '#fff',
-                  borderRadius: '4px',
-                  marginBottom: '4px',
-                  border: '1px solid #e0f2fe',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}>
-                  <span style={{ fontSize: '16px' }}>🔗</span>
-                  <a
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: '#2563eb',
-                      textDecoration: 'underline',
-                      fontSize: '13px',
-                      flex: 1,
-                      wordBreak: 'break-all',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {url}
-                  </a>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+           {/* Display URL evidence */}
+           {node.evidence.urls && node.evidence.urls.length > 0 && (
+             <div>
+               {node.evidence.urls.map((url, idx) => (
+                 <div key={idx} className="evidence-item">
+                   <span className="evidence-icon">🔗</span>
+                   <a
+                     href={url}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                   >
+                     {url}
+                   </a>
+                 </div>
+               ))}
+             </div>
+           )}
+         </div>
+       )}
 
       {/* Control buttons section */}
       <div className="controls">

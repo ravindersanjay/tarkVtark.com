@@ -201,7 +201,7 @@ https://debatemanch.com/इस्कॉन_vs_आर्य_समाज → Show
 1. Pick Cloudflare OR Netlify
 2. Follow the steps above
 3. Test the URL
-4. Celebrate! 🎉
+4. Celebrate! 
 ```
 
 **Current time: _____**
@@ -210,6 +210,5 @@ https://debatemanch.com/इस्कॉन_vs_आर्य_समाज → Show
 
 ---
 
-Keep this checklist handy! 📌
-
+Keep this checklist handy! 
 

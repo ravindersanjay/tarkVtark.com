@@ -34,7 +34,7 @@
 
 ## What You Need To Do (Deployment Side)
 
-### 🎯 OPTION A: Fix in Cloudflare Dashboard (Recommended - 5 minutes)
+###  OPTION A: Fix in Cloudflare Dashboard (Recommended - 5 minutes)
 
 1. Go to: https://dash.cloudflare.com
 2. **Pages** → Select your debate project
@@ -57,7 +57,7 @@
 
 ---
 
-### 🎯 OPTION B: Deploy to Netlify (10 minutes, auto SPA support)
+###  OPTION B: Deploy to Netlify (10 minutes, auto SPA support)
 
 If Cloudflare dashboard doesn't work:
 
@@ -72,7 +72,7 @@ If Cloudflare dashboard doesn't work:
 
 ---
 
-### 🎯 OPTION C: Verify Current Deployment
+###  OPTION C: Verify Current Deployment
 
 If unsure what happened:
 
@@ -161,5 +161,4 @@ The last one needs your action in Cloudflare dashboard!
 3. **If confused,** reference the detailed guides listed above
 
 Questions? Check the relevant markdown file!
-
 

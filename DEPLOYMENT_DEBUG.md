@@ -129,4 +129,3 @@ Then Cloudflare Pages is not rewriting the route to index.html.
 
 **Alternative:** Use Netlify (handles `_redirects` automatically)
 
-

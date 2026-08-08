@@ -186,8 +186,8 @@ Question B     Answer C
 ### Phase 4: Component Optimization
 
 #### Card Component
-**Desktop Controls:** [Reply] [Report] [👍] [👎] [Copy] [Edit]
-**Mobile Controls:** 
+**Desktop Controls:** \[Reply\] \[Report\] \[👍\] \[👎\] \[Copy\] \[Edit\]
+**Mobile Controls:**
 - Option 1: Action sheet (tap to expand)
 - Option 2: Icon-only buttons with labels
 - Option 3: Stack vertically with smaller text

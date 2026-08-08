@@ -5,7 +5,7 @@ When you refresh a page like `debatemanch.com/हिंदू_vs_मुस्ल
 
 ## The Solution (Choose ONE - takes 5 minutes)
 
-### 🚀 FASTEST FIX - Cloudflare Pages Dashboard (DO THIS FIRST)
+###  FASTEST FIX - Cloudflare Pages Dashboard (DO THIS FIRST)
 
 1. Open: https://dash.cloudflare.com
 2. Click: **Pages** → Your Debate Project
@@ -112,5 +112,4 @@ Just need to either:
 - Try Netlify
 
 **Pick one and test immediately!** ⏱️
-
 

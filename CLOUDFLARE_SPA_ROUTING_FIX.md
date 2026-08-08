@@ -229,4 +229,3 @@ If still getting 404 after trying all options:
    - `_redirects` file works out of box on both
    - Can migrate frontend in ~15 minutes
 
-
