@@ -54,14 +54,18 @@ const Card = ({
   evidenceUrls = {},
   setEvidenceUrls = () => {},
   user = null,
-  onEdit = () => {}
+  onEdit = () => {},
+  userVotes = {}
 }) => {
   // Local state to track if the Copy button was clicked (separate from uniqueId copy)
   const [textCopied, setTextCopied] = React.useState(false);
-  
+
   // Local state for edit mode
   const [isEditing, setIsEditing] = React.useState(false);
   const [editText, setEditText] = React.useState(node.text || '');
+
+  // Local state for text expansion (Read more/Less)
+  const [isTextExpanded, setIsTextExpanded] = React.useState(false);
 
   // Determine if this is a top-level question (depth 0) or a reply (depth > 0)
   const isQuestion = depth === 0;
@@ -103,6 +107,16 @@ const Card = ({
 
   // Check if current user is the author of this post
   const canEdit = user && node.author === user.email;
+
+  // Check if user has voted on this post
+  const voteKey = node.id + '-' + (user?.email || 'Anonymous');
+  const currentUserVote = userVotes[voteKey]; // 'up', 'down', or undefined
+
+  // Text truncation logic
+  const MAX_CHARS = 300; // Maximum characters before truncating
+  const text = node.text || '';
+  const shouldTruncate = text.length > MAX_CHARS && !isTextExpanded;
+  const displayText = shouldTruncate ? text.substring(0, MAX_CHARS) + '...' : text;
   
   // Debug logging
   console.log('Card Edit Check:', {
@@ -275,7 +289,27 @@ const Card = ({
           </div>
         </div>
       ) : (
-        <div className="content">{node.text}</div>
+        <div className="content">
+          {displayText}
+          {text.length > MAX_CHARS && (
+            <button
+              onClick={() => setIsTextExpanded(!isTextExpanded)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#2563eb',
+                cursor: 'pointer',
+                padding: '0',
+                marginLeft: '4px',
+                fontSize: '14px',
+                fontWeight: '500',
+                textDecoration: 'underline'
+              }}
+            >
+              {isTextExpanded ? 'Read less' : 'Read more'}
+            </button>
+          )}
+        </div>
       )}
 
        {/* Display evidence if available */}
@@ -371,11 +405,31 @@ const Card = ({
         </button>
 
         {/* Upvote button and count */}
-        <button className="btn vote" onClick={() => handleVote('up', node.id)}>👍</button>
+        <button
+          className="btn vote"
+          onClick={() => handleVote('up', node.id)}
+          style={{
+            backgroundColor: currentUserVote === 'up' ? '#2563eb' : '#fff',
+            color: currentUserVote === 'up' ? '#fff' : '#374151',
+            borderColor: currentUserVote === 'up' ? '#2563eb' : '#e5e7eb'
+          }}
+        >
+          👍
+        </button>
         <span className="vote-count">{node.votes?.up || 0}</span>
 
         {/* Downvote button and count */}
-        <button className="btn vote" onClick={() => handleVote('down', node.id)}>👎</button>
+        <button
+          className="btn vote"
+          onClick={() => handleVote('down', node.id)}
+          style={{
+            backgroundColor: currentUserVote === 'down' ? '#dc2626' : '#fff',
+            color: currentUserVote === 'down' ? '#fff' : '#374151',
+            borderColor: currentUserVote === 'down' ? '#dc2626' : '#e5e7eb'
+          }}
+        >
+          👎
+        </button>
         <span className="vote-count">{node.votes?.down || 0}</span>
 
         {/* Copy button - copies the post text to clipboard */}

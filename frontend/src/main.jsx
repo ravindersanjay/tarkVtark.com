@@ -39,6 +39,7 @@ import AdminDashboard from './components/AdminDashboard.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import LoginModal from './components/LoginModal.jsx';
 import UserProfile from './components/UserProfile.jsx';
+import { authAPI } from './services/apiService.js';
 
 /**
  * Extract debate topic from the URL path
@@ -56,8 +57,13 @@ function getDebateTopicFromUrl() {
   const path = window.location.pathname;
 
   // Skip these special paths - they're not debate topics
-  const specialPaths = ['/', '', '/admin', '/contact', '/guidelines', '/faq'];
+  const specialPaths = ['/', '', '/contact', '/guidelines', '/faq'];
   if (specialPaths.includes(path)) {
+    return null;
+  }
+
+  // Skip admin paths (including sub-sections)
+  if (path.startsWith('/admin')) {
     return null;
   }
 
@@ -104,12 +110,26 @@ function MainRouter() {
 
   // Admin authentication state
   // TODO: Replace with session-based auth from backend API
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
+    // Check if admin is уже logged in on page load
+    return authAPI.isAuthenticated();
+  });
 
-  // Check for admin route in URL
+  // Check for admin route in URL and restore authentication
   useEffect(() => {
-    if (window.location.pathname.includes('/admin')) {
-      setPage({ type: 'admin' });
+    const path = window.location.pathname;
+
+    if (path.includes('/admin')) {
+      // Check if user is authenticated
+      if (authAPI.isAuthenticated()) {
+        setIsAdminLoggedIn(true);
+        // Extract admin sub-section from URL
+        const adminSection = path.split('/')[2] || 'debate';
+        setPage({ type: 'admin', section: adminSection });
+      } else {
+        // Not authenticated, show login
+        setPage({ type: 'admin' });
+      }
     }
   }, []);
 
@@ -121,8 +141,15 @@ function MainRouter() {
       // Determine which page to show based on URL
       if (path === '/' || path === '') {
         setPage({ type: 'home' });
-      } else if (path === '/admin') {
-        setPage({ type: 'admin' });
+      } else if (path.startsWith('/admin')) {
+        // Extract admin sub-section from URL
+        const adminSection = path.split('/')[2] || 'debate';
+        if (authAPI.isAuthenticated()) {
+          setIsAdminLoggedIn(true);
+          setPage({ type: 'admin', section: adminSection });
+        } else {
+          setPage({ type: 'admin' });
+        }
       } else if (path === '/contact') {
         setPage({ type: 'contact' });
       } else if (path === '/guidelines') {
@@ -160,8 +187,9 @@ function MainRouter() {
   // Admin login handler
   const handleAdminLogin = () => {
     setIsAdminLoggedIn(true);
-    window.history.pushState({}, '', '/admin');
-    setPage({ type: 'admin' });
+    const adminSection = page.section || 'debate';
+    window.history.pushState({}, '', `/admin/${adminSection}`);
+    setPage({ type: 'admin', section: adminSection });
   };
 
   /**
@@ -216,8 +244,8 @@ function MainRouter() {
       setPage({ type: 'faq' });
     },
     onAdmin: () => {
-      window.history.pushState({}, '', '/admin');
-      setPage({ type: 'admin' });
+      window.history.pushState({}, '', '/admin/debate');
+      setPage({ type: 'admin', section: 'debate' });
     },
     active: page.type,
     // Jump feature only available on debate pages
@@ -275,6 +303,7 @@ function MainRouter() {
             <AdminDashboard
               onLogout={handleAdminLogout}
               onBackToSite={() => setPage({ type: 'home' })}
+              initialSection={page.section || 'debate'}
             />
           )}
         </>

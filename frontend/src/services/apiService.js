@@ -266,13 +266,14 @@ const questionsAPI = {
    * Vote on a question
    * @param {string} questionId - UUID of the question
    * @param {string} voteType - 'up' or 'down'
+   * @param {string} action - 'add', 'remove', or 'change'
    * @returns {Promise<Object>} Updated question with new vote counts
    */
-  vote: async (questionId, voteType) => {
-    console.log('❓ questionsAPI.vote() - Voting on question:', questionId, voteType);
+  vote: async (questionId, voteType, action = 'add') => {
+    console.log('❓ questionsAPI.vote() - Voting on question:', questionId, voteType, action);
     const result = await apiFetch(`/questions/${questionId}/vote`, {
       method: 'PUT',
-      body: JSON.stringify({ voteType }),
+      body: JSON.stringify({ voteType, action }),
     });
     console.log('❓ questionsAPI.vote() - Vote recorded:', result);
     return result;
@@ -344,13 +345,14 @@ const repliesAPI = {
    * Vote on a reply
    * @param {string} replyId - UUID of the reply
    * @param {string} voteType - 'up' or 'down'
+   * @param {string} action - 'add', 'remove', or 'change'
    * @returns {Promise<Object>} Updated reply with new vote counts
    */
-  vote: async (replyId, voteType) => {
-    console.log('💬 repliesAPI.vote() - Voting on reply:', replyId, voteType);
+  vote: async (replyId, voteType, action = 'add') => {
+    console.log('💬 repliesAPI.vote() - Voting on reply:', replyId, voteType, action);
     const result = await apiFetch(`/replies/${replyId}/vote`, {
       method: 'PUT',
-      body: JSON.stringify({ voteType }),
+      body: JSON.stringify({ voteType, action }),
     });
     console.log('💬 repliesAPI.vote() - Vote recorded:', result);
     return result;

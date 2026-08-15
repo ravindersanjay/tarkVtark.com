@@ -156,8 +156,8 @@ const App = ({ topic }) => {
   const [copied, setCopied] = useState({});    // Track which uniqueIds were recently copied
   const [expandedQuestions, setExpandedQuestions] = useState({}); // Track which questions are expanded
 
-  // Vote tracking (in-memory only, prevents double-voting during this session)
-  const voteSet = useRef(new Set()); // Set of "postId-username" strings
+  // Vote tracking (in-memory only, tracks user's current vote on each post)
+  const userVotes = useRef({}); // Object: { "postId-username": "up"|"down" }
 
   // Track the last opened form for auto-focus behavior
   const lastOpenedFormRef = useRef(null);
@@ -711,8 +711,10 @@ const App = ({ topic }) => {
   /**
    * Handle voting (upvote or downvote)
    *
-   * Prevents duplicate voting by the same user on the same post during this session.
-   * In production, this would be enforced server-side.
+   * Market standard voting behavior:
+   * - If user hasn't voted: add the vote
+   * - If user voted the same way: remove the vote (toggle off)
+   * - If user voted differently: change the vote (decrement old, increment new)
    * Requires authentication.
    *
    * @param {'up'|'down'} type - Type of vote
@@ -726,18 +728,26 @@ const App = ({ topic }) => {
     }
 
     const key = id + '-' + (user?.email || 'Anonymous');
+    const currentVote = userVotes.current[key];
 
-    // Check if user already voted on this post
-    if (voteSet.current.has(key)) return toast.error('Already voted');
+    // Determine the action: add, remove, or change vote
+    let action;
+    if (!currentVote) {
+      action = 'add'; // No existing vote, add new one
+    } else if (currentVote === type) {
+      action = 'remove'; // Same vote, remove it (toggle off)
+    } else {
+      action = 'change'; // Different vote, change it
+    }
 
     // Send vote to backend API
     try {
       const isQuestion = id.startsWith('q-') || debateData.questions.some(q => q.id === id);
 
       if (isQuestion) {
-        await questionsAPI.vote(id, type);
+        await questionsAPI.vote(id, type, action);
       } else {
-        await repliesAPI.vote(id, type);
+        await repliesAPI.vote(id, type, action);
       }
     } catch (err) {
       console.error('Failed to vote:', err);
@@ -751,14 +761,26 @@ const App = ({ topic }) => {
 
       if (target) {
         target.votes = target.votes || { up: 0, down: 0 };
-        target.votes[type]++; // Increment the vote count
+
+        if (action === 'add') {
+          target.votes[type]++;
+        } else if (action === 'remove') {
+          target.votes[type]--;
+        } else if (action === 'change') {
+          target.votes[currentVote]--;
+          target.votes[type]++;
+        }
       }
 
       return newData;
     });
 
-    // Mark this vote to prevent duplicates
-    voteSet.current.add(key);
+    // Update user's vote tracking
+    if (action === 'remove') {
+      delete userVotes.current[key];
+    } else {
+      userVotes.current[key] = type;
+    }
   };
 
   // =====================================================================
@@ -794,6 +816,7 @@ const App = ({ topic }) => {
       setEvidenceUrls={setEvidenceUrls}
       user={user}
       onEdit={handleEditPost}
+      userVotes={userVotes.current}
     />
   );
 

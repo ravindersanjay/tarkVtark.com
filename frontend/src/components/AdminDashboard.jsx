@@ -10,14 +10,27 @@ const REPORTS_KEY = 'reported_posts';
  * AdminDashboard Component
  * Central hub for moderating all aspects of the debate application
  */
-const AdminDashboard = ({ onLogout, onBackToSite }) => {
-  const [activeTab, setActiveTab] = useState('debates');
+const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) => {
+  const [activeTab, setActiveTab] = useState(() => {
+    // Map URL section to tab name
+    const sectionToTab = {
+      'debate': 'debates',
+      'questions': 'questions',
+      'analytics': 'analytics',
+      'reports': 'reports',
+      'faq': 'faq',
+      'guidelines': 'guidelines',
+      'messages': 'messages'
+    };
+    return sectionToTab[initialSection] || 'debates';
+  });
   const [topics, setTopics] = useState([]);
   const [messages, setMessages] = useState([]);
   const [reports, setReports] = useState([]);
   const [faqItems, setFaqItems] = useState([]);
   const [guidelines, setGuidelines] = useState([]);
   const [allQuestionsData, setAllQuestionsData] = useState([]); // Store all questions from all topics
+  const [isLoading, setIsLoading] = useState(false);
 
   // Edit states
   const [editingTopic, setEditingTopic] = useState(null);
@@ -32,6 +45,22 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Update URL when tab changes
+  useEffect(() => {
+    // Map tab name to URL section
+    const tabToSection = {
+      'debates': 'debate',
+      'questions': 'questions',
+      'analytics': 'analytics',
+      'reports': 'reports',
+      'faq': 'faq',
+      'guidelines': 'guidelines',
+      'messages': 'messages'
+    };
+    const section = tabToSection[activeTab] || 'debate';
+    window.history.replaceState({}, '', `/admin/${section}`);
+  }, [activeTab]);
 
   const loadData = async () => {
     // Load topics from backend API (store full objects, not just names)
@@ -175,6 +204,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
 
   const loadDebateData = async (topicObj) => {
     console.log('loadDebateData called with:', topicObj);
+    setIsLoading(true);
 
     setSelectedDebate(topicObj.topic);
     setSelectedDebateTopic(topicObj);
@@ -190,6 +220,8 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
       console.error('Error response:', err.response);
       setDebateQuestions([]);
       toast.error(`Failed to load questions. Error: ${err.message || 'Please check console for details.'}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -736,6 +768,28 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         {activeTab === 'questions' && (
           <div className="admin-section">
             <h2>Manage Questions & Answers</h2>
+            {isLoading && (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px',
+                gap: '8px'
+              }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  border: '3px solid #e5e7eb',
+                  borderTop: '3px solid #3b82f6',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                <div style={{ fontSize: '14px', color: '#6b7280', fontWeight: '500' }}>
+                  Loading...
+                </div>
+              </div>
+            )}
             {!selectedDebate ? (
               <div>
                 <p>Select a debate to manage its questions and answers:</p>
@@ -752,7 +806,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                 </div>
               </div>
             ) : (
-              <div>
+              <div style={{ display: isLoading ? 'none' : 'block' }}>
                 <div className="section-header">
                   <h3>{selectedDebate}</h3>
                   <button className="btn" onClick={() => setSelectedDebate(null)}>Back to Topics</button>
@@ -761,7 +815,7 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
                 {debateQuestions.length === 0 ? (
                   <p className="empty-state">No questions in this debate yet.</p>
                 ) : (
-                  <div className="questions-list">
+                <div className="questions-list">
                     {debateQuestions.map((question) => (
                       <div key={question.id} className="question-item">
                         <div className="question-header">
@@ -885,12 +939,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         {/* Reports Tab */}
         {activeTab === 'reports' && (
           <div className="admin-section">
-            <div className="section-header">
-              <h2>Reported Posts</h2>
-              {reports.length > 0 && (
-                <button className="btn btn-danger" onClick={clearAllReports}>Clear All</button>
-              )}
-            </div>
+            <h2>Reported Posts</h2>
+            {reports.length > 0 && (
+              <button className="btn btn-danger" onClick={clearAllReports}>Clear All</button>
+            )}
             <div className="admin-list">
               {reports.length === 0 ? (
                 <p className="empty-state">No reported posts.</p>
@@ -921,7 +973,6 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         {activeTab === 'faq' && (
           <div className="admin-section">
             <h2>Manage FAQ</h2>
-
             {/* Add New FAQ */}
             <div className="add-form">
               <h3>Add New FAQ</h3>
@@ -996,7 +1047,6 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         {activeTab === 'guidelines' && (
           <div className="admin-section">
             <h2>Manage Guidelines</h2>
-
             {/* Add New Guideline */}
             <div className="add-form">
               <h3>Add New Guideline</h3>
@@ -1056,12 +1106,10 @@ const AdminDashboard = ({ onLogout, onBackToSite }) => {
         {/* Messages Tab */}
         {activeTab === 'messages' && (
           <div className="admin-section">
-            <div className="section-header">
-              <h2>Contact Messages</h2>
-              {messages.length > 0 && (
-                <button className="btn btn-danger" onClick={clearAllMessages}>Clear All</button>
-              )}
-            </div>
+            <h2>Contact Messages</h2>
+            {messages.length > 0 && (
+              <button className="btn btn-danger" onClick={clearAllMessages}>Clear All</button>
+            )}
             <div className="admin-list">
               {messages.length === 0 ? (
                 <p className="empty-state">No messages received yet.</p>
