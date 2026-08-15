@@ -8,14 +8,21 @@ import '../styles/userProfile.css';
  * =====================================================================
  *
  * Displays logged-in user info and logout button in the top navigation.
+ * Shows login button when user is not authenticated.
  *
  * @author TarkVtark Team
  */
 const UserProfile = () => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, showLoginModal } = useAuth();
 
   if (!isAuthenticated || !user) {
-    return null;
+    return (
+      <div className="user-profile">
+        <button className="login-btn" onClick={() => showLoginModal('login')}>
+          Login
+        </button>
+      </div>
+    );
   }
 
   return (

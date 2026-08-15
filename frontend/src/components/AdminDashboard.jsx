@@ -669,7 +669,6 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
         <h1>Admin Dashboard</h1>
         <div className="admin-header-actions">
           <button className="btn" onClick={onBackToSite}>Back to Site</button>
-          <button className="btn" onClick={onLogout}>Logout</button>
         </div>
       </div>
 

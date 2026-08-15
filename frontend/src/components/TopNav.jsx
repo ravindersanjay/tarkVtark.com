@@ -14,8 +14,15 @@ import logoFallback from '../assets/react.svg';
  * @param {function} onAdmin - go to admin panel
  * @param {string} active - which nav item is active
  * @param {function} onJump - callback for unique ID jump
+ * @param {boolean} isAdminLoggedIn - whether admin is logged in
+ * @param {function} onAdminLogin - callback to go to admin login
+ * @param {function} onAdminLogout - callback to logout admin
+ * @param {boolean} isUserLoggedIn - whether user is logged in
+ * @param {function} onUserLogin - callback to show user login modal
+ * @param {function} onUserLogout - callback to logout user
+ * @param {object} user - current user object
  */
-const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJump }) => {
+const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJump, isAdminLoggedIn, onAdminLogin, onAdminLogout, isUserLoggedIn, onUserLogin, onUserLogout, user }) => {
   const [jumpId, setJumpId] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -44,7 +51,19 @@ const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJum
         <span className={`topnav-link${active === 'guidelines' ? ' active' : ''}`} onClick={onGuidelines}>Guidelines</span>
         <span className={`topnav-link${active === 'faq' ? ' active' : ''}`} onClick={onFAQ}>FAQ</span>
         <span className={`topnav-link${active === 'contact' ? ' active' : ''}`} onClick={onContact}>Contact Us</span>
-        <span className={`topnav-link${active === 'admin' ? ' active' : ''}`} onClick={onAdmin}>Admin</span>
+        {/* User Login/Logout button */}
+        {isUserLoggedIn && user ? (
+          <span className="topnav-link user-info" onClick={onUserLogout}>
+            {user.profilePicture && (
+              <img src={user.profilePicture} alt={user.name} className="nav-user-avatar" />
+            )}
+            <span className="nav-user-name">{user.name}</span>
+            <span className="nav-logout">Logout</span>
+          </span>
+        ) : (
+          <span className="topnav-link" onClick={onUserLogin}>Login</span>
+        )}
+        <span className={`topnav-link${active === 'admin' ? ' active' : ''}`} onClick={onAdmin}>Admin Login</span>
         {/* Jump to Unique ID - desktop */}
         <div className="topnav-jump">
           <input
@@ -68,7 +87,14 @@ const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJum
         <a className={`mobile-menu-link${active === 'guidelines' ? ' active' : ''}`} onClick={() => handleNavClick(onGuidelines)}>Guidelines</a>
         <a className={`mobile-menu-link${active === 'faq' ? ' active' : ''}`} onClick={() => handleNavClick(onFAQ)}>FAQ</a>
         <a className={`mobile-menu-link${active === 'contact' ? ' active' : ''}`} onClick={() => handleNavClick(onContact)}>Contact Us</a>
-        <a className={`mobile-menu-link${active === 'admin' ? ' active' : ''}`} onClick={() => handleNavClick(onAdmin)}>Admin</a>
+        {isUserLoggedIn && user ? (
+          <a className="mobile-menu-link" onClick={() => handleNavClick(onUserLogout)}>
+            {user.name} (Logout)
+          </a>
+        ) : (
+          <a className="mobile-menu-link" onClick={() => handleNavClick(onUserLogin)}>Login</a>
+        )}
+        <a className={`mobile-menu-link${active === 'admin' ? ' active' : ''}`} onClick={() => handleNavClick(onAdmin)}>Admin Login</a>
       </div>
     </nav>
   );

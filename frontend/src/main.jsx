@@ -24,7 +24,7 @@
 import { StrictMode, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { AuthProvider } from './contexts/AuthContext.jsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.jsx';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
@@ -38,7 +38,6 @@ import AdminLogin from './components/AdminLogin.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import LoginModal from './components/LoginModal.jsx';
-import UserProfile from './components/UserProfile.jsx';
 import { authAPI } from './services/apiService.js';
 
 /**
@@ -91,6 +90,7 @@ function getDebateTopicFromUrl() {
  * for a heavy routing library like React Router.
  */
 function MainRouter() {
+  const { user, isAuthenticated, logout, showLoginModal } = useAuth();
   /**
    * Page state - determines which component to render
    *
@@ -249,18 +249,20 @@ function MainRouter() {
     },
     active: page.type,
     // Jump feature only available on debate pages
-    onJump: page.type === 'debate' ? jumpToUniqueId : undefined
+    onJump: page.type === 'debate' ? jumpToUniqueId : undefined,
+    isAdminLoggedIn,
+    onAdminLogin: handleAdminLogin,
+    onAdminLogout: handleAdminLogout,
+    isUserLoggedIn: isAuthenticated,
+    onUserLogin: () => showLoginModal('login'),
+    onUserLogout: logout,
+    user
   };
 
   return (
     <>
       {/* Navigation bar - appears on all pages except admin */}
-      {page.type !== 'admin' && (
-        <>
-          <TopNav {...navProps} />
-          <UserProfile />
-        </>
-      )}
+      {page.type !== 'admin' && <TopNav {...navProps} />}
 
       {/* Login Modal - shown when guest tries protected actions */}
       <LoginModal />
