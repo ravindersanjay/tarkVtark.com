@@ -118,23 +118,25 @@
   }
 
   .topnav-link {
-    display: none; /* Hide desktop nav links on mobile */
+    display: none !important; /* Hide desktop nav links on mobile */
   }
 
   .topnav-jump {
-    display: none; /* Hide jump input on mobile */
+    display: none !important; /* Hide jump input on mobile */
   }
 
   /* Hamburger menu button */
   .mobile-menu-btn {
-    display: block;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-    padding: 8px;
-    margin-left: auto;
+	display: block !important; /* ensure visible on mobile (override unexpected specificity) */
+	background: none;
+	border: none;
+	color: white;
+	font-size: 24px;
+	cursor: pointer;
+	padding: 8px;
+	margin-left: auto;
+	position: relative; /* ensure it participates in stacking context */
+	z-index: 200; /* place above other header elements if overlapped */
   }
 }
 

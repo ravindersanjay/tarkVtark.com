@@ -11,6 +11,9 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8080') do (
 echo Port 8080 freed!
 echo.
 echo Starting backend...
-cd backend-java
-call mvn clean compile spring-boot:run
+echo cd backend
+echo call mvn clean compile spring-boot:run
+
+echo backend ports freed!
+echo pause
 

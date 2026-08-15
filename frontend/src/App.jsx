@@ -154,6 +154,7 @@ const App = ({ topic }) => {
 
   // UI feedback state
   const [copied, setCopied] = useState({});    // Track which uniqueIds were recently copied
+  const [expandedQuestions, setExpandedQuestions] = useState({}); // Track which questions are expanded
 
   // Vote tracking (in-memory only, prevents double-voting during this session)
   const voteSet = useRef(new Set()); // Set of "postId-username" strings
@@ -865,6 +866,9 @@ const App = ({ topic }) => {
     // If filtering hides everything, don't render this question at all
     if (filter && rowsToRender.length === 0) return null;
 
+    // Check if this question is expanded
+    const isExpanded = expandedQuestions[q.id] || false;
+
     // Step 3: Build render rows with pairing logic
     const renderRows = [];
     const processedAsChild = new Set(); // Track which nodes have been shown as children
@@ -895,32 +899,18 @@ const App = ({ topic }) => {
         for (let i = 0; i < directChildren.length; i++) {
           const child = directChildren[i];
 
-          if (i === 0 || !isFirstOccurrence) {
-            // Pair parent with child in same row
-            // This creates rows like: [Parent] → [Child]
-            renderRows.push({
-              type: 'paired',
-              parent: nodeRow,
-              child: child
-            });
-            processedAsChild.add(child.node.id);
+          // Always pair parent with child in same row
+          // This creates rows like: [Parent] → [Child]
+          renderRows.push({
+            type: 'paired',
+            parent: nodeRow,
+            child: child
+          });
+          processedAsChild.add(child.node.id);
 
-            // Recursively process the child (it might have its own children)
-            // Mark as NOT first occurrence since it's already shown
-            processNode(child, false);
-          } else {
-            // Additional sibling - show alone
-            if (!processedAsChild.has(child.node.id)) {
-              renderRows.push({
-                type: 'single',
-                row: child
-              });
-              processedAsChild.add(child.node.id);
-            }
-
-            // Still process recursively in case it has children
-            processNode(child, false);
-          }
+          // Recursively process the child (it might have its own children)
+          // Mark as NOT first occurrence since it's already shown
+          processNode(child, false);
         }
       } else {
         // No children - show alone (only if first occurrence and not already shown)
@@ -939,9 +929,44 @@ const App = ({ topic }) => {
     }
 
     // Step 5: Render the rows
+    // If collapsed, only show the first row
+    const rowsToDisplay = isExpanded ? renderRows : (renderRows.length > 0 ? [renderRows[0]] : []);
+
     return (
-      <div key={`q-${q.id}`} className={`question-section ${q.side || 'left'}`} data-uniqueid={q.uniqueId} style={{ marginBottom: '14px' }}>
+      <div
+        key={`q-${q.id}`}
+        className={`question-section ${q.side || 'left'}`}
+        data-uniqueid={q.uniqueId}
+        style={{ marginBottom: '14px' }}
+      >
+        {/* Expand/collapse indicator */}
+        {renderRows.length > 1 && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
+              marginBottom: '8px',
+              fontSize: '12px',
+              color: '#6b7280',
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setExpandedQuestions(prev => ({
+                ...prev,
+                [q.id]: !prev[q.id]
+              }));
+            }}
+          >
+            {isExpanded ? '▼ Click to collapse' : '▶ Click to expand'}
+          </div>
+        )}
         {renderRows.map((item, idx) => {
+          // Only render if this row should be displayed
+          if (!isExpanded && idx > 0) return null;
           if (item.type === 'paired') {
             // PAIRED ROW: Parent and child in same row
             const { parent, child } = item;
@@ -956,8 +981,6 @@ const App = ({ topic }) => {
                 key={`row-${parent.node.id}-${child.node.id}-${idx}`}
                 className="thread-row"
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
                   gap: '16px',
                   alignItems: 'center',
                   marginBottom: '8px',
@@ -1006,8 +1029,6 @@ const App = ({ topic }) => {
                 key={`row-${row.node.id}-${idx}`}
                 className="thread-row"
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
                   gap: '16px',
                   alignItems: 'start',
                   marginBottom: '8px'
@@ -1054,6 +1075,31 @@ const App = ({ topic }) => {
     <>
       {/* Main container with top padding for spacing from navbar */}
       <div className="container" style={{ paddingTop: '24px' }}>
+        {/* Loading indicator above add question section */}
+        {loading && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '40px 20px',
+            gap: '12px',
+            marginBottom: '16px'
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              border: '4px solid #e5e7eb',
+              borderTop: '4px solid #3b82f6',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></div>
+            <div style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>
+              Loading page...
+            </div>
+          </div>
+        )}
+
         {/* Search/filter input */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', marginTop: '8px' }}>
           <input
@@ -1078,8 +1124,8 @@ const App = ({ topic }) => {
           <div className="header-right">{rightLabel}</div>
         </div>
 
-        {/* Main debate board */}
-        <div id="board">{boardContent}</div>
+        {/* Main debate board - hide while loading */}
+        {!loading && <div id="board">{boardContent}</div>}
 
         {/* Form to add new question */}
         <div className="add-question">

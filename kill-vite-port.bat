@@ -17,5 +17,5 @@ for /f "tokens=5" %%a in ('netstat -ano ^| findstr :5175') do (
 )
 
 echo Vite ports freed!
-pause
+echo pause
 

@@ -23,16 +23,23 @@
     padding: 6px 12px;
   }
 
-  /* Thread rows - single column on mobile */
+  /* Thread rows - force single column on mobile.
+     Note: App.jsx sets inline grid styles (gridTemplateColumns) which
+     can prevent media queries from taking effect. Use !important here
+     to override the inline grid-template-columns and make the layout
+     collapse to a single column on narrow screens. */
   .thread-row {
-    grid-template-columns: 1fr;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
     gap: 12px;
   }
 
-  /* Left and right cells - full width on mobile */
+  /* Ensure each cell spans the full width when stacked. Use grid-column
+     so this works even when inline styles define grid behavior. */
   .left-cell,
   .right-cell {
     width: 100%;
+    grid-column: 1 / -1 !important;
   }
 
   /* Add side badges for mobile to indicate left/right */
@@ -44,9 +51,11 @@
     border-left: 4px solid #f97316;
   }
 
-  /* Hide arrow indicators on mobile */
+  /* Hide arrow indicators on mobile. Arrow element is rendered with an
+     inline style (position: absolute) so match by attribute and force
+     hide with !important. */
   .thread-row > div[style*="position: absolute"] {
-    display: none;
+    display: none !important;
   }
 
   /* Add question section mobile styles */
@@ -193,7 +202,7 @@
    color: #1d4ed8;
    text-decoration: underline;
 }
-}
+
 
 @media (max-width: 480px) {
    /* Smaller padding for very small screens */
