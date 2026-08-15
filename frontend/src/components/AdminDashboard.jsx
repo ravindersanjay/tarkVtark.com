@@ -31,6 +31,8 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
   const [guidelines, setGuidelines] = useState([]);
   const [allQuestionsData, setAllQuestionsData] = useState([]); // Store all questions from all topics
   const [isLoading, setIsLoading] = useState(false);
+  const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(null);
 
   // Edit states
   const [editingTopic, setEditingTopic] = useState(null);
@@ -60,6 +62,23 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
     };
     const section = tabToSection[activeTab] || 'debate';
     window.history.replaceState({}, '', `/admin/${section}`);
+  }, [activeTab]);
+
+  // Load analytics data when switching to analytics tab
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      setIsAnalyticsLoading(true);
+      setAnalyticsError(null);
+      console.log('Loading analytics data...');
+      loadData().then(() => {
+        console.log('Analytics data loaded successfully');
+        setIsAnalyticsLoading(false);
+      }).catch(err => {
+        console.error('Failed to load analytics data:', err);
+        setAnalyticsError('Failed to load analytics data');
+        setIsAnalyticsLoading(false);
+      });
+    }
   }, [activeTab]);
 
   const loadData = async () => {
@@ -1150,38 +1169,84 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
         {activeTab === 'analytics' && (
           <div className="admin-section">
             <h2>📊 Top 10 Analytics - Most Liked Content</h2>
-            <div className="analytics-grid">
-              {/* Top 10 Questions */}
-              <div className="analytics-section">
-                <h3>🏆 Top 10 Questions</h3>
-                {(() => {
-                  const stats = getTop10Stats();
-                  return stats.questions.length === 0 ? (
-                    <p className="empty-state">No questions available yet.</p>
-                  ) : (
-                    <div className="top-list">
-                      {stats.questions.map((question, index) => (
-                        <div key={index} className="top-item">
-                          <div className="rank">{index + 1}</div>
-                          <div className="top-content">
-                            <div className="top-topic">{question.topic}</div>
-                            <div className="top-text">{question.text}</div>
-                            <div className="top-meta">
-                              <span className="top-author">By: {question.author}</span>
-                              <span className="top-id">ID: {question.uniqueId}</span>
-                              <span className="top-tag">[{question.tag}]</span>
+            {isAnalyticsLoading && (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '40px',
+                gap: '12px'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  border: '4px solid #e5e7eb',
+                  borderTop: '4px solid #3b82f6',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                <div style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>
+                  Loading analytics data...
+                </div>
+              </div>
+            )}
+            {analyticsError && (
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#fee2e2',
+                border: '1px solid #ef4444',
+                borderRadius: '8px',
+                color: '#dc2626',
+                textAlign: 'center'
+              }}>
+                {analyticsError}
+                <button
+                  className="btn"
+                  onClick={() => {
+                    setAnalyticsError(null);
+                    setIsAnalyticsLoading(true);
+                    loadData().then(() => setIsAnalyticsLoading(false));
+                  }}
+                  style={{ marginLeft: '10px' }}
+                >
+                  Retry
+                </button>
+              </div>
+            )}
+            {!isAnalyticsLoading && !analyticsError && (
+              <div className="analytics-grid">
+                {/* Top 10 Questions */}
+                <div className="analytics-section">
+                  <h3>🏆 Top 10 Questions</h3>
+                  {(() => {
+                    const stats = getTop10Stats();
+                    return stats.questions.length === 0 ? (
+                      <p className="empty-state">No questions available yet.</p>
+                    ) : (
+                      <div className="top-list">
+                        {stats.questions.map((question, index) => (
+                          <div key={index} className="top-item">
+                            <div className="rank">{index + 1}</div>
+                            <div className="top-content">
+                              <div className="top-topic">{question.topic}</div>
+                              <div className="top-text">{question.text}</div>
+                              <div className="top-meta">
+                                <span className="top-author">By: {question.author}</span>
+                                <span className="top-id">ID: {question.uniqueId}</span>
+                                <span className="top-tag">[{question.tag}]</span>
+                              </div>
+                            </div>
+                            <div className="top-likes">
+                              <div className="likes-count">{question.totalLikes}</div>
+                              <div className="likes-label">👍 Likes</div>
                             </div>
                           </div>
-                          <div className="top-likes">
-                            <div className="likes-count">{question.totalLikes}</div>
-                            <div className="likes-label">👍 Likes</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
 
               {/* Top 10 Answers */}
               <div className="analytics-section">
@@ -1214,6 +1279,7 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
                 })()}
               </div>
             </div>
+            )}
           </div>
         )}
       </div>
