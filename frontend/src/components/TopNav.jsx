@@ -11,6 +11,7 @@ import logoFallback from '../assets/react.svg';
  * @param {function} onContact - go to contact page
  * @param {function} onGuidelines - go to guidelines page
  * @param {function} onFAQ - go to FAQ page
+ * @param {function} onPrivacy - go to privacy policy page
  * @param {function} onAdmin - go to admin panel
  * @param {string} active - which nav item is active
  * @param {function} onJump - callback for unique ID jump
@@ -22,7 +23,7 @@ import logoFallback from '../assets/react.svg';
  * @param {function} onUserLogout - callback to logout user
  * @param {object} user - current user object
  */
-const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJump, isAdminLoggedIn, onAdminLogin, onAdminLogout, isUserLoggedIn, onUserLogin, onUserLogout, user }) => {
+const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onPrivacy, onAdmin, active, onJump, isAdminLoggedIn, onAdminLogin, onAdminLogout, isUserLoggedIn, onUserLogin, onUserLogout, user }) => {
   const [jumpId, setJumpId] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -50,6 +51,7 @@ const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJum
         <span className={`topnav-link${active === 'home' ? ' active' : ''}`} onClick={onHome}>Home</span>
         <span className={`topnav-link${active === 'guidelines' ? ' active' : ''}`} onClick={onGuidelines}>Guidelines</span>
         <span className={`topnav-link${active === 'faq' ? ' active' : ''}`} onClick={onFAQ}>FAQ</span>
+        <span className={`topnav-link${active === 'privacy' ? ' active' : ''}`} onClick={onPrivacy}>Privacy Policy</span>
         <span className={`topnav-link${active === 'contact' ? ' active' : ''}`} onClick={onContact}>Contact Us</span>
         {/* User Login/Logout button */}
         {isUserLoggedIn && user ? (
@@ -86,6 +88,7 @@ const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onAdmin, active, onJum
         <a className={`mobile-menu-link${active === 'home' ? ' active' : ''}`} onClick={() => handleNavClick(onHome)}>Home</a>
         <a className={`mobile-menu-link${active === 'guidelines' ? ' active' : ''}`} onClick={() => handleNavClick(onGuidelines)}>Guidelines</a>
         <a className={`mobile-menu-link${active === 'faq' ? ' active' : ''}`} onClick={() => handleNavClick(onFAQ)}>FAQ</a>
+        <a className={`mobile-menu-link${active === 'privacy' ? ' active' : ''}`} onClick={() => handleNavClick(onPrivacy)}>Privacy Policy</a>
         <a className={`mobile-menu-link${active === 'contact' ? ' active' : ''}`} onClick={() => handleNavClick(onContact)}>Contact Us</a>
         {isUserLoggedIn && user ? (
           <a className="mobile-menu-link" onClick={() => handleNavClick(onUserLogout)}>

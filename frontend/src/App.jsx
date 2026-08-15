@@ -90,6 +90,104 @@ const findReplyById = (id, arr) => {
 };
 
 /**
+ * Find a post (question or reply) by its uniqueId
+ *
+ * This function searches through the entire debate tree to find a specific post by uniqueId.
+ * It first checks top-level questions, then recursively searches through all replies.
+ *
+ * @param {string} uniqueId - The uniqueId to search for
+ * @param {Array} questions - Array of question objects to search in
+ * @returns {object|null} - The found post object, or null if not found
+ */
+const findPostByUniqueId = (uniqueId, questions) => {
+  if (!Array.isArray(questions)) return null;
+
+  // First, check top-level questions
+  const q = questions.find(x => x.uniqueId === uniqueId);
+  if (q) return q;
+
+  // Not found at top level, search recursively through all replies
+  return findReplyByUniqueId(uniqueId, questions);
+};
+
+/**
+ * Recursively search through nested replies to find a post by uniqueId
+ *
+ * This is a depth-first search that traverses the entire reply tree.
+ * Each question can have replies, and each reply can have its own replies (nested structure).
+ *
+ * @param {string} uniqueId - The uniqueId to search for
+ * @param {Array} arr - Array of posts (questions or replies) to search
+ * @returns {object|null} - The found post, or null if not found
+ */
+const findReplyByUniqueId = (uniqueId, arr) => {
+  if (!Array.isArray(arr)) return null;
+
+  // Iterate through each post in the array
+  for (const r of arr) {
+    // Check if this is the post we're looking for
+    if (r.uniqueId === uniqueId) return r;
+
+    // If this post has replies, search them recursively
+    if (Array.isArray(r.replies) && r.replies.length > 0) {
+      const found = findReplyByUniqueId(uniqueId, r.replies);
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+/**
+ * Find the chain of parent reply IDs leading to a specific uniqueId
+ *
+ * This function builds a path from the top-level question down to the target reply.
+ * The path includes all parent reply IDs that need to be expanded to show the target.
+ *
+ * @param {string} uniqueId - The uniqueId to find the path for
+ * @param {Array} questions - Array of question objects to search in
+ * @returns {Array} - Array of post IDs in the chain (from question to target)
+ */
+const findReplyChainPath = (uniqueId, questions) => {
+  if (!Array.isArray(questions)) return [];
+
+  // First check if it's a top-level question
+  const q = questions.find(x => x.uniqueId === uniqueId);
+  if (q) return [q.id];
+
+  // Search recursively through replies
+  return findReplyChainPathRecursive(uniqueId, questions, []);
+};
+
+/**
+ * Recursive helper to find the reply chain path
+ *
+ * @param {string} uniqueId - The uniqueId to find
+ * @param {Array} arr - Array of posts to search
+ * @param {Array} currentPath - Current path of parent IDs
+ * @returns {Array} - Path to the target uniqueId, or empty array if not found
+ */
+const findReplyChainPathRecursive = (uniqueId, arr, currentPath) => {
+  if (!Array.isArray(arr)) return [];
+
+  for (const r of arr) {
+    // Check if this is the target
+    if (r.uniqueId === uniqueId) {
+      return [...currentPath, r.id];
+    }
+
+    // Search in replies
+    if (Array.isArray(r.replies) && r.replies.length > 0) {
+      const foundPath = findReplyChainPathRecursive(uniqueId, r.replies, [...currentPath, r.id]);
+      if (foundPath.length > 0) {
+        return foundPath;
+      }
+    }
+  }
+
+  return [];
+};
+
+/**
  * Build a searchable text string from a post for filtering
  *
  * Combines all the metadata and content into a single lowercase string
@@ -110,7 +208,7 @@ const getLeftText = (item, isQuestion) => {
 };
 
 
-const App = ({ topic }) => {
+const App = ({ topic, timestamp }) => {
   // =====================================================================
   // AUTHENTICATION
   // =====================================================================
@@ -321,6 +419,58 @@ const App = ({ topic }) => {
   }, [topic]);
 
   /**
+   * Scroll to and highlight post when uniqueId is provided in URL
+   * Also expands the reply chain to show nested replies
+   */
+  useEffect(() => {
+    if (!timestamp || !debateData.questions.length) return;
+
+    console.log('🔍 Looking for post with uniqueId:', timestamp);
+    console.log('📋 Available questions:', debateData.questions.length);
+
+    // Find the post by uniqueId
+    const post = findPostByUniqueId(timestamp, debateData.questions);
+    console.log('✅ Found post:', post);
+
+    if (post) {
+      // Find the reply chain path to expand all parent replies
+      const chainPath = findReplyChainPath(timestamp, debateData.questions);
+      console.log('🔗 Reply chain path:', chainPath);
+
+      // Collapse all questions and expand only the relevant ones in a single update
+      if (chainPath.length > 0) {
+        // Include the question ID (first item) and all parent replies (except the target)
+        const idsToExpand = chainPath.slice(0, -1); // Question + parent replies to expand
+        console.log('📂 Expanding question and parent replies:', idsToExpand);
+
+        // Create new state with only the items we want expanded
+        const newExpandedState = {};
+        idsToExpand.forEach(id => {
+          newExpandedState[id] = true;
+        });
+
+        setExpandedQuestions(newExpandedState);
+
+        // Wait a moment for DOM to update after expanding, then scroll
+        setTimeout(() => {
+          const el = document.querySelector(`[data-uniqueid="${timestamp}"]`);
+          console.log('🎯 Found element:', el);
+          if (el) {
+            // Scroll smoothly to the element
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Temporarily highlight the element
+            el.classList.add('highlight-reply');
+            setTimeout(() => el.classList.remove('highlight-reply'), 1800);
+          }
+        }, 300);
+      }
+    } else {
+      console.log('❌ Post not found with uniqueId:', timestamp);
+    }
+  }, [timestamp, debateData.questions]);
+
+  /**
    * Poll for new data every 15 seconds to show real-time updates
    * This allows users to see posts from other users without manual refresh
    */
@@ -366,20 +516,28 @@ const App = ({ topic }) => {
 
 
   /**
-   * Copy a uniqueId to clipboard and show confirmation message
+   * Copy a timestamp-based URL to clipboard and show confirmation message
    *
-   * @param {string} id - The uniqueId to copy
+   * @param {string} timestamp - The timestamp of the post
+   * @param {string} uniqueId - The uniqueId of the post (fallback)
    */
-  const copyUniqueId = (id) => {
-    navigator.clipboard.writeText(id).then(() => {
+  const copyUniqueId = (timestamp, uniqueId) => {
+    // Generate URL-friendly topic name
+    const urlTopic = topic.toLowerCase().replace(/\s+/g, '_');
+    // Use timestamp if available, otherwise use uniqueId
+    const postIdentifier = timestamp || uniqueId;
+    // Generate full URL with post identifier
+    const shareUrl = `${window.location.origin}/${urlTopic}/${postIdentifier}`;
+
+    navigator.clipboard.writeText(shareUrl).then(() => {
       // Show "Copied" message
-      setCopied(prev => ({ ...prev, [id]: true }));
+      setCopied(prev => ({ ...prev, [postIdentifier]: true }));
 
       // Hide message after 2 seconds
       setTimeout(() => {
         setCopied(prev => {
           const np = { ...prev };
-          delete np[id];
+          delete np[postIdentifier];
           return np;
         });
       }, 2000);

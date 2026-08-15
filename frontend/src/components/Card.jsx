@@ -245,20 +245,21 @@ const Card = ({
     // Left cards have blue background, right cards have orange/cream background
     <div
       data-uniqueid={node.uniqueId}
+      data-timestamp={node.timestamp}
       className={node.side === 'left' ? 'left-card' : 'right-card'}
       style={{ marginLeft: depth > 0 ? depth * 10 : 0 }} // Indent nested replies slightly
     >
       {/* Metadata section - shows author, timestamp, uniqueId, and tag */}
       <div className="meta">
         {metaText}
-        {/* Clickable uniqueId - clicking copies it to clipboard */}
-        <span style={{ cursor: 'pointer' }} onClick={() => copyUniqueId(node.uniqueId)}>
+        {/* Clickable uniqueId - clicking copies URL to clipboard */}
+        <span style={{ cursor: 'pointer' }} onClick={() => copyUniqueId(node.timestamp, node.uniqueId)}>
           {node.uniqueId}
         </span>
         {/* Show tag only for questions (not replies) */}
         {isQuestion && <span className="tag">[ {node.tag || ''} ]</span>}
-        {/* "Copied" confirmation message - shown temporarily after copying uniqueId */}
-        <span className="copy-msg" style={{ display: copied[node.uniqueId] ? 'inline' : 'none' }}>
+        {/* "Copied" confirmation message - shown temporarily after copying */}
+        <span className="copy-msg" style={{ display: copied[node.timestamp || node.uniqueId] ? 'inline' : 'none' }}>
           Copied
         </span>
       </div>

@@ -34,6 +34,7 @@ import ContactUs from './components/ContactUs.jsx';
 import Guidelines from './components/Guidelines.jsx';
 import TopNav from './components/TopNav.jsx';
 import FAQ from './components/FAQ.jsx';
+import PrivacyPolicy from './components/PrivacyPolicy.jsx';
 import AdminLogin from './components/AdminLogin.jsx';
 import AdminDashboard from './components/AdminDashboard.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
@@ -41,22 +42,23 @@ import LoginModal from './components/LoginModal.jsx';
 import { authAPI } from './services/apiService.js';
 
 /**
- * Extract debate topic from the URL path
+ * Extract debate topic and post timestamp from the URL path
  *
  * Supports multiple URL formats:
  * - Clean URLs: /hindu_vs_muslim → "Hindu vs Muslim"
+ * - Post-specific URLs: /hindu_vs_muslim/q02.08.2026.14.51.44.830-298 → "Hindu vs Muslim" with timestamp
  * - Legacy format: /debate_Sanatan_vs_Islam.html → "Sanatan vs Islam"
  *
  * This allows users to navigate directly to a specific debate via URL
- * and share links to specific debates.
+ * and share links to specific posts within debates.
  *
- * @returns {string|null} - The debate topic with proper capitalization, or null if not a debate URL
+ * @returns {object|null} - { topic: string, timestamp: string|null } or null if not a debate URL
  */
-function getDebateTopicFromUrl() {
+function getDebateInfoFromUrl() {
   const path = window.location.pathname;
 
   // Skip these special paths - they're not debate topics
-  const specialPaths = ['/', '', '/contact', '/guidelines', '/faq'];
+  const specialPaths = ['/', '', '/contact', '/guidelines', '/faq', '/privacy'];
   if (specialPaths.includes(path)) {
     return null;
   }
@@ -69,17 +71,34 @@ function getDebateTopicFromUrl() {
   // Legacy format: /debate_Topic_Name.html
   const legacyMatch = path.match(/debate_(.+)\.html$/);
   if (legacyMatch) {
-    return decodeURIComponent(legacyMatch[1]).replace(/_/g, ' ');
+    return {
+      topic: decodeURIComponent(legacyMatch[1]).replace(/_/g, ' '),
+      timestamp: null
+    };
+  }
+
+  // Post-specific format: /topic_name/timestamp
+  // Supports both question (q) and reply (r) timestamp prefixes
+  const postMatch = path.match(/^\/([^\/]+)\/([qr]\d+\.\d+\.\d+\.\d+\.\d+\.\d+\.\d+-\d+)$/);
+  if (postMatch) {
+    const topic = decodeURIComponent(postMatch[1]).replace(/_/g, ' ');
+    const timestamp = postMatch[2];
+    return {
+      topic: topic.split(' ').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join(' '),
+      timestamp
+    };
   }
 
   // Clean URL format: /hindu_vs_muslim
-  // Remove leading slash, decode URI, and convert underscores to spaces
   const topic = decodeURIComponent(path.slice(1)).replace(/_/g, ' ');
-
-  // Capitalize each word properly: "hindu vs muslim" → "Hindu vs Muslim"
-  return topic.split(' ').map(word =>
-    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-  ).join(' ');
+  return {
+    topic: topic.split(' ').map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    ).join(' '),
+    timestamp: null
+  };
 }
 
 /**
@@ -96,15 +115,16 @@ function MainRouter() {
    *
    * Structure:
    * - { type: 'home' } - Show debate topics list
-   * - { type: 'debate', topic: 'Sanatan vs Islam' } - Show specific debate
+   * - { type: 'debate', topic: 'Sanatan vs Islam', timestamp: null } - Show specific debate
+   * - { type: 'debate', topic: 'Sanatan vs Islam', timestamp: 'q02.08.2026.14.51.44.830-298' } - Show specific debate with post highlighted
    * - { type: 'contact' } - Show contact page
    * - { type: 'guidelines' } - Show guidelines
    * - { type: 'faq' } - Show FAQ
    */
   const [page, setPage] = useState(() => {
     // Initialize based on URL - if URL contains a debate topic, go directly to it
-    const topic = getDebateTopicFromUrl();
-    if (topic) return { type: 'debate', topic };
+    const debateInfo = getDebateInfoFromUrl();
+    if (debateInfo) return { type: 'debate', topic: debateInfo.topic, timestamp: debateInfo.timestamp };
     return { type: 'home' };
   });
 
@@ -156,11 +176,13 @@ function MainRouter() {
         setPage({ type: 'guidelines' });
       } else if (path === '/faq') {
         setPage({ type: 'faq' });
+      } else if (path === '/privacy') {
+        setPage({ type: 'privacy' });
       } else {
         // Assume it's a debate topic URL
-        const topic = getDebateTopicFromUrl();
-        if (topic) {
-          setPage({ type: 'debate', topic });
+        const debateInfo = getDebateInfoFromUrl();
+        if (debateInfo) {
+          setPage({ type: 'debate', topic: debateInfo.topic, timestamp: debateInfo.timestamp });
         } else {
           // Invalid path, redirect to home
           window.history.replaceState({}, '', '/');
@@ -243,6 +265,10 @@ function MainRouter() {
       window.history.pushState({}, '', '/faq');
       setPage({ type: 'faq' });
     },
+    onPrivacy: () => {
+      window.history.pushState({}, '', '/privacy');
+      setPage({ type: 'privacy' });
+    },
     onAdmin: () => {
       window.history.pushState({}, '', '/admin/debate');
       setPage({ type: 'admin', section: 'debate' });
@@ -282,7 +308,7 @@ function MainRouter() {
       )}
 
       {page.type === 'debate' && (
-        <App topic={page.topic} />
+        <App topic={page.topic} timestamp={page.timestamp} />
       )}
 
       {page.type === 'contact' && (
@@ -295,6 +321,10 @@ function MainRouter() {
 
       {page.type === 'faq' && (
         <FAQ />
+      )}
+
+      {page.type === 'privacy' && (
+        <PrivacyPolicy />
       )}
 
       {page.type === 'admin' && (
