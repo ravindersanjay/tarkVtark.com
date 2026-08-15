@@ -40,8 +40,144 @@ console.log('🔧 API Configuration:', {
   mode: import.meta.env.MODE
 });
 
+// =====================================================================
+// SECURITY & PROTECTION MECHANISMS
+// =====================================================================
+
 /**
- * Generic fetch wrapper with error handling
+ * Rate Limiter - Prevents API spam and DDoS attacks
+ * Limits the number of requests per time window
+ */
+class RateLimiter {
+  constructor(maxRequests, timeWindowMs) {
+    this.maxRequests = maxRequests;
+    this.timeWindowMs = timeWindowMs;
+    this.requests = [];
+  }
+
+  /**
+   * Check if a request is allowed
+   * @returns {boolean} True if request is allowed, false if rate limited
+   */
+  canMakeRequest() {
+    const now = Date.now();
+    // Remove requests outside the time window
+    this.requests = this.requests.filter(time => now - time < this.timeWindowMs);
+
+    if (this.requests.length >= this.maxRequests) {
+      console.warn('🚫 Rate limit exceeded:', {
+        requests: this.requests.length,
+        max: this.maxRequests,
+        window: this.timeWindowMs
+      });
+      return false;
+    }
+
+    this.requests.push(now);
+    return true;
+  }
+
+  /**
+   * Get time until next allowed request
+   * @returns {number} Milliseconds until next request is allowed
+   */
+  getTimeUntilNextRequest() {
+    const now = Date.now();
+    this.requests = this.requests.filter(time => now - time < this.timeWindowMs);
+
+    if (this.requests.length < this.maxRequests) {
+      return 0;
+    }
+
+    const oldestRequest = Math.min(...this.requests);
+    return this.timeWindowMs - (now - oldestRequest);
+  }
+}
+
+// Create rate limiters for different endpoint types
+const rateLimiters = {
+  // General API: 100 requests per minute
+  general: new RateLimiter(100, 60 * 1000),
+  // Write operations (POST, PUT, DELETE): 20 requests per minute
+  write: new RateLimiter(20, 60 * 1000),
+  // Contact form: 5 requests per hour
+  contact: new RateLimiter(5, 60 * 60 * 1000),
+  // Login attempts: 10 attempts per 15 minutes
+  login: new RateLimiter(10, 15 * 60 * 1000),
+};
+
+/**
+ * Request deduplication - Prevents duplicate submissions
+ * Tracks in-flight requests to prevent duplicate submissions
+ */
+const inFlightRequests = new Map();
+
+/**
+ * Generate a unique key for a request
+ * @param {string} url - Request URL
+ * @param {string} method - HTTP method
+ * @param {string} body - Request body (stringified)
+ * @returns {string} Unique request key
+ */
+function getRequestKey(url, method, body) {
+  return `${method}:${url}:${body || ''}`;
+}
+
+/**
+ * Input validation and sanitization
+ */
+const inputValidator = {
+  /**
+   * Validate and sanitize text input
+   * @param {string} text - Input text
+   * @param {number} maxLength - Maximum allowed length
+   * @returns {object} { valid: boolean, sanitized: string, error: string }
+   */
+  validateText: (text, maxLength = 10000) => {
+    if (typeof text !== 'string') {
+      return { valid: false, error: 'Input must be a string' };
+    }
+
+    if (text.length > maxLength) {
+      return { valid: false, error: `Input exceeds maximum length of ${maxLength}` };
+    }
+
+    // Basic XSS prevention - remove script tags and event handlers
+    const sanitized = text
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/on\w+="[^"]*"/gi, '')
+      .replace(/on\w+='[^']*'/gi, '');
+
+    return { valid: true, sanitized };
+  },
+
+  /**
+   * Validate email format
+   * @param {string} email - Email address
+   * @returns {boolean} True if valid
+   */
+  validateEmail: (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  },
+
+  /**
+   * Validate URL format
+   * @param {string} url - URL string
+   * @returns {boolean} True if valid
+   */
+  validateURL: (url) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+};
+
+/**
+ * Generic fetch wrapper with error handling and security protections
  */
 async function apiFetch(url, options = {}) {
   const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -49,6 +185,38 @@ async function apiFetch(url, options = {}) {
 
   // Get user token from localStorage
   const userToken = localStorage.getItem('user_token');
+
+  // Determine which rate limiter to use based on endpoint and method
+  let rateLimiter = rateLimiters.general;
+  if (method !== 'GET') {
+    rateLimiter = rateLimiters.write;
+  }
+  if (url.includes('/contact')) {
+    rateLimiter = rateLimiters.contact;
+  }
+  if (url.includes('/login')) {
+    rateLimiter = rateLimiters.login;
+  }
+
+  // Check rate limit
+  if (!rateLimiter.canMakeRequest()) {
+    const waitTime = Math.ceil(rateLimiter.getTimeUntilNextRequest() / 1000);
+    const error = new Error(`Rate limit exceeded. Please wait ${waitTime} seconds before trying again.`);
+    error.isRateLimit = true;
+    throw error;
+  }
+
+  // Check for duplicate requests (prevent double submissions)
+  const requestKey = getRequestKey(url, method, options.body);
+  if (inFlightRequests.has(requestKey)) {
+    console.warn('🚫 Duplicate request blocked:', requestKey);
+    const error = new Error('Request already in progress. Please wait.');
+    error.isDuplicate = true;
+    throw error;
+  }
+
+  // Mark request as in-flight
+  inFlightRequests.set(requestKey, Date.now());
 
   // Log to both console and file
   logger.group(`🌐 API Request [${requestId}]`);
@@ -72,6 +240,9 @@ async function apiFetch(url, options = {}) {
         ...options.headers,
       },
     });
+
+    // Remove request from in-flight map after completion
+    inFlightRequests.delete(requestKey);
 
     logger.group(`📨 API Response [${requestId}]`);
     logger.log('📍 Endpoint:', `${method} ${API_BASE_URL}${url}`);
@@ -104,6 +275,9 @@ async function apiFetch(url, options = {}) {
     logger.groupEnd();
     return null;
   } catch (error) {
+    // Remove request from in-flight map on error
+    inFlightRequests.delete(requestKey);
+
     logger.group(`❌ API Error [${requestId}]`);
     logger.error('📍 Endpoint:', `${method} ${API_BASE_URL}${url}`);
     logger.error('💥 Error Type:', error.name);
@@ -225,9 +399,31 @@ const questionsAPI = {
    */
   create: async (questionData) => {
     console.log('❓ questionsAPI.create() - Creating question:', questionData);
+
+    // Validate and sanitize text input
+    const textValidation = inputValidator.validateText(questionData.text, 10000);
+    if (!textValidation.valid) {
+      throw new Error(textValidation.error);
+    }
+
+    // Validate tag if provided
+    if (questionData.tag) {
+      const tagValidation = inputValidator.validateText(questionData.tag, 100);
+      if (!tagValidation.valid) {
+        throw new Error(tagValidation.error);
+      }
+    }
+
+    // Use sanitized text
+    const sanitizedData = {
+      ...questionData,
+      text: textValidation.sanitized,
+      tag: questionData.tag ? inputValidator.validateText(questionData.tag, 100).sanitized : ''
+    };
+
     const result = await apiFetch('/questions', {
       method: 'POST',
-      body: JSON.stringify(questionData),
+      body: JSON.stringify(sanitizedData),
     });
     console.log('❓ questionsAPI.create() - Created:', result);
     return result;
@@ -304,9 +500,22 @@ const repliesAPI = {
    */
   create: async (replyData) => {
     console.log('💬 repliesAPI.create() - Creating reply:', replyData);
+
+    // Validate and sanitize text input
+    const textValidation = inputValidator.validateText(replyData.text, 10000);
+    if (!textValidation.valid) {
+      throw new Error(textValidation.error);
+    }
+
+    // Use sanitized text
+    const sanitizedData = {
+      ...replyData,
+      text: textValidation.sanitized
+    };
+
     const result = await apiFetch('/replies', {
       method: 'POST',
-      body: JSON.stringify(replyData),
+      body: JSON.stringify(sanitizedData),
     });
     console.log('💬 repliesAPI.create() - Created:', result);
     return result;
@@ -496,9 +705,39 @@ const contactAPI = {
    */
   send: async (messageData) => {
     console.log('📧 contactAPI.send() - Sending message from:', messageData.email);
+
+    // Validate email
+    if (!inputValidator.validateEmail(messageData.email)) {
+      throw new Error('Invalid email address');
+    }
+
+    // Validate and sanitize text fields
+    const nameValidation = inputValidator.validateText(messageData.name, 100);
+    if (!nameValidation.valid) {
+      throw new Error(nameValidation.error);
+    }
+
+    const subjectValidation = inputValidator.validateText(messageData.subject, 200);
+    if (!subjectValidation.valid) {
+      throw new Error(subjectValidation.error);
+    }
+
+    const messageValidation = inputValidator.validateText(messageData.message, 5000);
+    if (!messageValidation.valid) {
+      throw new Error(messageValidation.error);
+    }
+
+    // Use sanitized data
+    const sanitizedData = {
+      name: nameValidation.sanitized,
+      email: messageData.email,
+      subject: subjectValidation.sanitized,
+      message: messageValidation.sanitized
+    };
+
     const result = await apiFetch('/contact', {
       method: 'POST',
-      body: JSON.stringify(messageData),
+      body: JSON.stringify(sanitizedData),
     });
     console.log('📧 contactAPI.send() - Message sent successfully');
     return result;
