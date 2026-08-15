@@ -42,9 +42,19 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
       // Fetch topics from backend API
       const data = await topicsAPI.getAll();
       setTopics(data);
+      // Clear error state on successful load
+      setError(null);
     } catch (err) {
       console.error('Failed to load topics:', err);
-      setError('Failed to load topics. Please make sure the backend is running.');
+
+      // Handle different error types
+      if (err.isRateLimit) {
+        setError(err.message);
+      } else if (err.isDuplicate) {
+        setError('Request already in progress. Please wait.');
+      } else {
+        setError('Failed to load topics. Please make sure the backend is running.');
+      }
       setTopics([]);
     } finally {
       setLoading(false);

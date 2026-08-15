@@ -96,10 +96,10 @@ class RateLimiter {
 
 // Create rate limiters for different endpoint types
 const rateLimiters = {
-  // General API: 100 requests per minute
-  general: new RateLimiter(100, 60 * 1000),
-  // Write operations (POST, PUT, DELETE): 20 requests per minute
-  write: new RateLimiter(20, 60 * 1000),
+  // General API: 200 requests per minute (increased from 100)
+  general: new RateLimiter(200, 60 * 1000),
+  // Write operations (POST, PUT, DELETE): 30 requests per minute (increased from 20)
+  write: new RateLimiter(30, 60 * 1000),
   // Contact form: 5 requests per hour
   contact: new RateLimiter(5, 60 * 60 * 1000),
   // Login attempts: 10 attempts per 15 minutes
