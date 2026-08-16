@@ -55,6 +55,9 @@ const Card = ({
   setEvidenceUrls = () => {},
   user = null,
   onEdit = () => {},
+  onEditingChange = () => {},
+  onDeleteAttachment = () => {},
+  onDeleteEvidenceUrl = () => {},
   userVotes = {}
 }) => {
   // Local state to track if the Copy button was clicked (separate from uniqueId copy)
@@ -63,9 +66,18 @@ const Card = ({
   // Local state for edit mode
   const [isEditing, setIsEditing] = React.useState(false);
   const [editText, setEditText] = React.useState(node.text || '');
+  const [editTag, setEditTag] = React.useState(node.tag || '');
+  const [editFiles, setEditFiles] = React.useState([]);
+  const [editUrls, setEditUrls] = React.useState([]);
+  const [editUrlInput, setEditUrlInput] = React.useState('');
 
   // Local state for text expansion (Read more/Less)
   const [isTextExpanded, setIsTextExpanded] = React.useState(false);
+
+  // Notify parent when editing mode changes
+  React.useEffect(() => {
+    onEditingChange(node.id, isEditing);
+  }, [isEditing, node.id, onEditingChange]);
 
   // Determine if this is a top-level question (depth 0) or a reply (depth > 0)
   const isQuestion = depth === 0;
@@ -86,22 +98,39 @@ const Card = ({
   // Handler for edit button
   const handleEdit = () => {
     setEditText(node.text || '');
+    setEditTag(node.tag || '');
+    setEditFiles([]);
+    setEditUrls([]);
+    setEditUrlInput('');
     setIsEditing(true);
   };
 
   // Handler for saving edit
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editText.trim()) {
       toast.error('Text cannot be empty');
       return;
     }
-    onEdit(node.id, editText.trim(), depth === 0 ? 'question' : 'reply');
-    setIsEditing(false);
+    try {
+      await onEdit(node.id, editText.trim(), depth === 0 ? 'question' : 'reply', {
+        tag: editTag,
+        files: editFiles,
+        urls: editUrls
+      });
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Failed to save edit:', err);
+      // Don't close edit form on error
+    }
   };
 
   // Handler for canceling edit
   const handleCancelEdit = () => {
     setEditText(node.text || '');
+    setEditTag(node.tag || '');
+    setEditFiles([]);
+    setEditUrls([]);
+    setEditUrlInput('');
     setIsEditing(false);
   };
 
@@ -256,8 +285,30 @@ const Card = ({
         <span style={{ cursor: 'pointer' }} onClick={() => copyUniqueId(node.timestamp, node.uniqueId)}>
           {node.uniqueId}
         </span>
-        {/* Show tag only for questions (not replies) */}
-        {isQuestion && <span className="tag">[ {node.tag || ''} ]</span>}
+        {/* Show tags only for questions (not replies) */}
+        {isQuestion && node.tag && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginLeft: '8px' }}>
+            {node.tag.split(',').map((tag, idx) => (
+              tag.trim() && (
+                <span
+                  key={idx}
+                  className="tag"
+                  style={{
+                    display: 'inline-block',
+                    padding: '2px 6px',
+                    background: '#e0e7ff',
+                    color: '#3730a3',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    fontWeight: '500'
+                  }}
+                >
+                  {tag.trim()}
+                </span>
+              )
+            ))}
+          </div>
+        )}
         {/* "Copied" confirmation message - shown temporarily after copying */}
         <span className="copy-msg" style={{ display: copied[node.timestamp || node.uniqueId] ? 'inline' : 'none' }}>
           Copied
@@ -267,6 +318,28 @@ const Card = ({
       {/* Main content area - displays the question or reply text or edit form */}
       {isEditing ? (
         <div style={{ marginTop: '8px' }}>
+          {/* Tag input for questions */}
+          {isQuestion && (
+            <div style={{ marginBottom: '8px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: '#4b5563' }}>
+                Tags (comma-separated):
+              </label>
+              <input
+                type="text"
+                value={editTag}
+                onChange={(e) => setEditTag(e.target.value)}
+                placeholder="e.g., politics, religion, history"
+                style={{
+                  width: '100%',
+                  padding: '6px',
+                  borderRadius: '4px',
+                  border: '1px solid #d1d5db',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+          )}
+          
           <textarea
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
@@ -280,7 +353,133 @@ const Card = ({
               fontFamily: 'inherit'
             }}
           />
-          <div style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
+          
+          {/* Existing Attachments */}
+          {node.evidence?.files && node.evidence.files.length > 0 && (
+            <div style={{ marginTop: '12px', padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px' }}>Existing Attachments:</label>
+              {node.evidence.files.map((file, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: '#fff', marginBottom: '4px', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
+                  <span style={{ fontSize: '12px' }}>{file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
+                  <button
+                    type="button"
+                    className="btn btn-small btn-danger"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDeleteAttachment(file.id);
+                    }}
+                    style={{ padding: '2px 8px', fontSize: '11px' }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+           {/* New File Upload */}
+           <div style={{ marginTop: '8px' }}>
+             <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '13px' }}>Add New Attachments:</label>
+             <input
+               type="file"
+               accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+               multiple
+               onChange={(e) => {
+                 const newFiles = Array.from(e.target.files);
+                 if (newFiles.length > 0) {
+                   setEditFiles(prev => [...prev, ...newFiles]);
+                 }
+                 e.target.value = '';
+               }}
+             />
+             {editFiles.length > 0 && (
+               <div style={{ marginTop: '8px', padding: '8px', background: '#fef3c7', borderRadius: '4px', border: '1px solid #fcd34d' }}>
+                 <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '12px', color: '#92400e' }}>New files to upload:</label>
+                 {editFiles.map((file, idx) => (
+                   <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: '#fff', marginBottom: '4px', borderRadius: '4px', border: '1px solid #fcd34d' }}>
+                     <span style={{ fontSize: '12px' }}>📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
+                     <button
+                       type="button"
+                       className="btn btn-small btn-danger"
+                       onClick={(e) => {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         setEditFiles(prev => prev.filter((_, i) => i !== idx));
+                       }}
+                       style={{ padding: '2px 8px', fontSize: '11px' }}
+                     >
+                       Remove
+                     </button>
+                   </div>
+                 ))}
+               </div>
+             )}
+           </div>
+
+          {/* Existing URLs */}
+          {node.evidence?.urls && node.evidence.urls.length > 0 && (
+            <div style={{ marginTop: '12px', padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+              <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px' }}>Existing URLs:</label>
+              {node.evidence.urls.map((url, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: '#fff', marginBottom: '4px', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
+                  <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#2563eb', textDecoration: 'none' }}>{url}</a>
+                  <button
+                    type="button"
+                    className="btn btn-small btn-danger"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDeleteEvidenceUrl(url, node.id, depth === 0 ? 'question' : 'reply');
+                    }}
+                    style={{ padding: '2px 8px', fontSize: '11px' }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* New URL Input */}
+          <div style={{ marginTop: '8px' }}>
+            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '13px' }}>Add New URL:</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder="https://example.com"
+                value={editUrlInput}
+                onChange={(e) => setEditUrlInput(e.target.value)}
+                style={{ flex: 1, padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+              />
+              <button
+                type="button"
+                className="btn btn-small"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (editUrlInput.trim()) {
+                    setEditUrls(prev => [...prev, editUrlInput.trim()]);
+                    setEditUrlInput('');
+                  }
+                }}
+                style={{ padding: '6px 12px' }}
+              >
+                Add
+              </button>
+            </div>
+            {editUrls.length > 0 && (
+              <div style={{ marginTop: '4px' }}>
+                {editUrls.map((url, idx) => (
+                  <div key={idx} style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>
+                    + {url}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginTop: '12px', display: 'flex', gap: '8px' }}>
             <button className="btn primary" onClick={handleSaveEdit}>
               Save
             </button>

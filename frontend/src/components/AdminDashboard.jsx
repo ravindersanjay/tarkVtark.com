@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import '../styles/admin.css';
-import { topicsAPI, questionsAPI, repliesAPI, adminAPI, contactAPI } from '../services/apiService.js';
+import { topicsAPI, questionsAPI, repliesAPI, adminAPI, contactAPI, filesAPI } from '../services/apiService.js';
 
 const MESSAGES_KEY = 'contact_messages';
 const REPORTS_KEY = 'reported_posts';
@@ -275,17 +275,40 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
 
   // Edit question/reply text
   const [editingPost, setEditingPost] = useState(null);
+  const [editingPostTag, setEditingPostTag] = useState('');
+  const [editingPostFiles, setEditingPostFiles] = useState([]);
+  const [editingPostUrls, setEditingPostUrls] = useState([]);
+  const [editingPostUrlInput, setEditingPostUrlInput] = useState('');
 
-  const updatePost = async (postId, newText, isQuestion, originalPost) => {
+  const updatePost = async (postId, newText, newTag, isQuestion, originalPost, newFiles = [], newUrls = []) => {
     try {
       if (isQuestion) {
         // Update question - send complete object with all required fields
         await questionsAPI.update(postId, {
           text: newText,
-          tag: originalPost.tag,
+          tag: newTag || originalPost.tag,
           side: originalPost.side,
           author: originalPost.author
         });
+
+        // Upload new files
+        for (const file of newFiles) {
+          try {
+            await filesAPI.upload(file, postId, null, 'Admin');
+          } catch (err) {
+            console.error('Failed to upload file:', file.name, err);
+            toast.error(`Failed to upload ${file.name}`);
+          }
+        }
+
+        // Add new URLs
+        for (const url of newUrls) {
+          try {
+            await filesAPI.addEvidenceUrl(url, postId, null);
+          } catch (err) {
+            console.error('Failed to add URL:', url, err);
+          }
+        }
       } else {
         // Update reply - send complete object with all required fields
         await repliesAPI.update(postId, {
@@ -293,14 +316,87 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
           side: originalPost.side,
           author: originalPost.author
         });
+
+        // Upload new files
+        for (const file of newFiles) {
+          try {
+            await filesAPI.upload(file, null, postId, 'Admin');
+          } catch (err) {
+            console.error('Failed to upload file:', file.name, err);
+            toast.error(`Failed to upload ${file.name}`);
+          }
+        }
+
+        // Add new URLs
+        for (const url of newUrls) {
+          try {
+            await filesAPI.addEvidenceUrl(url, null, postId);
+          } catch (err) {
+            console.error('Failed to add URL:', url, err);
+          }
+        }
       }
 
       await loadDebateData(selectedDebateTopic);
       setEditingPost(null);
+      setEditingPostTag('');
+      setEditingPostFiles([]);
+      setEditingPostUrls([]);
+      setEditingPostUrlInput('');
       toast.success('Updated successfully!');
     } catch (err) {
       console.error('Failed to update:', err);
       toast.error('Failed to update. Please try again.');
+    }
+  };
+
+  const deleteAttachment = async (attachmentId) => {
+    try {
+      await filesAPI.delete(attachmentId);
+      toast.success('Attachment deleted');
+      // Update debateQuestions locally to remove the attachment without losing edit state
+      setDebateQuestions(prevQuestions =>
+        prevQuestions.map(question => ({
+          ...question,
+          attachments: (question.attachments || []).filter(att => att.id !== attachmentId),
+          replies: (question.replies || []).map(reply => ({
+            ...reply,
+            attachments: (reply.attachments || []).filter(att => att.id !== attachmentId),
+            replies: (reply.replies || []).map(subReply => ({
+              ...subReply,
+              attachments: (subReply.attachments || []).filter(att => att.id !== attachmentId)
+            }))
+          }))
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to delete attachment:', err);
+      toast.error('Failed to delete attachment');
+    }
+  };
+
+  const deleteEvidenceUrl = async (urlId) => {
+    try {
+      await filesAPI.deleteEvidenceUrl(urlId);
+      toast.success('URL deleted');
+      // Update debateQuestions locally to remove the URL without losing edit state
+      setDebateQuestions(prevQuestions =>
+        prevQuestions.map(question => ({
+          ...question,
+          evidenceUrls: (question.evidenceUrls || []).filter(ev => ev.id !== urlId),
+          replies: (question.replies || []).map(reply => ({
+            ...reply,
+            evidenceUrls: (reply.evidenceUrls || []).filter(ev => ev.id !== urlId),
+            replies: (reply.replies || []).map(subReply => ({
+              ...subReply,
+              evidenceUrls: (subReply.evidenceUrls || []).filter(ev => ev.id !== urlId)
+            }))
+          }))
+        }))
+      );
+    } catch (err) {
+      console.error('Failed to delete URL:', err);
+      toast.error('Failed to delete URL');
     }
   };
 
@@ -845,25 +941,139 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
                         {/* Question Text - Editable */}
                         {editingPost === question.id ? (
                           <div className="edit-form">
+                            <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500' }}>Tags (comma-separated):</label>
+                            <input
+                              type="text"
+                              defaultValue={question.tag || ''}
+                              className="edit-input"
+                              style={{ marginBottom: '8px', width: '100%', padding: '6px' }}
+                              placeholder="e.g., politics, religion, history"
+                              id={`edit-tag-${question.id}`}
+                            />
                             <textarea
                               id={`edit-${question.id}`}
                               defaultValue={question.text}
                               className="edit-textarea"
                               rows="4"
                             />
-                            <div className="form-actions">
+                            
+                            {/* Existing Attachments */}
+                            {question.attachments && question.attachments.length > 0 && (
+                              <div style={{ marginTop: '12px', padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px' }}>Existing Attachments:</label>
+                                {question.attachments.map((att, idx) => (
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: '#fff', marginBottom: '4px', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
+                                    <span style={{ fontSize: '12px' }}>{att.fileName} ({(att.fileSize / 1024).toFixed(1)} KB)</span>
+                                    <button
+                                      type="button"
+                                      className="btn btn-small btn-danger"
+                                      onClick={() => deleteAttachment(att.id)}
+                                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* New File Upload */}
+                            <div style={{ marginTop: '8px' }}>
+                              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '13px' }}>Add New Attachments:</label>
+                              <input
+                                type="file"
+                                accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                                multiple
+                                onChange={(e) => {
+                                  const newFiles = Array.from(e.target.files);
+                                  if (newFiles.length > 0) {
+                                    setEditingPostFiles(prev => [...prev, ...newFiles]);
+                                  }
+                                  e.target.value = '';
+                                }}
+                              />
+                              {editingPostFiles.length > 0 && (
+                                <div style={{ marginTop: '4px', fontSize: '12px', color: '#6b7280' }}>
+                                  {editingPostFiles.length} new file(s) selected
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Existing URLs */}
+                            {question.evidenceUrls && question.evidenceUrls.length > 0 && (
+                              <div style={{ marginTop: '12px', padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px' }}>Existing URLs:</label>
+                                {question.evidenceUrls.map((ev, idx) => (
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: '#fff', marginBottom: '4px', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
+                                    <a href={ev.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#2563eb', textDecoration: 'none' }}>{ev.url}</a>
+                                    <button
+                                      type="button"
+                                      className="btn btn-small btn-danger"
+                                      onClick={() => deleteEvidenceUrl(ev.id)}
+                                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* New URL Input */}
+                            <div style={{ marginTop: '8px' }}>
+                              <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '13px' }}>Add New URL:</label>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <input
+                                  type="text"
+                                  placeholder="https://example.com"
+                                  value={editingPostUrlInput}
+                                  onChange={(e) => setEditingPostUrlInput(e.target.value)}
+                                  style={{ flex: 1, padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                                />
+                                <button
+                                  type="button"
+                                  className="btn btn-small"
+                                  onClick={() => {
+                                    if (editingPostUrlInput.trim()) {
+                                      setEditingPostUrls(prev => [...prev, editingPostUrlInput.trim()]);
+                                      setEditingPostUrlInput('');
+                                    }
+                                  }}
+                                  style={{ padding: '6px 12px' }}
+                                >
+                                  Add
+                                </button>
+                              </div>
+                              {editingPostUrls.length > 0 && (
+                                <div style={{ marginTop: '4px' }}>
+                                  {editingPostUrls.map((url, idx) => (
+                                    <div key={idx} style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>
+                                      + {url}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="form-actions" style={{ marginTop: '12px' }}>
                               <button
                                 className="btn btn-small"
                                 onClick={() => {
                                   const newText = document.getElementById(`edit-${question.id}`).value;
+                                  const newTag = document.getElementById(`edit-tag-${question.id}`).value;
                                   if (newText.trim()) {
-                                    updatePost(question.id, newText.trim(), true, question);
+                                    updatePost(question.id, newText.trim(), newTag.trim(), true, question, editingPostFiles, editingPostUrls);
                                   }
                                 }}
                               >
                                 Save
                               </button>
-                              <button className="btn btn-small" onClick={() => setEditingPost(null)}>Cancel</button>
+                              <button className="btn btn-small" onClick={() => {
+                                setEditingPost(null);
+                                setEditingPostFiles([]);
+                                setEditingPostUrls([]);
+                                setEditingPostUrlInput('');
+                              }}>Cancel</button>
                             </div>
                           </div>
                         ) : (
@@ -907,19 +1117,123 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
                                       className="edit-textarea"
                                       rows="3"
                                     />
-                                    <div className="form-actions">
+                                    
+                                    {/* Existing Attachments */}
+                                    {reply.attachments && reply.attachments.length > 0 && (
+                                      <div style={{ marginTop: '12px', padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px' }}>Existing Attachments:</label>
+                                        {reply.attachments.map((att, idx) => (
+                                          <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: '#fff', marginBottom: '4px', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
+                                            <span style={{ fontSize: '12px' }}>{att.fileName} ({(att.fileSize / 1024).toFixed(1)} KB)</span>
+                                            <button
+                                              type="button"
+                                              className="btn btn-small btn-danger"
+                                              onClick={() => deleteAttachment(att.id)}
+                                              style={{ padding: '2px 8px', fontSize: '11px' }}
+                                            >
+                                              Delete
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {/* New File Upload */}
+                                    <div style={{ marginTop: '8px' }}>
+                                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '13px' }}>Add New Attachments:</label>
+                                      <input
+                                        type="file"
+                                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+                                        multiple
+                                        onChange={(e) => {
+                                          const newFiles = Array.from(e.target.files);
+                                          if (newFiles.length > 0) {
+                                            setEditingPostFiles(prev => [...prev, ...newFiles]);
+                                          }
+                                          e.target.value = '';
+                                        }}
+                                      />
+                                      {editingPostFiles.length > 0 && (
+                                        <div style={{ marginTop: '4px', fontSize: '12px', color: '#6b7280' }}>
+                                          {editingPostFiles.length} new file(s) selected
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Existing URLs */}
+                                    {reply.evidenceUrls && reply.evidenceUrls.length > 0 && (
+                                      <div style={{ marginTop: '12px', padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
+                                        <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', fontSize: '13px' }}>Existing URLs:</label>
+                                        {reply.evidenceUrls.map((ev, idx) => (
+                                          <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: '#fff', marginBottom: '4px', borderRadius: '4px', border: '1px solid #e5e7eb' }}>
+                                            <a href={ev.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#2563eb', textDecoration: 'none' }}>{ev.url}</a>
+                                            <button
+                                              type="button"
+                                              className="btn btn-small btn-danger"
+                                              onClick={() => deleteEvidenceUrl(ev.id)}
+                                              style={{ padding: '2px 8px', fontSize: '11px' }}
+                                            >
+                                              Delete
+                                            </button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+
+                                    {/* New URL Input */}
+                                    <div style={{ marginTop: '8px' }}>
+                                      <label style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '13px' }}>Add New URL:</label>
+                                      <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input
+                                          type="text"
+                                          placeholder="https://example.com"
+                                          value={editingPostUrlInput}
+                                          onChange={(e) => setEditingPostUrlInput(e.target.value)}
+                                          style={{ flex: 1, padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+                                        />
+                                        <button
+                                          type="button"
+                                          className="btn btn-small"
+                                          onClick={() => {
+                                            if (editingPostUrlInput.trim()) {
+                                              setEditingPostUrls(prev => [...prev, editingPostUrlInput.trim()]);
+                                              setEditingPostUrlInput('');
+                                            }
+                                          }}
+                                          style={{ padding: '6px 12px' }}
+                                        >
+                                          Add
+                                        </button>
+                                      </div>
+                                      {editingPostUrls.length > 0 && (
+                                        <div style={{ marginTop: '4px' }}>
+                                          {editingPostUrls.map((url, idx) => (
+                                            <div key={idx} style={{ fontSize: '12px', color: '#6b7280', marginBottom: '2px' }}>
+                                              + {url}
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    <div className="form-actions" style={{ marginTop: '12px' }}>
                                       <button
                                         className="btn btn-small"
                                         onClick={() => {
                                           const newText = document.getElementById(`edit-${reply.id}`).value;
                                           if (newText.trim()) {
-                                            updatePost(reply.id, newText.trim(), false, reply);
+                                            updatePost(reply.id, newText.trim(), '', false, reply, editingPostFiles, editingPostUrls);
                                           }
                                         }}
                                       >
                                         Save
                                       </button>
-                                      <button className="btn btn-small" onClick={() => setEditingPost(null)}>Cancel</button>
+                                      <button className="btn btn-small" onClick={() => {
+                                        setEditingPost(null);
+                                        setEditingPostFiles([]);
+                                        setEditingPostUrls([]);
+                                        setEditingPostUrlInput('');
+                                      }}>Cancel</button>
                                     </div>
                                   </div>
                                 ) : (

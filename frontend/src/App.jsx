@@ -234,7 +234,8 @@ const App = ({ topic, timestamp }) => {
   const [isPolling, setIsPolling] = useState(false);
 
   // Form inputs for adding a new question
-  const [newTag, setNewTag] = useState('');           // Category tag input
+  const [newTag, setNewTag] = useState('');           // Category tag input (single tag being typed)
+  const [newTags, setNewTags] = useState([]);         // Array of tags for multi-tag support
   const [newQuestionText, setNewQuestionText] = useState(''); // Question text
   const [newQuestionSide, setNewQuestionSide] = useState(''); // Which side (left/right)
   const [newQuestionFiles, setNewQuestionFiles] = useState([]); // Evidence files for new question
@@ -253,6 +254,7 @@ const App = ({ topic, timestamp }) => {
   // UI feedback state
   const [copied, setCopied] = useState({});    // Track which uniqueIds were recently copied
   const [expandedQuestions, setExpandedQuestions] = useState({}); // Track which questions are expanded
+  const [editingPostIds, setEditingPostIds] = useState({}); // Track which posts are currently being edited
 
   // Vote tracking (in-memory only, tracks user's current vote on each post)
   const userVotes = useRef({}); // Object: { "postId-username": "up"|"down" }
@@ -301,6 +303,7 @@ const App = ({ topic, timestamp }) => {
       // Transform evidence from backend format
       const evidence = {
         files: (reply.attachments || []).map(att => ({
+          id: att.id,  // Include attachment ID for deletion
           name: att.fileName,
           size: att.fileSize,
           type: att.fileType,
@@ -333,6 +336,24 @@ const App = ({ topic, timestamp }) => {
     }));
   };
 
+  /**
+   * Callback to track when a card enters or exits edit mode
+   * This is used to disable polling while editing to prevent the form from closing
+   *
+   * @param {string} postId - The ID of the post being edited
+   * @param {boolean} isEditing - Whether the post is now in edit mode (true) or not (false)
+   */
+  const handleEditingChange = (postId, isEditing) => {
+    setEditingPostIds(prev => {
+      const updated = { ...prev };
+      if (isEditing) {
+        updated[postId] = true;
+      } else {
+        delete updated[postId];
+      }
+      return updated;
+    });
+  };
 
   /**
    * Load debate data from backend API
@@ -364,6 +385,7 @@ const App = ({ topic, timestamp }) => {
           // Evidence comes from database now (attachments and evidenceUrls in API response)
           const evidence = {
             files: (q.attachments || []).map(att => ({
+              id: att.id,  // Include attachment ID for deletion
               name: att.fileName,
               size: att.fileSize,
               type: att.fileType,
@@ -475,12 +497,17 @@ const App = ({ topic, timestamp }) => {
    * This allows users to see posts from other users without manual refresh
    */
   useEffect(() => {
+    // Don't poll if any post is being edited
+    if (Object.keys(editingPostIds).length > 0) {
+      return;
+    }
+
     const pollInterval = setInterval(() => {
       loadDebateData(true);
     }, 15000); // Poll every 15 seconds
 
     return () => clearInterval(pollInterval);
-  }, [topic]);
+  }, [topic, editingPostIds]);
 
   /**
    * Auto-focus the textarea when a reply form is opened
@@ -573,7 +600,7 @@ const App = ({ topic, timestamp }) => {
 
     try {
       const text = newQuestionText.trim();
-      const tag = newTag.trim();
+      const tag = newTags.join(',').trim(); // Join multiple tags with comma
 
       // Validation
       if (!text) return toast.error('Enter question');
@@ -650,6 +677,7 @@ const App = ({ topic, timestamp }) => {
       // Clear form inputs
       setNewQuestionText('');
       setNewTag('');
+      setNewTags([]);
       setNewQuestionSide('');
       setNewQuestionFiles([]);
       setNewQuestionUrls([]);
@@ -669,37 +697,180 @@ const App = ({ topic, timestamp }) => {
    * 1. Finds the post in the debate tree
    * 2. Calls the appropriate API to update the post
    * 3. Updates the local state with the new text
+   * 4. Handles tag, file, and URL updates
    * Requires authentication and user must be the author.
    *
    * @param {string} postId - The ID of the post to edit
    * @param {string} newText - The new text content
    * @param {string} type - 'question' or 'reply'
+   * @param {Object} editData - { tag, files, urls }
    */
-  const handleEditPost = async (postId, newText, type) => {
+  const handleEditPost = async (postId, newText, type, editData = {}) => {
     try {
       if (!isAuthenticated) {
         toast.error('Please login to edit posts');
         return;
       }
 
+      const { tag, files, urls } = editData;
+      console.log('📝 handleEditPost called:', { postId, newText, type, tag, filesCount: files?.length, urlsCount: urls?.length });
+
       // Call the appropriate API
       if (type === 'question') {
-        await questionsAPI.update(postId, { text: newText });
+        console.log('📝 Updating question:', postId, { text: newText, tag });
+        await questionsAPI.update(postId, { text: newText, tag });
+
+        // Upload new files
+        for (const file of files || []) {
+          try {
+            console.log('📤 Uploading file:', file.name);
+            await filesAPI.upload(file, postId, null, user?.email || 'Anonymous');
+            console.log('✅ File uploaded:', file.name);
+          } catch (err) {
+            console.error('❌ Failed to upload file:', file.name, err);
+            toast.error(`Failed to upload ${file.name}`);
+          }
+        }
+
+        // Add new URLs
+        for (const url of urls || []) {
+          try {
+            console.log('🔗 Adding URL:', url);
+            await filesAPI.addEvidenceUrl(url, postId, null);
+            console.log('✅ URL added:', url);
+          } catch (err) {
+            console.error('❌ Failed to add URL:', url, err);
+            toast.error(`Failed to add URL: ${url}`);
+          }
+        }
       } else {
+        console.log('📝 Updating reply:', postId, { text: newText });
         await repliesAPI.update(postId, { text: newText });
+
+        // Upload new files
+        for (const file of files || []) {
+          try {
+            console.log('📤 Uploading file:', file.name);
+            await filesAPI.upload(file, null, postId, user?.email || 'Anonymous');
+            console.log('✅ File uploaded:', file.name);
+          } catch (err) {
+            console.error('❌ Failed to upload file:', file.name, err);
+            toast.error(`Failed to upload ${file.name}`);
+          }
+        }
+
+        // Add new URLs
+        for (const url of urls || []) {
+          try {
+            console.log('🔗 Adding URL:', url);
+            await filesAPI.addEvidenceUrl(url, null, postId);
+            console.log('✅ URL added:', url);
+          } catch (err) {
+            console.error('❌ Failed to add URL:', url, err);
+            toast.error(`Failed to add URL: ${url}`);
+          }
+        }
       }
 
-      // Update local state
-      const post = findPostById(postId, debateData.questions);
-      if (post) {
-        post.text = newText;
-        setDebateData({ ...debateData });
-      }
+      // Reload data to get updated attachments/URLs
+      console.log('🔄 Reloading debate data...');
+      await loadDebateData();
+      console.log('✅ Debate data reloaded');
 
       toast.success('Post updated successfully!');
     } catch (err) {
-      console.error('Failed to edit post:', err);
+      console.error('❌ Failed to edit post:', err);
       toast.error('Failed to edit post. Please try again.');
+      throw err; // Re-throw to let Card component handle the error
+    }
+  };
+
+  /**
+   * Helper function to recursively remove an attachment from the questions tree
+   */
+  const removeAttachmentFromTree = (attachmentId, questions) => {
+    return questions.map(question => {
+      let updated = { ...question };
+
+      // Remove from this question's evidence files
+      if (updated.evidence && updated.evidence.files) {
+        updated.evidence.files = updated.evidence.files.filter(file => file.id !== attachmentId);
+      }
+
+      // Recursively remove from replies
+      if (updated.replies && updated.replies.length > 0) {
+        updated.replies = removeAttachmentFromTree(attachmentId, updated.replies);
+      }
+
+      return updated;
+    });
+  };
+
+  /**
+   * Helper function to recursively remove an evidence URL from the questions tree
+   */
+  const removeUrlFromTree = (urlToRemove, questions) => {
+    return questions.map(question => {
+      let updated = { ...question };
+
+      // Remove from this question's evidence URLs
+      if (updated.evidence && updated.evidence.urls) {
+        updated.evidence.urls = updated.evidence.urls.filter(url => url !== urlToRemove);
+      }
+
+      // Recursively remove from replies
+      if (updated.replies && updated.replies.length > 0) {
+        updated.replies = removeUrlFromTree(urlToRemove, updated.replies);
+      }
+
+      return updated;
+    });
+  };
+
+  /**
+   * Handle deleting an attachment
+   */
+  const handleDeleteAttachment = async (attachmentId) => {
+    try {
+      await filesAPI.delete(attachmentId);
+      toast.success('Attachment deleted');
+      // Update local state to remove the attachment without reloading
+      setDebateData(prevData => ({
+        ...prevData,
+        questions: removeAttachmentFromTree(attachmentId, prevData.questions)
+      }));
+    } catch (err) {
+      console.error('Failed to delete attachment:', err);
+      toast.error('Failed to delete attachment');
+    }
+  };
+
+  /**
+   * Handle deleting an evidence URL
+   */
+  const handleDeleteEvidenceUrl = async (url, postId, type) => {
+    try {
+      // Get all evidence URLs for this post
+      const questionId = type === 'question' ? postId : null;
+      const replyId = type === 'reply' ? postId : null;
+      const evidenceUrls = await filesAPI.getEvidenceUrls(questionId, replyId);
+      
+      // Find the URL object that matches
+      const urlObj = evidenceUrls.find(ev => ev.url === url);
+      if (urlObj && urlObj.id) {
+        await filesAPI.deleteEvidenceUrl(urlObj.id);
+        toast.success('URL deleted');
+        // Update local state to remove the URL without reloading
+        setDebateData(prevData => ({
+          ...prevData,
+          questions: removeUrlFromTree(url, prevData.questions)
+        }));
+      } else {
+        toast.error('URL not found');
+      }
+    } catch (err) {
+      console.error('Failed to delete URL:', err);
+      toast.error('Failed to delete URL');
     }
   };
 
@@ -974,6 +1145,9 @@ const App = ({ topic, timestamp }) => {
       setEvidenceUrls={setEvidenceUrls}
       user={user}
       onEdit={handleEditPost}
+      onEditingChange={handleEditingChange}
+      onDeleteAttachment={handleDeleteAttachment}
+      onDeleteEvidenceUrl={handleDeleteEvidenceUrl}
       userVotes={userVotes.current}
     />
   );
@@ -1350,13 +1524,64 @@ const App = ({ topic, timestamp }) => {
             onChange={(e) => setNewQuestionText(e.target.value)}
           />
 
-          {/* Tag input */}
-          <input
-            id="newTag"
-            placeholder="Tag"
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-          />
+          {/* Tag input with multi-tag support */}
+          <div style={{ marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: '#4b5563' }}>
+              Tags (press Enter or comma to add):
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+              {newTags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '4px 8px',
+                    background: '#dbeafe',
+                    color: '#1e40af',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => setNewTags(prev => prev.filter((_, i) => i !== idx))}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#1e40af',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      lineHeight: 1,
+                      padding: 0
+                    }}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              id="newTag"
+              placeholder="Type tag and press Enter..."
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault();
+                  const tagValue = newTag.trim().replace(/,$/, '');
+                  if (tagValue && !newTags.includes(tagValue)) {
+                    setNewTags(prev => [...prev, tagValue]);
+                    setNewTag('');
+                  }
+                }
+              }}
+              style={{ width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #d1d5db' }}
+            />
+          </div>
 
           {/* Evidence section */}
           <div style={{ marginTop: '12px', padding: '12px', background: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
