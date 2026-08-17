@@ -294,41 +294,54 @@ function MainRouter() {
       <LoginModal />
 
       {/* Render the appropriate page based on current state */}
+      <div data-testid="page-container">
       {page.type === 'home' && (
-        <DebateTopics
-          onSelectTopic={(topic) => {
-            // Convert topic to URL-friendly format: "Hindu vs Muslim" → "hindu_vs_muslim"
-            const urlTopic = topic.toLowerCase().replace(/\s+/g, '_');
-            // Update browser URL (makes it shareable)
-            window.history.pushState({}, '', `/${urlTopic}`);
-            // Update React state to show debate page
-            setPage({ type: 'debate', topic });
-          }}
-        />
+        <div data-testid="debate-topics-page">
+          <DebateTopics
+            onSelectTopic={(topic) => {
+              // Convert topic to URL-friendly format: "Hindu vs Muslim" → "hindu_vs_muslim"
+              const urlTopic = topic.toLowerCase().replace(/\s+/g, '_');
+              // Update browser URL (makes it shareable)
+              window.history.pushState({}, '', `/${urlTopic}`);
+              // Update React state to show debate page
+              setPage({ type: 'debate', topic });
+            }}
+          />
+        </div>
       )}
 
       {page.type === 'debate' && (
-        <App topic={page.topic} timestamp={page.timestamp} />
+        <div data-testid="debate-page">
+          <App topic={page.topic} timestamp={page.timestamp} />
+        </div>
       )}
 
       {page.type === 'contact' && (
-        <ContactUs />
+        <div data-testid="contact-page">
+          <ContactUs />
+        </div>
       )}
 
       {page.type === 'guidelines' && (
-        <Guidelines />
+        <div data-testid="guidelines-page">
+          <Guidelines />
+        </div>
       )}
 
       {page.type === 'faq' && (
-        <FAQ />
+        <div data-testid="faq-page">
+          <FAQ />
+        </div>
       )}
 
       {page.type === 'privacy' && (
-        <PrivacyPolicy />
+        <div data-testid="privacy-policy-page">
+          <PrivacyPolicy />
+        </div>
       )}
 
       {page.type === 'admin' && (
-        <>
+        <div data-testid="admin-page">
           {!isAdminLoggedIn ? (
             <AdminLogin onLogin={handleAdminLogin} />
           ) : (
@@ -338,8 +351,9 @@ function MainRouter() {
               initialSection={page.section || 'debate'}
             />
           )}
-        </>
+        </div>
       )}
+      </div>
     </>
   );
 }

@@ -111,32 +111,32 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
 
   return (
     <>
-      <div className="breadcrumb">Home</div>
-      <div className="home-container content-card">
-        <header className="header">
-          {onContact && <button className="btn" onClick={onContact}>Contact</button>}
+      <div className="breadcrumb" data-testid="home-breadcrumb">Home</div>
+      <div className="home-container content-card" data-testid="home-container">
+        <header className="header" data-testid="home-header">
+          {onContact && <button className="btn" onClick={onContact} data-testid="home-contact-button">Contact</button>}
         </header>
-        <div className="main-content">
-          <div className="topics-section">
-            <h2>Debate Topics({topics.length})</h2>
+        <div className="main-content" data-testid="home-main-content">
+          <div className="topics-section" data-testid="topics-section">
+            <h2 data-testid="topics-heading">Debate Topics({topics.length})</h2>
 
             {/* Show loading/error states */}
-            {loading && <p>Loading topics...</p>}
-            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {loading && <p data-testid="topics-loading">Loading topics...</p>}
+            {error && <p data-testid="topics-error" style={{ color: 'red' }}>{error}</p>}
 
             {/* List of debate topics */}
-            <ul className="topics-list">
+            <ul className="topics-list" data-testid="topics-list">
               {topics.length === 0 && !loading && !error && (
-                <li style={{ color: '#666', fontStyle: 'italic' }}>
+                <li data-testid="topics-empty" style={{ color: '#666', fontStyle: 'italic' }}>
                   No topics yet. Add one below to get started!
                 </li>
               )}
               {topics.map((t) => (
-                <li key={t.id}>
+                <li key={t.id} data-testid="topic-list-item" data-topic-id={t.id}>
                   {/* Click to navigate to debate - calls onSelectTopic callback */}
-                  <button className="topic-btn" onClick={() => onSelectTopic(t.topic.trim())}>
+                  <button className="topic-btn" data-testid={`topic-button-${t.id}`} onClick={() => onSelectTopic(t.topic.trim())}>
                     {t.topic}
-                    <span className="question-count">
+                    <span className="question-count" data-testid={`topic-question-count-${t.id}`}>
                       {t.questionCount !== undefined ? `${t.questionCount} questions` : ''}
                     </span>
                   </button>
@@ -145,9 +145,10 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
             </ul>
 
             {/* Form to add new topics */}
-            <div className="add-topic-form">
+            <div className="add-topic-form" data-testid="add-topic-form">
               <input
                 type="text"
+                data-testid="topic-input"
                 placeholder="Add topic (e.g. Cats vs Dogs)"
                 value={newTopic}
                 onChange={e => setNewTopic(e.target.value)}
@@ -159,7 +160,7 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
                 }}
                 className="topic-input"
               />
-              <button className="add-btn" onClick={addTopic}>Add Topic</button>
+              <button className="add-btn" data-testid="add-topic-button" onClick={addTopic}>Add Topic</button>
             </div>
           </div>
         </div>

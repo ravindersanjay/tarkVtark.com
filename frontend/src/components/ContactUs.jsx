@@ -37,18 +37,19 @@ const ContactUs = ({ onBack }) => {
 
   return (
     <>
-      <div className="breadcrumb">Home &gt; Contact Us</div>
-      <div className="contact-container content-card">
-        <header className="header">
-          {onBack && <button className="btn" onClick={onBack}>Back</button>}
+      <div className="breadcrumb" data-testid="contact-breadcrumb">Home &gt; Contact Us</div>
+      <div className="contact-container content-card" data-testid="contact-container">
+        <header className="header" data-testid="contact-header">
+          {onBack && <button className="btn" data-testid="contact-back-button" onClick={onBack}>Back</button>}
         </header>
-        <div className="main-content">
-          <div className="contact-section">
-            <h2>Contact Us</h2>
-            <p>For any queries, suggestions, or support, please email us at <a href="mailto:debateManch@gmailcom">debateManch@gmail.com</a> or fill out the form below:</p>
-            <form className="contact-form" onSubmit={handleSubmit}>
+        <div className="main-content" data-testid="contact-main-content">
+          <div className="contact-section" data-testid="contact-section">
+            <h2 data-testid="contact-heading">Contact Us</h2>
+            <p data-testid="contact-description">For any queries, suggestions, or support, please email us at <a href="mailto:debateManch@gmailcom" data-testid="contact-email-link">debateManch@gmail.com</a> or fill out the form below:</p>
+            <form className="contact-form" data-testid="contact-form" onSubmit={handleSubmit}>
               <input
                 type="text"
+                data-testid="contact-name-input"
                 placeholder="Your Name"
                 required
                 className="contact-input"
@@ -57,6 +58,7 @@ const ContactUs = ({ onBack }) => {
               />
               <input
                 type="email"
+                data-testid="contact-email-input"
                 placeholder="Your Email"
                 required
                 className="contact-input"
@@ -65,19 +67,21 @@ const ContactUs = ({ onBack }) => {
               />
               <input
                 type="text"
+                data-testid="contact-subject-input"
                 placeholder="Subject (Optional)"
                 className="contact-input"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               />
               <textarea
+                data-testid="contact-message-textarea"
                 placeholder="Your Message"
                 required
                 className="contact-textarea"
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               />
-              <button className="add-btn" type="submit" disabled={isSubmitting}>
+              <button className="add-btn" type="submit" data-testid="contact-submit-button" disabled={isSubmitting}>
                 {isSubmitting ? 'Sending...' : 'Send'}
               </button>
             </form>

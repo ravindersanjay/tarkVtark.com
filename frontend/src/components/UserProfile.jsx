@@ -17,8 +17,8 @@ const UserProfile = () => {
 
   if (!isAuthenticated || !user) {
     return (
-      <div className="user-profile">
-        <button className="login-btn" onClick={() => showLoginModal('login')}>
+      <div className="user-profile" data-testid="user-profile-logged-out">
+        <button className="login-btn" data-testid="user-profile-login-button" onClick={() => showLoginModal('login')}>
           Login
         </button>
       </div>
@@ -26,16 +26,17 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="user-profile">
+    <div className="user-profile" data-testid="user-profile-logged-in">
       {user.profilePicture && (
         <img
           src={user.profilePicture}
           alt={user.name}
           className="user-avatar"
+          data-testid="user-profile-avatar"
         />
       )}
-      <span className="user-name">{user.name}</span>
-      <button className="logout-btn" onClick={logout} title="Logout">
+      <span className="user-name" data-testid="user-profile-name">{user.name}</span>
+      <button className="logout-btn" data-testid="user-profile-logout-button" onClick={logout} title="Logout">
         Logout
       </button>
     </div>

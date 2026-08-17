@@ -1305,31 +1305,33 @@ const App = ({ topic, timestamp }) => {
       <div
         key={`q-${q.id}`}
         className={`question-section ${q.side || 'left'}`}
+        data-testid={`question-section-${q.id}`}
         data-uniqueid={q.uniqueId}
         style={{ marginBottom: '14px' }}
       >
         {/* Expand/collapse indicator */}
         {renderRows.length > 1 && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '4px',
-              marginBottom: '8px',
-              fontSize: '12px',
-              color: '#6b7280',
-              fontWeight: '500',
-              cursor: 'pointer'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setExpandedQuestions(prev => ({
-                ...prev,
-                [q.id]: !prev[q.id]
-              }));
-            }}
-          >
+           <div
+             data-testid={`expand-toggle-${q.id}`}
+             style={{
+               display: 'flex',
+               alignItems: 'center',
+               justifyContent: 'center',
+               padding: '4px',
+               marginBottom: '8px',
+               fontSize: '12px',
+               color: '#6b7280',
+               fontWeight: '500',
+               cursor: 'pointer'
+             }}
+             onClick={(e) => {
+               e.stopPropagation();
+               setExpandedQuestions(prev => ({
+                 ...prev,
+                 [q.id]: !prev[q.id]
+               }));
+             }}
+           >
             {isExpanded ? '▼ Click to collapse' : '▶ Click to expand'}
           </div>
         )}
@@ -1346,26 +1348,27 @@ const App = ({ topic, timestamp }) => {
             const arrowDirection = parent.node.side === 'left' ? 'right' : 'left';
 
             return (
-              <div
-                key={`row-${parent.node.id}-${child.node.id}-${idx}`}
-                className="thread-row"
-                style={{
-                  gap: '16px',
-                  alignItems: 'center',
-                  marginBottom: '8px',
-                  position: 'relative'
-                }}
-              >
+             <div
+                 key={`row-${parent.node.id}-${child.node.id}-${idx}`}
+                 className="thread-row"
+                 data-testid={`thread-row-paired-${parent.node.id}-${child.node.id}`}
+                 style={{
+                   gap: '16px',
+                   alignItems: 'center',
+                   marginBottom: '8px',
+                   position: 'relative'
+                 }}
+               >
                 {/* Left column */}
-                <div className="left-cell">
-                  {parent.node.side === 'left'
-                    ? renderCardForNode(parent.node, parent.depth)
-                    : (child.node.side === 'left' ? renderCardForNode(child.node, child.depth) : null)
-                  }
-                </div>
+                 <div className="left-cell" data-testid={`thread-row-left-${parent.node.id}-${child.node.id}`}>
+                   {parent.node.side === 'left'
+                     ? renderCardForNode(parent.node, parent.depth)
+                     : (child.node.side === 'left' ? renderCardForNode(child.node, child.depth) : null)
+                   }
+                 </div>
 
                 {/* Arrow indicator in the center */}
-                <div style={{
+                 <div data-testid={`thread-row-arrow-${parent.node.id}-${child.node.id}`} style={{
                   position: 'absolute',
                   left: '50%',
                   top: '50%',
@@ -1381,12 +1384,12 @@ const App = ({ topic, timestamp }) => {
                 </div>
 
                 {/* Right column */}
-                <div className="right-cell">
-                  {parent.node.side === 'right'
-                    ? renderCardForNode(parent.node, parent.depth)
-                    : (child.node.side === 'right' ? renderCardForNode(child.node, child.depth) : null)
-                  }
-                </div>
+                 <div className="right-cell" data-testid={`thread-row-right-${parent.node.id}-${child.node.id}`}>
+                   {parent.node.side === 'right'
+                     ? renderCardForNode(parent.node, parent.depth)
+                     : (child.node.side === 'right' ? renderCardForNode(child.node, child.depth) : null)
+                   }
+                 </div>
               </div>
             );
           } else {
@@ -1394,21 +1397,22 @@ const App = ({ topic, timestamp }) => {
             const { row } = item;
 
             return (
-              <div
-                key={`row-${row.node.id}-${idx}`}
-                className="thread-row"
-                style={{
-                  gap: '16px',
-                  alignItems: 'start',
-                  marginBottom: '8px'
-                }}
-              >
-                <div className="left-cell">
-                  {row.node.side === 'left' ? renderCardForNode(row.node, row.depth) : null}
-                </div>
-                <div className="right-cell">
-                  {row.node.side === 'right' ? renderCardForNode(row.node, row.depth) : null}
-                </div>
+             <div
+                 key={`row-${row.node.id}-${idx}`}
+                 className="thread-row"
+                 data-testid={`thread-row-single-${row.node.id}`}
+                 style={{
+                   gap: '16px',
+                   alignItems: 'start',
+                   marginBottom: '8px'
+                 }}
+               >
+                 <div className="left-cell" data-testid={`thread-row-single-left-${row.node.id}`}>
+                   {row.node.side === 'left' ? renderCardForNode(row.node, row.depth) : null}
+                 </div>
+                 <div className="right-cell" data-testid={`thread-row-single-right-${row.node.id}`}>
+                   {row.node.side === 'right' ? renderCardForNode(row.node, row.depth) : null}
+                 </div>
               </div>
             );
           }
@@ -1425,15 +1429,15 @@ const App = ({ topic, timestamp }) => {
    * Board content - either show questions or empty state
    */
   const boardContent = debateData.questions.length === 0 ? (
-    <div style={{ color: '#666', margin: '10px' }}>
+    <div data-testid="empty-state" style={{ color: '#666', margin: '10px' }}>
       <i>No questions yet. Add one below to start a debate!</i>
     </div>
   ) : (
-    <div className="board-full">
+    <div className="board-full" data-testid="board-full">
       {/* Render each question thread */}
       {debateData.questions.map((q) => (
         <React.Fragment key={`thread-${q.id}`}>
-          <hr className="question-sep" />
+          <hr className="question-sep" data-testid={`question-separator-${q.id}`} />
           {renderQuestion(q)}
         </React.Fragment>
       ))}
@@ -1443,10 +1447,10 @@ const App = ({ topic, timestamp }) => {
   return (
     <>
       {/* Main container with top padding for spacing from navbar */}
-      <div className="container" style={{ paddingTop: '24px' }}>
+      <div className="container" style={{ paddingTop: '24px' }} data-testid="debate-board-container">
         {/* Loading indicator above add question section */}
         {loading && (
-          <div style={{
+          <div data-testid="loading-indicator" style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -1455,7 +1459,7 @@ const App = ({ topic, timestamp }) => {
             gap: '12px',
             marginBottom: '16px'
           }}>
-            <div style={{
+            <div data-testid="loading-spinner" style={{
               width: '40px',
               height: '40px',
               border: '4px solid #e5e7eb',
@@ -1463,7 +1467,8 @@ const App = ({ topic, timestamp }) => {
               borderRadius: '50%',
               animation: 'spin 1s linear infinite'
             }}></div>
-            <div style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>
+
+            <div data-testid="loading-text" style={{ fontSize: '16px', color: '#6b7280', fontWeight: '500' }}>
               Loading page...
             </div>
           </div>
@@ -1473,66 +1478,72 @@ const App = ({ topic, timestamp }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', marginTop: '8px' }}>
           <input
             id="tagSearch"
+            data-testid="search-by-tag-input"
             placeholder="Search by tag"
             value={filterTag}
             onChange={(e) => setFilterTag(e.target.value)}
             style={{ padding: '6px', width: '300px', borderRadius: '4px', border: '1px solid #d1d5db' }}
           />
           {/* Auto-refresh indicator */}
-          {isPolling && (
-            <span style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ animation: 'spin 1s linear infinite' }}>↻</span>
-              Refreshing...
-            </span>
-          )}
-        </div>
+            {isPolling && (
+              <span style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span data-testid="refresh-indicator" style={{ animation: 'spin 1s linear infinite' }}>↻</span>
+                Refreshing...
+              </span>
+            )}
+          </div>
 
         {/* Column headers showing left and right labels */}
         <div className="columns-header" style={{ marginBottom: '8px' }}>
-          <div className="header-left">{leftLabel}</div>
-          <div className="header-right">{rightLabel}</div>
+          <div className="header-left" data-testid="left-column-header">{leftLabel}</div>
+          <div className="header-right" data-testid="right-column-header">{rightLabel}</div>
         </div>
 
         {/* Main debate board - hide while loading */}
-        {!loading && <div id="board">{boardContent}</div>}
+        {!loading && <div id="board" data-testid="debate-board">{boardContent}</div>}
 
         {/* Form to add new question */}
-        <div className="add-question">
-          <h3>Add New Question</h3>
+        <div className="add-question" data-testid="add-question-section">
+          <h3 data-testid="add-question-heading">Add New Question</h3>
 
           {/* Side selector (left/right radio buttons) */}
           <div className="side-selector" style={{ marginTop: '8px', display: 'flex', gap: '8px' }}>
             <label
+              data-testid="side-selector-left"
               className={`side-option left ${newQuestionSide === 'left' ? 'selected' : ''}`}
               onClick={() => setNewQuestionSide('left')}
             >
-              <input
-                type="radio"
-                name="side"
-                value="left"
-                checked={newQuestionSide === 'left'}
-                onChange={() => setNewQuestionSide('left')}
-              />
-              <span className="option-name">{leftLabel}</span>
+               <input
+                 type="radio"
+                 data-testid="side-selector-left-radio"
+                 name="side"
+                 value="left"
+                 checked={newQuestionSide === 'left'}
+                 onChange={() => setNewQuestionSide('left')}
+               />
+               <span className="option-name">{leftLabel}</span>
             </label>
             <label
+              data-testid="side-selector-right"
               className={`side-option right ${newQuestionSide === 'right' ? 'selected' : ''}`}
               onClick={() => setNewQuestionSide('right')}
             >
-              <input
-                type="radio"
-                name="side"
-                value="right"
-                checked={newQuestionSide === 'right'}
-                onChange={() => setNewQuestionSide('right')}
-              />
-              <span className="option-name">{rightLabel}</span>
+               <input
+                 type="radio"
+                 data-testid="side-selector-right-radio"
+                 name="side"
+                 value="right"
+                 checked={newQuestionSide === 'right'}
+                 onChange={() => setNewQuestionSide('right')}
+               />
+               <span className="option-name">{rightLabel}</span>
             </label>
           </div>
 
           {/* Question text input */}
           <textarea
             id="newQuestionText"
+            data-testid="new-question-text-input"
             placeholder="Type your question"
             value={newQuestionText}
             onChange={(e) => setNewQuestionText(e.target.value)}
@@ -1540,13 +1551,14 @@ const App = ({ topic, timestamp }) => {
 
           {/* Tag input with multi-tag support */}
           <div style={{ marginBottom: '8px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: '#4b5563' }}>
+            <label data-testid="tag-input-label" style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: '#4b5563' }}>
               Tags (press Enter or comma to add):
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
               {newTags.map((tag, idx) => (
                 <span
                   key={idx}
+                  data-testid={`selected-tag-${idx}`}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
@@ -1562,6 +1574,7 @@ const App = ({ topic, timestamp }) => {
                   {tag}
                   <button
                     type="button"
+                    data-testid={`remove-tag-button-${idx}`}
                     onClick={() => setNewTags(prev => prev.filter((_, i) => i !== idx))}
                     style={{
                       background: 'none',
@@ -1580,6 +1593,7 @@ const App = ({ topic, timestamp }) => {
             </div>
             <input
               id="newTag"
+              data-testid="new-tag-input"
               placeholder="Type tag and press Enter..."
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
@@ -1598,8 +1612,8 @@ const App = ({ topic, timestamp }) => {
           </div>
 
           {/* Evidence section */}
-          <div style={{ marginTop: '12px', padding: '12px', background: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }}>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#0c4a6e' }}>
+          <div style={{ marginTop: '12px', padding: '12px', background: '#f0f9ff', borderRadius: '6px', border: '1px solid #bae6fd' }} data-testid="evidence-section">
+            <label data-testid="evidence-label" style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px', color: '#0c4a6e' }}>
               Evidence (optional):
             </label>
 
@@ -1607,6 +1621,7 @@ const App = ({ topic, timestamp }) => {
             <div style={{ marginBottom: '12px' }}>
               <input
                 type="file"
+                data-testid="new-question-file-input"
                 accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
                 multiple
                 onChange={(e) => {
@@ -1619,7 +1634,7 @@ const App = ({ topic, timestamp }) => {
                 }}
                 style={{ marginBottom: '4px' }}
               />
-              <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
+              <div data-testid="new-question-file-accept-text" style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>
                 Accepted: Images, Videos, Audio, PDF, Documents
               </div>
 
@@ -1627,7 +1642,7 @@ const App = ({ topic, timestamp }) => {
               {newQuestionFiles.length > 0 && (
                 <div style={{ marginTop: '8px' }}>
                   {newQuestionFiles.map((file, idx) => (
-                    <div key={idx} style={{
+                    <div key={idx} data-testid={`new-question-file-item-${idx}`} style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: '8px',
@@ -1637,12 +1652,13 @@ const App = ({ topic, timestamp }) => {
                       marginBottom: '4px',
                       border: '1px solid #e0f2fe'
                     }}>
-                      <span style={{ fontSize: '16px' }}>📎</span>
-                      <span style={{ flex: 1, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span data-testid={`new-question-file-icon-${idx}`} style={{ fontSize: '16px' }}>📎</span>
+                      <span data-testid={`new-question-file-name-${idx}`} style={{ flex: 1, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {file.name} ({(file.size / 1024).toFixed(1)} KB)
                       </span>
                       <button
                         type="button"
+                        data-testid={`new-question-file-remove-${idx}`}
                         onClick={() => setNewQuestionFiles(prev => prev.filter((_, i) => i !== idx))}
                         style={{
                           background: '#ef4444',
@@ -1667,6 +1683,7 @@ const App = ({ topic, timestamp }) => {
               <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
                 <input
                   type="text"
+                  data-testid="new-question-url-input"
                   placeholder="Paste URL evidence (e.g., YouTube, articles, sources)"
                   value={newQuestionUrlInput}
                   onChange={(e) => setNewQuestionUrlInput(e.target.value)}
@@ -1683,6 +1700,7 @@ const App = ({ topic, timestamp }) => {
                 />
                 <button
                   type="button"
+                  data-testid="new-question-add-url-button"
                   onClick={() => {
                     if (newQuestionUrlInput.trim()) {
                       setNewQuestionUrls(prev => [...prev, newQuestionUrlInput.trim()]);
@@ -1707,38 +1725,39 @@ const App = ({ topic, timestamp }) => {
               {/* Display added URLs */}
               {newQuestionUrls.length > 0 && (
                 <div style={{ marginTop: '8px' }}>
-                  {newQuestionUrls.map((url, idx) => (
-                    <div key={idx} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '6px 8px',
-                      background: '#fff',
-                      borderRadius: '4px',
-                      marginBottom: '4px',
-                      border: '1px solid #e0f2fe'
-                    }}>
-                      <span style={{ fontSize: '16px' }}>🔗</span>
-                      <span style={{ flex: 1, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#2563eb' }}>
-                        {url}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setNewQuestionUrls(prev => prev.filter((_, i) => i !== idx))}
-                        style={{
-                          background: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '4px',
-                          padding: '2px 8px',
-                          cursor: 'pointer',
-                          fontSize: '12px'
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
+                   {newQuestionUrls.map((url, idx) => (
+                     <div key={idx} data-testid={`new-question-url-item-${idx}`} style={{
+                       display: 'flex',
+                       alignItems: 'center',
+                       gap: '8px',
+                       padding: '6px 8px',
+                       background: '#fff',
+                       borderRadius: '4px',
+                       marginBottom: '4px',
+                       border: '1px solid #e0f2fe'
+                     }}>
+                       <span data-testid={`new-question-url-icon-${idx}`} style={{ fontSize: '16px' }}>🔗</span>
+                       <span data-testid={`new-question-url-text-${idx}`} style={{ flex: 1, fontSize: '13px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#2563eb' }}>
+                         {url}
+                       </span>
+                       <button
+                         type="button"
+                         data-testid={`new-question-url-remove-${idx}`}
+                         onClick={() => setNewQuestionUrls(prev => prev.filter((_, i) => i !== idx))}
+                         style={{
+                           background: '#ef4444',
+                           color: 'white',
+                           border: 'none',
+                           borderRadius: '4px',
+                           padding: '2px 8px',
+                           cursor: 'pointer',
+                           fontSize: '12px'
+                         }}
+                       >
+                         Remove
+                       </button>
+                     </div>
+                   ))}
                 </div>
               )}
             </div>
@@ -1747,6 +1766,7 @@ const App = ({ topic, timestamp }) => {
           {/* Submit button */}
           <button
             className="btn primary"
+            data-testid="add-question-submit-button"
             onClick={addNewQuestion}
             style={{ marginTop: '8px' }}
           >

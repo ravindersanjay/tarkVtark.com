@@ -20,7 +20,7 @@ const Guidelines = ({ onBack }) => {
         setGuidelines([
           'सवाल : आपने चोरी की है क्या?',
           'सही जवाब : मैने चोरी नहीं की ✅',
-          'सही जवाब : हां मैने चोरी  की  है✅',
+          'सही जवाब : हां मैंने चोरी  की  है✅',
           'सही जवाब : आपको लगता है मैंने चोरी की है तो सबूत दिखाओै✅',
           'गलत जवाब : आप ने भी तो चोरी की है❌',
           'गलत जवाब : नेता और अधिकारी भी तो चोरी करते है।❌',
@@ -41,19 +41,20 @@ const Guidelines = ({ onBack }) => {
 
   return (
     <>
-      <div className="breadcrumb">Home &gt; Guidelines</div>
-      <div className="guidelines-container content-card">
-        <header className="header">
+      <div className="breadcrumb" data-testid="guidelines-breadcrumb">Home &gt; Guidelines</div>
+      <div className="guidelines-container content-card" data-testid="guidelines-container">
+        <header className="header" data-testid="guidelines-header">
+          {onBack && <button className="btn" data-testid="guidelines-back-button" onClick={onBack}>Back</button>}
         </header>
-        <div className="main-content">
-          <div className="guidelines-section">
-            <h2>Community Guidelines</h2>
+        <div className="main-content" data-testid="guidelines-main-content">
+          <div className="guidelines-section" data-testid="guidelines-section">
+            <h2 data-testid="guidelines-heading">Community Guidelines</h2>
             {loading ? (
-              <p>Loading guidelines...</p>
+              <p data-testid="guidelines-loading">Loading guidelines...</p>
             ) : (
-              <ul className="guidelines-list">
+              <ul className="guidelines-list" data-testid="guidelines-list">
                 {guidelines.map((guideline, idx) => (
-                  <li key={idx}>{guideline}</li>
+                  <li key={idx} data-testid={`guideline-item-${idx}`}>{guideline}</li>
                 ))}
               </ul>
             )}

@@ -30,19 +30,19 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       // Fallback UI
       return (
-        <div style={{
+        <div data-testid="error-boundary-wrapper" style={{
           padding: '40px',
           textAlign: 'center',
           fontFamily: 'Arial, sans-serif',
           backgroundColor: '#f8f9fa'
         }}>
-          <h1 style={{ color: '#dc3545' }}>⚠️ Something went wrong</h1>
-          <p style={{ color: '#6c757d', marginBottom: '20px' }}>
+          <h1 data-testid="error-boundary-title" style={{ color: '#dc3545' }}>⚠️ Something went wrong</h1>
+          <p data-testid="error-boundary-message" style={{ color: '#6c757d', marginBottom: '20px' }}>
             The application encountered an error. Please try refreshing the page.
           </p>
 
           {this.state.error && (
-            <details style={{
+            <details data-testid="error-boundary-details" style={{
               marginTop: '20px',
               padding: '20px',
               backgroundColor: '#fff',
@@ -52,10 +52,10 @@ class ErrorBoundary extends React.Component {
               maxWidth: '800px',
               margin: '20px auto'
             }}>
-              <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' }}>
+              <summary data-testid="error-boundary-summary" style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '10px' }}>
                 Error Details (click to expand)
               </summary>
-              <pre style={{
+              <pre data-testid="error-boundary-pre" style={{
                 overflow: 'auto',
                 padding: '10px',
                 backgroundColor: '#f8f9fa',
@@ -69,6 +69,7 @@ class ErrorBoundary extends React.Component {
           )}
 
           <button
+            data-testid="error-boundary-refresh-button"
             onClick={() => window.location.reload()}
             style={{
               marginTop: '20px',

@@ -3,7 +3,7 @@ import '../styles/faq.css';
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../services/apiService.js';
 
-const FAQ = () => {
+const FAQ = ({ onBack }) => {
   const [open, setOpen] = useState({});
   const [faqList, setFaqList] = useState([]);
 
@@ -49,20 +49,21 @@ const FAQ = () => {
 
   return (
     <>
-      <div className="breadcrumb">Home &gt; FAQ</div>
-      <div className="faq-container content-card">
-        <header className="header">
+      <div className="breadcrumb" data-testid="faq-breadcrumb">Home &gt; FAQ</div>
+      <div className="faq-container content-card" data-testid="faq-container">
+        <header className="header" data-testid="faq-header">
+          {onBack && <button className="btn" data-testid="faq-back-button" onClick={onBack}>Back</button>}
         </header>
-        <div className="main-content">
-          <div className="faq-section">
-            <h2>Frequently Asked Questions</h2>
-            <ul className="faq-list">
+        <div className="main-content" data-testid="faq-main-content">
+          <div className="faq-section" data-testid="faq-section">
+            <h2 data-testid="faq-heading">Frequently Asked Questions</h2>
+            <ul className="faq-list" data-testid="faq-list">
               {faqList.map((item, idx) => (
-                <li key={idx} className="faq-item">
-                  <div className="faq-q" onClick={() => setOpen(o => ({ ...o, [idx]: !o[idx] }))}>
-                    <span className="faq-toggle">{open[idx] ? '▼' : '▶'}</span> {item.q}
+                <li key={idx} className="faq-item" data-testid={`faq-item-${idx}`}>
+                  <div className="faq-q" data-testid={`faq-question-${idx}`} onClick={() => setOpen(o => ({ ...o, [idx]: !o[idx] }))}>
+                    <span className="faq-toggle" data-testid={`faq-toggle-${idx}`}>{open[idx] ? '▼' : '▶'}</span> <span data-testid={`faq-question-text-${idx}`}>{item.q}</span>
                   </div>
-                  {open[idx] && <div className="faq-a">{item.a}</div>}
+                  {open[idx] && <div className="faq-a" data-testid={`faq-answer-${idx}`}>{item.a}</div>}
                 </li>
               ))}
             </ul>

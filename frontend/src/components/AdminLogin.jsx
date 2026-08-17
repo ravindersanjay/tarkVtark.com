@@ -61,7 +61,7 @@ const AdminLogin = ({ onLogin }) => {
   };
 
   return (
-    <div style={{
+    <div data-testid="admin-login-container" style={{
       maxWidth: '400px',
       margin: '100px auto',
       padding: '32px',
@@ -69,16 +69,17 @@ const AdminLogin = ({ onLogin }) => {
       borderRadius: '12px',
       boxShadow: '0 2px 16px rgba(0,0,0,0.1)'
     }}>
-      <h2 style={{ marginBottom: '24px', textAlign: 'center', color: '#2563eb' }}>
+      <h2 data-testid="admin-login-title" style={{ marginBottom: '24px', textAlign: 'center', color: '#2563eb' }}>
         Admin Login
       </h2>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+      <form data-testid="admin-login-form" onSubmit={handleSubmit}>
+        <div data-testid="admin-login-username-group" style={{ marginBottom: '16px' }}>
+          <label data-testid="admin-login-username-label" style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
             Username
           </label>
           <input
             type="text"
+            data-testid="admin-login-username-input"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             style={{
@@ -92,12 +93,13 @@ const AdminLogin = ({ onLogin }) => {
             disabled={loading}
           />
         </div>
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+        <div data-testid="admin-login-password-group" style={{ marginBottom: '16px' }}>
+          <label data-testid="admin-login-password-label" style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
             Password
           </label>
           <input
             type="password"
+            data-testid="admin-login-password-input"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={{
@@ -112,7 +114,7 @@ const AdminLogin = ({ onLogin }) => {
           />
         </div>
         {error && (
-          <div style={{
+          <div data-testid="admin-login-error" style={{
             color: '#dc2626',
             marginBottom: '16px',
             fontSize: '0.9rem',
@@ -127,6 +129,7 @@ const AdminLogin = ({ onLogin }) => {
         <button
           type="submit"
           className="add-btn"
+          data-testid="admin-login-submit-button"
           style={{
             width: '100%',
             padding: '10px',
@@ -138,7 +141,7 @@ const AdminLogin = ({ onLogin }) => {
           {loading ? 'Authenticating...' : 'Login'}
         </button>
       </form>
-      <p style={{ marginTop: '16px', fontSize: '0.85rem', color: '#6b7280', textAlign: 'center' }}>
+      <p data-testid="admin-login-default-creds" style={{ marginTop: '16px', fontSize: '0.85rem', color: '#6b7280', textAlign: 'center' }}>
         Default: admin / Admin@1234
       </p>
     </div>
