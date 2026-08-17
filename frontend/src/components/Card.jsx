@@ -43,21 +43,21 @@ const Card = ({
   toggleForm,
   openForms = {},
   drafts = {},
-  setDrafts = () => {},
-  postReply = () => {},
-  handleVote = () => {},
-  copyUniqueId = () => {},
+  setDrafts = () => { },
+  postReply = () => { },
+  handleVote = () => { },
+  copyUniqueId = () => { },
   leftLabel,
   rightLabel,
   evidenceFiles = {},
-  setEvidenceFiles = () => {},
+  setEvidenceFiles = () => { },
   evidenceUrls = {},
-  setEvidenceUrls = () => {},
+  setEvidenceUrls = () => { },
   user = null,
-  onEdit = () => {},
-  onEditingChange = () => {},
-  onDeleteAttachment = () => {},
-  onDeleteEvidenceUrl = () => {},
+  onEdit = () => { },
+  onEditingChange = () => { },
+  onDeleteAttachment = () => { },
+  onDeleteEvidenceUrl = () => { },
   userVotes = {}
 }) => {
   // Local state to track if the Copy button was clicked (separate from uniqueId copy)
@@ -146,7 +146,7 @@ const Card = ({
   const text = node.text || '';
   const shouldTruncate = text.length > MAX_CHARS && !isTextExpanded;
   const displayText = shouldTruncate ? text.substring(0, MAX_CHARS) + '...' : text;
-  
+
   // Debug logging
   console.log('Card Edit Check:', {
     nodeId: node.id,
@@ -286,6 +286,15 @@ const Card = ({
         <span style={{ cursor: 'pointer' }} data-testid={`card-uniqueid-${node.id}`} onClick={() => copyUniqueId(node.timestamp, node.uniqueId)}>
           {node.uniqueId}
         </span>
+        {/* Copy icon - clicking also copies full post URL to clipboard */}
+        <span
+          style={{ cursor: 'pointer', marginLeft: '6px', fontSize: '13px' }}
+          data-testid={`card-copy-icon-${node.id}`}
+          onClick={() => copyUniqueId(node.timestamp, node.uniqueId)}
+          title="Copy Link"
+        >
+          Copy Link
+        </span>
         {/* Show tags only for questions (not replies) */}
         {isQuestion && node.tag && (
           <div data-testid={`card-tags-${node.id}`} style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginLeft: '8px' }}>
@@ -342,7 +351,7 @@ const Card = ({
               />
             </div>
           )}
-          
+
           <textarea
             data-testid={`card-edit-textarea-${node.id}`}
             value={editText}
@@ -357,7 +366,7 @@ const Card = ({
               fontFamily: 'inherit'
             }}
           />
-          
+
           {/* Existing Attachments */}
           {node.evidence?.files && node.evidence.files.length > 0 && (
             <div data-testid={`card-edit-existing-attachments-${node.id}`} style={{ marginTop: '12px', padding: '8px', background: '#f9fafb', borderRadius: '4px' }}>
@@ -383,46 +392,46 @@ const Card = ({
             </div>
           )}
 
-           {/* New File Upload */}
-           <div data-testid={`card-edit-new-files-${node.id}`} style={{ marginTop: '8px' }}>
-              <label data-testid={`card-edit-new-files-label-${node.id}`} style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '13px' }}>Add New Attachments:</label>
-              <input
-                type="file"
-                data-testid={`card-edit-file-input-${node.id}`}
-                accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
-                multiple
-                onChange={(e) => {
-                  const newFiles = Array.from(e.target.files);
-                  if (newFiles.length > 0) {
-                    setEditFiles(prev => [...prev, ...newFiles]);
-                  }
-                  e.target.value = '';
-                }}
-              />
-              {editFiles.length > 0 && (
-                <div data-testid={`card-edit-new-files-list-${node.id}`} style={{ marginTop: '8px', padding: '8px', background: '#fef3c7', borderRadius: '4px', border: '1px solid #fcd34d' }}>
-                  <label data-testid={`card-edit-new-files-label2-${node.id}`} style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '12px', color: '#92400e' }}>New files to upload:</label>
-                  {editFiles.map((file, idx) => (
-                    <div key={idx} data-testid={`card-edit-new-file-item-${node.id}-${idx}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: '#fff', marginBottom: '4px', borderRadius: '4px', border: '1px solid #fcd34d' }}>
-                      <span data-testid={`card-edit-new-file-name-${node.id}-${idx}`} style={{ fontSize: '12px' }}>📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
-                      <button
-                        type="button"
-                        className="btn btn-small btn-danger"
-                        data-testid={`card-edit-new-file-remove-${node.id}-${idx}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setEditFiles(prev => prev.filter((_, i) => i !== idx));
-                        }}
-                        style={{ padding: '2px 8px', fontSize: '11px' }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* New File Upload */}
+          <div data-testid={`card-edit-new-files-${node.id}`} style={{ marginTop: '8px' }}>
+            <label data-testid={`card-edit-new-files-label-${node.id}`} style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '13px' }}>Add New Attachments:</label>
+            <input
+              type="file"
+              data-testid={`card-edit-file-input-${node.id}`}
+              accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+              multiple
+              onChange={(e) => {
+                const newFiles = Array.from(e.target.files);
+                if (newFiles.length > 0) {
+                  setEditFiles(prev => [...prev, ...newFiles]);
+                }
+                e.target.value = '';
+              }}
+            />
+            {editFiles.length > 0 && (
+              <div data-testid={`card-edit-new-files-list-${node.id}`} style={{ marginTop: '8px', padding: '8px', background: '#fef3c7', borderRadius: '4px', border: '1px solid #fcd34d' }}>
+                <label data-testid={`card-edit-new-files-label2-${node.id}`} style={{ display: 'block', marginBottom: '4px', fontWeight: '500', fontSize: '12px', color: '#92400e' }}>New files to upload:</label>
+                {editFiles.map((file, idx) => (
+                  <div key={idx} data-testid={`card-edit-new-file-item-${node.id}-${idx}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 8px', background: '#fff', marginBottom: '4px', borderRadius: '4px', border: '1px solid #fcd34d' }}>
+                    <span data-testid={`card-edit-new-file-name-${node.id}-${idx}`} style={{ fontSize: '12px' }}>📄 {file.name} ({(file.size / 1024).toFixed(1)} KB)</span>
+                    <button
+                      type="button"
+                      className="btn btn-small btn-danger"
+                      data-testid={`card-edit-new-file-remove-${node.id}-${idx}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setEditFiles(prev => prev.filter((_, i) => i !== idx));
+                      }}
+                      style={{ padding: '2px 8px', fontSize: '11px' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Existing URLs */}
           {node.evidence?.urls && node.evidence.urls.length > 0 && (
@@ -523,64 +532,64 @@ const Card = ({
         </div>
       )}
 
-       {/* Display evidence if available */}
-       {node.evidence && (node.evidence.files?.length > 0 || node.evidence.urls?.length > 0) && (
-         <div className="evidence-container" data-testid={`card-evidence-${node.id}`}>
-           <div className="evidence-title" data-testid={`card-evidence-title-${node.id}`}>📚 Evidence Attached:</div>
+      {/* Display evidence if available */}
+      {node.evidence && (node.evidence.files?.length > 0 || node.evidence.urls?.length > 0) && (
+        <div className="evidence-container" data-testid={`card-evidence-${node.id}`}>
+          <div className="evidence-title" data-testid={`card-evidence-title-${node.id}`}>📚 Evidence Attached:</div>
 
-           {/* Display file evidence */}
-           {node.evidence.files && node.evidence.files.length > 0 && (
-             <div data-testid={`card-evidence-files-${node.id}`}>
-               {node.evidence.files.map((file, idx) => (
-                 <div key={idx} className="evidence-item" data-testid={`card-evidence-file-${node.id}-${idx}`}>
-                   <span className="evidence-icon" data-testid={`card-evidence-file-icon-${node.id}-${idx}`}>📎</span>
-                   {file.dataUrl ? (
-                     <a
-                       data-testid={`card-evidence-file-link-${node.id}-${idx}`}
-                       href={file.dataUrl}
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       onClick={(e) => openFileInNewTab(file, e)}
-                     >
-                       {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                     </a>
-                   ) : (
-                     <span data-testid={`card-evidence-file-name-${node.id}-${idx}`} style={{ fontSize: '13px', color: '#6b7280' }}>
-                       {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                     </span>
-                   )}
-                 </div>
-               ))}
-             </div>
-           )}
+          {/* Display file evidence */}
+          {node.evidence.files && node.evidence.files.length > 0 && (
+            <div data-testid={`card-evidence-files-${node.id}`}>
+              {node.evidence.files.map((file, idx) => (
+                <div key={idx} className="evidence-item" data-testid={`card-evidence-file-${node.id}-${idx}`}>
+                  <span className="evidence-icon" data-testid={`card-evidence-file-icon-${node.id}-${idx}`}>📎</span>
+                  {file.dataUrl ? (
+                    <a
+                      data-testid={`card-evidence-file-link-${node.id}-${idx}`}
+                      href={file.dataUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => openFileInNewTab(file, e)}
+                    >
+                      {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                    </a>
+                  ) : (
+                    <span data-testid={`card-evidence-file-name-${node.id}-${idx}`} style={{ fontSize: '13px', color: '#6b7280' }}>
+                      {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
 
-           {/* Display URL evidence */}
-           {node.evidence.urls && node.evidence.urls.length > 0 && (
-             <div data-testid={`card-evidence-urls-${node.id}`}>
-               {node.evidence.urls.map((url, idx) => (
-                 <div key={idx} className="evidence-item" data-testid={`card-evidence-url-${node.id}-${idx}`}>
-                   <span className="evidence-icon" data-testid={`card-evidence-url-icon-${node.id}-${idx}`}>🔗</span>
-                   <a
-                     data-testid={`card-evidence-url-link-${node.id}-${idx}`}
-                     href={url}
-                     target="_blank"
-                     rel="noopener noreferrer"
-                   >
-                     {url}
-                   </a>
-                 </div>
-               ))}
-             </div>
-           )}
-         </div>
-       )}
+          {/* Display URL evidence */}
+          {node.evidence.urls && node.evidence.urls.length > 0 && (
+            <div data-testid={`card-evidence-urls-${node.id}`}>
+              {node.evidence.urls.map((url, idx) => (
+                <div key={idx} className="evidence-item" data-testid={`card-evidence-url-${node.id}-${idx}`}>
+                  <span className="evidence-icon" data-testid={`card-evidence-url-icon-${node.id}-${idx}`}>🔗</span>
+                  <a
+                    data-testid={`card-evidence-url-link-${node.id}-${idx}`}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {url}
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Control buttons section */}
       <div className="controls" data-testid={`card-controls-${node.id}`}>
         {/* Edit button - only shown if user is the author */}
         {canEdit && !isEditing && (
-          <button 
-            className="btn" 
+          <button
+            className="btn"
             data-testid={`card-edit-button-${node.id}`}
             onClick={handleEdit}
             style={{ backgroundColor: '#10b981', color: 'white', fontWeight: 'bold' }}
@@ -588,7 +597,7 @@ const Card = ({
             ✏️ Edit
           </button>
         )}
-        
+
         {/* Debug: Show if canEdit is false */}
         {!canEdit && (
           <span data-testid={`card-not-author-${node.id}`} style={{ fontSize: '10px', color: '#999' }}>Not your post</span>
@@ -650,7 +659,7 @@ const Card = ({
 
         {/* Copy button - copies the post text to clipboard */}
         <button className="btn" data-testid={`card-copy-button-${node.id}`} onClick={handleCopyText}>
-          Copy
+          Copy text
         </button>
         {/* "Copied!!" confirmation message - shown temporarily after copying text */}
         <span className="copy-msg" data-testid={`card-text-copied-${node.id}`} style={{ display: textCopied ? 'inline' : 'none' }}>
