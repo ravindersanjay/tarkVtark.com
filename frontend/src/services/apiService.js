@@ -970,7 +970,7 @@ export const authAPI = {
    * @returns {string|null} JWT token or null
    */
   getToken: () => {
-    return localStorage.getItem('admin_token');
+    return sessionStorage.getItem('admin_token');
   },
 
   /**
@@ -978,16 +978,16 @@ export const authAPI = {
    * @param {string} token - JWT token to store
    */
   setToken: (token) => {
-    localStorage.setItem('admin_token', token);
+    sessionStorage.setItem('admin_token', token);
   },
 
   /**
    * Remove authentication token (logout)
    */
   removeToken: () => {
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_user');
-    localStorage.removeItem('admin_logged_in'); // Remove old flag
+    sessionStorage.removeItem('admin_token');
+    sessionStorage.removeItem('admin_user');
+    sessionStorage.removeItem('admin_logged_in'); // Remove old flag
   },
 
   /**
@@ -995,7 +995,7 @@ export const authAPI = {
    * @param {Object} user - User info object
    */
   setUser: (user) => {
-    localStorage.setItem('admin_user', JSON.stringify(user));
+    sessionStorage.setItem('admin_user', JSON.stringify(user));
   },
 
   /**
@@ -1003,7 +1003,7 @@ export const authAPI = {
    * @returns {Object|null} User object or null
    */
   getUser: () => {
-    const userStr = localStorage.getItem('admin_user');
+    const userStr = sessionStorage.getItem('admin_user');
     return userStr ? JSON.parse(userStr) : null;
   },
 

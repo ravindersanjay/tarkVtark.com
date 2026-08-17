@@ -41,7 +41,7 @@ const AdminLogin = ({ onLogin }) => {
       }
 
       // Set legacy flag for backward compatibility (will be removed later)
-      localStorage.setItem('admin_logged_in', 'true');
+      sessionStorage.setItem('admin_logged_in', 'true');
 
       // Notify parent component
       onLogin();
