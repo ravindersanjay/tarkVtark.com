@@ -89,10 +89,20 @@ const findReplyById = (id, arr) => {
   return null;
 };
 
+// =====================================================================
+// UTILS
+// =====================================================================
+
+const normalizeTopicString = (str) => {
+  if (!str) return '';
+  // Normalize Unicode (NFC vs NFD), convert to lowercase, and collapse multiple spaces
+  return str.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
+};
+
 /**
- * Find a post (question or reply) by its uniqueId
- *
- * This function searches through the entire debate tree to find a specific post by uniqueId.
+ * Find a post by its uniqueId in a tree of questions and replies
+ * Performs a deep recursive search
+es through the entire debate tree to find a specific post by uniqueId.
  * It first checks top-level questions, then recursively searches through all replies.
  *
  * @param {string} uniqueId - The uniqueId to search for
@@ -374,7 +384,7 @@ const App = ({ topic, timestamp }) => {
       const topics = await topicsAPI.getAll();
       console.log('✅ Topics loaded:', topics.length, 'topics');
 
-      const topicData = topics.find(t => t.topic.toLowerCase() === topic.toLowerCase());
+      const topicData = topics.find(t => normalizeTopicString(t.topic) === normalizeTopicString(topic));
 
       if (topicData) {
         console.log('📡 Fetching questions for topic:', topicData.id);
@@ -612,7 +622,7 @@ const App = ({ topic, timestamp }) => {
 
       // Save to backend API first
       const topics = await topicsAPI.getAll();
-      const topicData = topics.find(t => t.topic.toLowerCase() === topic.toLowerCase());
+      const topicData = topics.find(t => normalizeTopicString(t.topic) === normalizeTopicString(topic));
 
       if (!topicData) {
         toast.error(`Topic "${topic}" not found in database. Please create it first.`);
