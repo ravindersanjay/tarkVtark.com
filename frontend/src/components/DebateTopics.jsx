@@ -118,7 +118,7 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
         </header>
         <div className="main-content">
           <div className="topics-section">
-            <h2>Debate Topics</h2>
+            <h2>Debate Topics({topics.length})</h2>
 
             {/* Show loading/error states */}
             {loading && <p>Loading topics...</p>}
