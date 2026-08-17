@@ -262,6 +262,9 @@ const App = ({ topic, timestamp }) => {
   // Track the last opened form for auto-focus behavior
   const lastOpenedFormRef = useRef(null);
 
+  // Track the last processed timestamp to prevent jumping back to it on every data refresh
+  const lastProcessedTimestampRef = useRef(null);
+
   /**
    * Parse the topic string to extract left and right labels
    * Example: "Sanatan vs Islam" -> leftLabel="Sanatan", rightLabel="Islam"
@@ -447,6 +450,9 @@ const App = ({ topic, timestamp }) => {
   useEffect(() => {
     if (!timestamp || !debateData.questions.length) return;
 
+    // Only process a timestamp once to avoid jumping back after adding new questions
+    if (lastProcessedTimestampRef.current === timestamp) return;
+
     console.log('🔍 Looking for post with uniqueId:', timestamp);
     console.log('📋 Available questions:', debateData.questions.length);
 
@@ -459,19 +465,17 @@ const App = ({ topic, timestamp }) => {
       const chainPath = findReplyChainPath(timestamp, debateData.questions);
       console.log('🔗 Reply chain path:', chainPath);
 
+      // Mark as processed immediately so we don't process it again
+      lastProcessedTimestampRef.current = timestamp;
+
       // Collapse all questions and expand only the relevant ones in a single update
       if (chainPath.length > 0) {
-        // Include the question ID (first item) and all parent replies (except the target)
-        const idsToExpand = chainPath.slice(0, -1); // Question + parent replies to expand
-        console.log('📂 Expanding question and parent replies:', idsToExpand);
+        // We only need to expand the top-level question that contains this post
+        const topLevelQuestionId = chainPath[0];
+        console.log('📂 Expanding question:', topLevelQuestionId);
 
-        // Create new state with only the items we want expanded
-        const newExpandedState = {};
-        idsToExpand.forEach(id => {
-          newExpandedState[id] = true;
-        });
-
-        setExpandedQuestions(newExpandedState);
+        // Create new state with only the target question expanded
+        setExpandedQuestions({ [topLevelQuestionId]: true });
 
         // Wait a moment for DOM to update after expanding, then scroll
         setTimeout(() => {
@@ -608,7 +612,7 @@ const App = ({ topic, timestamp }) => {
 
       // Save to backend API first
       const topics = await topicsAPI.getAll();
-      const topicData = topics.find(t => t.topic === topic);
+      const topicData = topics.find(t => t.topic.toLowerCase() === topic.toLowerCase());
 
       if (!topicData) {
         toast.error(`Topic "${topic}" not found in database. Please create it first.`);
