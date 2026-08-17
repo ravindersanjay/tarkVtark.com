@@ -21,6 +21,7 @@
  */
 
 import logger from '../utils/logger.js';
+import { cleanRichText } from '../utils/helpers.js';
 
 // API base URL - will be served by Spring Boot backend
 // API Base URL - loaded from frontend/.env file
@@ -400,8 +401,9 @@ const questionsAPI = {
   create: async (questionData) => {
     console.log('❓ questionsAPI.create() - Creating question:', questionData);
 
-    // Validate and sanitize text input
-    const textValidation = inputValidator.validateText(questionData.text, 10000);
+    // Clean and validate text input
+    const cleanedText = cleanRichText(questionData.text);
+    const textValidation = inputValidator.validateText(cleanedText, 10000);
     if (!textValidation.valid) {
       throw new Error(textValidation.error);
     }
@@ -501,8 +503,9 @@ const repliesAPI = {
   create: async (replyData) => {
     console.log('💬 repliesAPI.create() - Creating reply:', replyData);
 
-    // Validate and sanitize text input
-    const textValidation = inputValidator.validateText(replyData.text, 10000);
+    // Clean and validate text input
+    const cleanedText = cleanRichText(replyData.text);
+    const textValidation = inputValidator.validateText(cleanedText, 10000);
     if (!textValidation.valid) {
       throw new Error(textValidation.error);
     }

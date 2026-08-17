@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import RichTextInput from './RichTextInput';
 
 /**
  * =====================================================================
@@ -84,11 +85,11 @@ const ReplyForm = ({
       style={{ display: open ? 'block' : 'none' }}
     >
       {/* Main text input for reply content */}
-      <textarea
+      <RichTextInput
         data-testid={`reply-textarea-${id}`}
         placeholder="Reply..."
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
       />
 
       {/* Evidence section - file upload and URL */}

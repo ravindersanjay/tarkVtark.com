@@ -1,6 +1,8 @@
 import React from "react";
 import { toast } from 'react-toastify';
 import ReplyCard from "./ReplyCard";
+import RichTextInput from "./RichTextInput.jsx";
+import { sanitizeHtml } from "../utils/helpers.js";
 
 const QuestionColumn = ({ debateData, setDebateData }) => {
   const handleReply = (parentId, text) => {
@@ -41,7 +43,7 @@ const QuestionColumn = ({ debateData, setDebateData }) => {
             <div className="meta text-sm text-gray-600 mb-1">
               Question • {q.author} • {q.timestamp} • Replies: {q.replies.length} • [{q.tag}]
             </div>
-            <div className="content">{q.text}</div>
+            <div className="content" dangerouslySetInnerHTML={{ __html: sanitizeHtml(q.text) }} />
             <div className="controls mt-2">
               <ReplyForm parentId={q.id} onReply={handleReply} />
             </div>
@@ -64,9 +66,9 @@ const ReplyForm = ({ parentId, onReply }) => {
   const [value, setValue] = React.useState("");
   return (
     <div className="flex flex-col mt-2">
-      <textarea
+      <RichTextInput
         value={value}
-        onChange={e => setValue(e.target.value)}
+        onChange={setValue}
         placeholder="Reply..."
         className="w-full p-2 border rounded mb-1"
       />

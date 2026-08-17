@@ -6,6 +6,13 @@
   to { transform: rotate(360deg); }
 }
 
+/* Contenteditable placeholder */
+[contenteditable][data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
 /* ========================================
    MOBILE DEBATE PAGE STYLES
    ======================================== */

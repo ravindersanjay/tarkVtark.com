@@ -4,6 +4,7 @@ import { generateUniqueId, deepCopy } from './utils/helpers.js';
 import { topicsAPI, questionsAPI, repliesAPI, filesAPI } from './services/apiService.js';
 import { useAuth } from './contexts/AuthContext.jsx';
 import Card from './components/Card.jsx';
+import RichTextInput from './components/RichTextInput.jsx';
 import './styles/app.css';
 
 /**
@@ -1541,12 +1542,12 @@ const App = ({ topic, timestamp }) => {
           </div>
 
           {/* Question text input */}
-          <textarea
+          <RichTextInput
             id="newQuestionText"
             data-testid="new-question-text-input"
             placeholder="Type your question"
             value={newQuestionText}
-            onChange={(e) => setNewQuestionText(e.target.value)}
+            onChange={setNewQuestionText}
           />
 
           {/* Tag input with multi-tag support */}

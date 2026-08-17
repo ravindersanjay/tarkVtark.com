@@ -1,4 +1,6 @@
 import React from "react";
+import RichTextInput from "./RichTextInput.jsx";
+import { sanitizeHtml } from "../utils/helpers.js";
 
 const ReplyCard = ({ reply, onReply }) => {
   const [showForm, setShowForm] = React.useState(false);
@@ -14,7 +16,7 @@ const ReplyCard = ({ reply, onReply }) => {
         <div className="meta text-sm text-gray-600 mb-1">
           {reply.author} replied • {reply.timestamp} • Replies: {reply.replies.length}
         </div>
-        <div className="content mb-2">{reply.text}</div>
+        <div className="content mb-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.text) }} />
 
         <div className="controls flex gap-2 mb-2">
           <button
@@ -27,9 +29,9 @@ const ReplyCard = ({ reply, onReply }) => {
 
         {showForm && (
           <div className="reply-form flex flex-col mt-2">
-            <textarea
+            <RichTextInput
               value={value}
-              onChange={e => setValue(e.target.value)}
+              onChange={setValue}
               placeholder="Reply..."
               className="w-full p-2 border rounded mb-1"
             />

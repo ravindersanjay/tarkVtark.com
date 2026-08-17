@@ -131,3 +131,122 @@ export const escapeHtml = (text = '') => {
  * // copy.questions now has 2 items
  */
 export const deepCopy = (obj) => JSON.parse(JSON.stringify(obj));
+
+/**
+ * Sanitize HTML by removing dangerous elements and attributes
+ * Used when rendering user-generated HTML content safely
+ */
+export const sanitizeHtml = (html = '') => {
+  if (typeof html !== 'string') return '';
+  
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  
+  temp.querySelectorAll('script').forEach(el => el.remove());
+  
+  temp.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes).forEach(attr => {
+      if (attr.name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+      }
+    });
+    if (el.tagName === 'A' && el.href && el.href.trim().toLowerCase().startsWith('javascript:')) {
+      el.removeAttribute('href');
+    }
+    if ((el.tagName === 'IMG' || el.tagName === 'IFRAME' || el.tagName === 'VIDEO') && el.src && el.src.trim().toLowerCase().startsWith('javascript:')) {
+      el.removeAttribute('src');
+    }
+  });
+  
+  return temp.innerHTML;
+};
+
+/**
+ * Safely truncate HTML content to a maximum character length
+ * Preserves HTML structure by truncating at text nodes
+ */
+export const truncateHtml = (html, maxLength) => {
+  if (!html || typeof html !== 'string') return '';
+  if (html.length <= maxLength) return html;
+  
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  
+  let length = 0;
+  const walker = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT);
+  let node;
+  
+  while ((node = walker.nextNode())) {
+    if (length + node.nodeValue.length > maxLength) {
+      node.nodeValue = node.nodeValue.substring(0, maxLength - length) + '...';
+      let next = node.nextSibling;
+      while (next) {
+        const toRemove = next;
+        next = next.nextSibling;
+        toRemove.remove();
+      }
+      break;
+    }
+    length += node.nodeValue.length;
+  }
+  
+  return temp.innerHTML;
+};
+
+/**
+ * Clean rich text HTML by stripping unnecessary attributes and styles
+ * Preserves semantic structure while removing bloat from pasted content
+ */
+export const cleanRichText = (html = '') => {
+  if (typeof html !== 'string') return '';
+  
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  
+  const ALLOWED_TAGS = new Set([
+    'P', 'BR', 'B', 'I', 'U', 'STRONG', 'EM', 'A', 'UL', 'OL', 'LI',
+    'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'CODE',
+    'SPAN', 'DIV', 'TABLE', 'TR', 'TD', 'TH', 'THEAD', 'TBODY'
+  ]);
+  
+  const ALLOWED_ATTRS = new Set(['HREF', 'TARGET', 'REL']);
+  
+  function cleanNode(node) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const tagName = node.tagName;
+      
+      if (!ALLOWED_TAGS.has(tagName)) {
+        while (node.firstChild) {
+          node.parentNode.insertBefore(node.firstChild, node);
+        }
+        node.remove();
+        return;
+      }
+      
+      Array.from(node.attributes).forEach(attr => {
+        if (!ALLOWED_ATTRS.has(attr.name.toUpperCase())) {
+          node.removeAttribute(attr.name);
+        }
+      });
+      
+      if (tagName === 'A') {
+        const href = node.getAttribute('href');
+        if (href && href.trim().toLowerCase().startsWith('javascript:')) {
+          node.removeAttribute('href');
+        } else if (!href) {
+          node.removeAttribute('href');
+        }
+      }
+      
+      Array.from(node.childNodes).forEach(cleanNode);
+    }
+  }
+  
+  Array.from(temp.childNodes).forEach(cleanNode);
+  
+  let cleaned = temp.innerHTML;
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  cleaned = cleaned.replace(/> <\//g, '><');
+  
+  return cleaned;
+};

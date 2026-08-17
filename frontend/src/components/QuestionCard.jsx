@@ -1,3 +1,5 @@
+import { sanitizeHtml } from '../utils/helpers.js';
+
 export default function QuestionCard({ question }) {
   return (
     <div className="grid grid-cols-2 gap-4 thread-row border-b border-gray-200 pb-4">
@@ -9,7 +11,7 @@ export default function QuestionCard({ question }) {
             {question.replies.length} Replies
             <span className="tag ml-2 text-blue-600">[{question.tag}]</span>
           </div>
-          <div className="content text-sm mb-2">{question.text}</div>
+          <div className="content text-sm mb-2" dangerouslySetInnerHTML={{ __html: sanitizeHtml(question.text) }} />
           <div className="controls flex gap-2">
             <button className="btn bg-blue-100 text-blue-600 px-2 py-1 rounded">
               Reply this question
@@ -29,7 +31,9 @@ export default function QuestionCard({ question }) {
           </div>
           <div className="content text-sm mb-2">
             {question.replies.length > 0
-              ? question.replies.map((r) => r.text).join(", ")
+              ? question.replies.map((r, i) => (
+                  <span key={i} dangerouslySetInnerHTML={{ __html: sanitizeHtml(r.text) }} />
+                ))
               : "No answers yet"}
           </div>
           <div className="controls flex gap-2">

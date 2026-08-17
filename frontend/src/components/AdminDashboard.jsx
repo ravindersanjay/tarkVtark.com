@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import '../styles/admin.css';
 import { topicsAPI, questionsAPI, repliesAPI, adminAPI, contactAPI, filesAPI } from '../services/apiService.js';
+import { sanitizeHtml } from '../utils/helpers.js';
 
 const MESSAGES_KEY = 'contact_messages';
 const REPORTS_KEY = 'reported_posts';
@@ -1078,7 +1079,7 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
                           </div>
                         ) : (
                           <>
-                            <div className="question-text">{question.text}</div>
+                            <div className="question-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(question.text) }} />
                             <div className="question-actions">
                               <button
                                 className="btn btn-small"
@@ -1238,7 +1239,7 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
                                   </div>
                                 ) : (
                                   <>
-                                    <div className="reply-text">{reply.text}</div>
+                                    <div className="reply-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.text) }} />
                                     <div className="reply-actions">
                                       <button
                                         className="btn btn-small"
@@ -1544,7 +1545,7 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
                             <div className="rank">{index + 1}</div>
                             <div className="top-content">
                               <div className="top-topic">{question.topic}</div>
-                              <div className="top-text">{question.text}</div>
+                               <div className="top-text" dangerouslySetInnerHTML={{ __html: sanitizeHtml(question.text) }} />
                               <div className="top-meta">
                                 <span className="top-author">By: {question.author}</span>
                                 <span className="top-id">ID: {question.uniqueId}</span>

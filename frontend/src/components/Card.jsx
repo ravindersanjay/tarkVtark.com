@@ -1,6 +1,8 @@
 import React from 'react';
 import { toast } from 'react-toastify';
 import ReplyForm from './ReplyForm';
+import RichTextInput from './RichTextInput.jsx';
+import { sanitizeHtml, truncateHtml } from '../utils/helpers.js';
 
 /**
  * Card Component
@@ -142,10 +144,11 @@ const Card = ({
   const currentUserVote = userVotes[voteKey]; // 'up', 'down', or undefined
 
   // Text truncation logic
-  const MAX_CHARS = 300; // Maximum characters before truncating
+  const MAX_CHARS = 300;
   const text = node.text || '';
-  const shouldTruncate = text.length > MAX_CHARS && !isTextExpanded;
-  const displayText = shouldTruncate ? text.substring(0, MAX_CHARS) + '...' : text;
+  const plainTextLength = text.replace(/<[^>]*>/g, '').length;
+  const shouldTruncate = plainTextLength > MAX_CHARS && !isTextExpanded;
+  const displayText = shouldTruncate ? truncateHtml(text, MAX_CHARS) : text;
 
   // Debug logging
   console.log('Card Edit Check:', {
@@ -352,10 +355,10 @@ const Card = ({
             </div>
           )}
 
-          <textarea
+          <RichTextInput
             data-testid={`card-edit-textarea-${node.id}`}
             value={editText}
-            onChange={(e) => setEditText(e.target.value)}
+            onChange={setEditText}
             style={{
               width: '100%',
               minHeight: '80px',
@@ -509,8 +512,8 @@ const Card = ({
         </div>
       ) : (
         <div className="content" data-testid={`card-content-${node.id}`}>
-          {displayText}
-          {text.length > MAX_CHARS && (
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(displayText) }} />
+          {plainTextLength > MAX_CHARS && (
             <button
               data-testid={`card-read-more-${node.id}`}
               onClick={() => setIsTextExpanded(!isTextExpanded)}
