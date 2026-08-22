@@ -144,9 +144,11 @@ const Card = ({
   const currentUserVote = userVotes[voteKey]; // 'up', 'down', or undefined
 
   // Text truncation logic
-  const MAX_CHARS = 300;
+  const MAX_CHARS = 200;
   const text = node.text || '';
-  const plainTextLength = text.replace(/<[^>]*>/g, '').length;
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = text;
+  const plainTextLength = tempDiv.textContent.length;
   const shouldTruncate = plainTextLength > MAX_CHARS && !isTextExpanded;
   const displayText = shouldTruncate ? truncateHtml(text, MAX_CHARS) : text;
 

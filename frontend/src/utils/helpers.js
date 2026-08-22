@@ -167,30 +167,15 @@ export const sanitizeHtml = (html = '') => {
  */
 export const truncateHtml = (html, maxLength) => {
   if (!html || typeof html !== 'string') return '';
-  if (html.length <= maxLength) return html;
-  
+  // Create a temporary div to extract plain text
   const temp = document.createElement('div');
   temp.innerHTML = html;
-  
-  let length = 0;
-  const walker = document.createTreeWalker(temp, NodeFilter.SHOW_TEXT);
-  let node;
-  
-  while ((node = walker.nextNode())) {
-    if (length + node.nodeValue.length > maxLength) {
-      node.nodeValue = node.nodeValue.substring(0, maxLength - length) + '...';
-      let next = node.nextSibling;
-      while (next) {
-        const toRemove = next;
-        next = next.nextSibling;
-        toRemove.remove();
-      }
-      break;
-    }
-    length += node.nodeValue.length;
-  }
-  
-  return temp.innerHTML;
+  const plain = temp.textContent || '';
+  if (plain.length <= maxLength) return html;
+  // Truncate plain text and append ellipsis
+  const truncated = plain.slice(0, maxLength) + '...';
+  // Return as plain text (no HTML) to ensure consistent length
+  return truncated;
 };
 
 /**
