@@ -151,36 +151,36 @@ const AdminDashboard = ({ onLogout, onBackToSite, initialSection = 'debate' }) =
 
   // Topic Management
   const deleteTopic = async (topicObj) => {
-    const topicName = typeof topicObj === 'string' ? topicObj : topicObj.topic;
-    const topicId = typeof topicObj === 'object' ? topicObj.id : null;
+  const topicName = typeof topicObj === 'string' ? topicObj : topicObj.topic;
+  const topicId = typeof topicObj === 'object' ? topicObj.id : null;
 
-    console.log('Delete topic called with:', { topicObj, topicName, topicId });
+  console.log('Soft delete topic called with:', { topicObj, topicName, topicId });
 
-    if (!topicId) {
-      console.error('Cannot delete: Topic ID not found', topicObj);
-      toast.error('Cannot delete: Topic ID not found');
-      return;
+  if (!topicId) {
+    console.error('Cannot delete: Topic ID not found', topicObj);
+    toast.error('Cannot delete: Topic ID not found');
+    return;
+  }
+
+  if (window.confirm(`Archive debate "${topicName}"? This will hide it from users but keep data.`)) {
+    try {
+      console.log('Calling topicsAPI.update to set isActive false for ID:', topicId);
+      await topicsAPI.update(topicId, {
+        topic: topicObj.topic,
+        leftLabel: topicObj.leftLabel,
+        rightLabel: topicObj.rightLabel,
+        description: topicObj.description || '',
+        isActive: false
+      });
+      console.log('Topic archived successfully, reloading data...');
+      await loadData();
+      toast.success('Topic archived successfully!');
+    } catch (err) {
+      console.error('Failed to archive topic - Full error:', err);
+      toast.error(`Failed to archive topic. Error: ${err.message || 'Please try again.'}`);
     }
-
-    if (window.confirm(`Delete debate "${topicName}"? This will also delete all questions and answers.`)) {
-      try {
-        console.log('Calling topicsAPI.delete with ID:', topicId);
-        // Delete from backend
-        await topicsAPI.delete(topicId);
-
-        console.log('Topic deleted successfully, reloading data...');
-        // Reload from backend to sync
-        await loadData();
-
-        toast.success('Topic deleted successfully!');
-      } catch (err) {
-        console.error('Failed to delete topic - Full error:', err);
-        console.error('Error message:', err.message);
-        console.error('Error response:', err.response);
-        toast.error(`Failed to delete topic. Error: ${err.message || 'Please try again.'}`);
-      }
-    }
-  };
+  }
+};
 
   const updateTopic = async (oldTopicObj, newTopicName) => {
     const topicId = typeof oldTopicObj === 'object' ? oldTopicObj.id : null;

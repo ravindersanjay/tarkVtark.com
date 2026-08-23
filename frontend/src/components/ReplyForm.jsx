@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import RichTextInput from './RichTextInput';
 
+
 /**
  * =====================================================================
  * ReplyForm Component
@@ -66,7 +67,8 @@ const ReplyForm = ({
   const addUrl = () => {
     const url = currentUrl.trim();
     if (url) {
-      onUrlsChange([...evidenceUrls, url]);
+      const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+      onUrlsChange([...evidenceUrls, normalized]);
       setCurrentUrl('');
     }
   };

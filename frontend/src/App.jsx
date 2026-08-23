@@ -7,6 +7,17 @@ import Card from './components/Card.jsx';
 import RichTextInput from './components/RichTextInput.jsx';
 import './styles/app.css';
 
+// ---------------------------------------------------------------------
+// Logging control – disable console spam in production
+// ---------------------------------------------------------------------
+const DEBUG = process.env.NODE_ENV !== 'production';
+if (!DEBUG) {
+  const noop = () => {};
+  ['log', 'info', 'warn', 'error', 'debug', 'count', 'countReset', 'group', 'groupEnd'].forEach(m => {
+    console[m] = noop;
+  });
+}
+
 /**
  * =====================================================================
  * App Component - Main Debate Board Application
