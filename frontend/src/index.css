@@ -326,7 +326,7 @@ body {
   }
 
   .add-topic-form {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .topic-input {

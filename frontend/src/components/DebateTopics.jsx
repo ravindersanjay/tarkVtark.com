@@ -120,6 +120,25 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
           <div className="topics-section" data-testid="topics-section">
             <h2 data-testid="topics-heading">Debate Topics({topics.length})</h2>
 
+            {/* Form to add new topics */}
+            <div className="add-topic-form" data-testid="add-topic-form" style={{ marginBottom: '16px' }}>
+              <input
+                type="text"
+                data-testid="topic-input"
+                placeholder="Add topic (e.g. Cats vs Dogs)"
+                value={newTopic}
+                onChange={e => setNewTopic(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addTopic();
+                  }
+                }}
+                className="topic-input"
+              />
+              <button className="add-btn" data-testid="add-topic-button" onClick={addTopic}>Add Topic</button>
+            </div>
+
             {/* Show loading/error states */}
             {loading && <p data-testid="topics-loading">Loading topics...</p>}
             {error && <p data-testid="topics-error" style={{ color: 'red' }}>{error}</p>}
@@ -143,25 +162,6 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
                 </li>
               ))}
             </ul>
-
-            {/* Form to add new topics */}
-            <div className="add-topic-form" data-testid="add-topic-form">
-              <input
-                type="text"
-                data-testid="topic-input"
-                placeholder="Add topic (e.g. Cats vs Dogs)"
-                value={newTopic}
-                onChange={e => setNewTopic(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addTopic();
-                  }
-                }}
-                className="topic-input"
-              />
-              <button className="add-btn" data-testid="add-topic-button" onClick={addTopic}>Add Topic</button>
-            </div>
           </div>
         </div>
       </div>
