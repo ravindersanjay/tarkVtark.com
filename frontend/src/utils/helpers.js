@@ -58,6 +58,15 @@ const formatTimestampForId = (date = new Date()) => {
 export const generateUniqueId = (prefix = 'id') =>
   `${prefix}${formatTimestampForId(new Date())}-${Math.floor(Math.random() * 1000)}`;
 
+// Ensure URLs have a protocol; prepend https:// if missing
+export const normalizeUrl = (url) => {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  // If starts with www., still prepend https://
+  return `https://${trimmed}`;
+};
+
 /**
  * Escape HTML special characters to prevent XSS attacks
  *

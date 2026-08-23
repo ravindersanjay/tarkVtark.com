@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { generateUniqueId, deepCopy } from './utils/helpers.js';
+import { generateUniqueId, deepCopy, normalizeUrl } from './utils/helpers.js';
 import { topicsAPI, questionsAPI, repliesAPI, filesAPI } from './services/apiService.js';
 import { useAuth } from './contexts/AuthContext.jsx';
 import Card from './components/Card.jsx';
@@ -751,7 +751,7 @@ const App = ({ topic, timestamp }) => {
         for (const url of urls || []) {
           try {
             console.log('🔗 Adding URL:', url);
-            await filesAPI.addEvidenceUrl(url, postId, null);
+            await filesAPI.addEvidenceUrl(normalizeUrl(url), postId, null);
             console.log('✅ URL added:', url);
           } catch (err) {
             console.error('❌ Failed to add URL:', url, err);
@@ -778,7 +778,7 @@ const App = ({ topic, timestamp }) => {
         for (const url of urls || []) {
           try {
             console.log('🔗 Adding URL:', url);
-            await filesAPI.addEvidenceUrl(url, null, postId);
+            await filesAPI.addEvidenceUrl(normalizeUrl(url), null, postId);
             console.log('✅ URL added:', url);
           } catch (err) {
             console.error('❌ Failed to add URL:', url, err);
@@ -1692,7 +1692,7 @@ const App = ({ topic, timestamp }) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
                       if (newQuestionUrlInput.trim()) {
-                        setNewQuestionUrls(prev => [...prev, newQuestionUrlInput.trim()]);
+                        setNewQuestionUrls(prev => [...prev, normalizeUrl(newQuestionUrlInput.trim())]);
                         setNewQuestionUrlInput('');
                       }
                     }
@@ -1704,7 +1704,7 @@ const App = ({ topic, timestamp }) => {
                   data-testid="new-question-add-url-button"
                   onClick={() => {
                     if (newQuestionUrlInput.trim()) {
-                      setNewQuestionUrls(prev => [...prev, newQuestionUrlInput.trim()]);
+                      setNewQuestionUrls(prev => [...prev, normalizeUrl(newQuestionUrlInput.trim())]);
                       setNewQuestionUrlInput('');
                     }
                   }}

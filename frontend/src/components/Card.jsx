@@ -2,7 +2,7 @@ import React from 'react';
 import { toast } from 'react-toastify';
 import ReplyForm from './ReplyForm';
 import RichTextInput from './RichTextInput.jsx';
-import { sanitizeHtml, truncateHtml } from '../utils/helpers.js';
+import { sanitizeHtml, truncateHtml, normalizeUrl } from '../utils/helpers.js';
 
 /**
  * Card Component
@@ -483,7 +483,7 @@ const Card = ({
                   e.preventDefault();
                   e.stopPropagation();
                   if (editUrlInput.trim()) {
-                    setEditUrls(prev => [...prev, editUrlInput.trim()]);
+                    setEditUrls(prev => [...prev, normalizeUrl(editUrlInput.trim())]);
                     setEditUrlInput('');
                   }
                 }}
