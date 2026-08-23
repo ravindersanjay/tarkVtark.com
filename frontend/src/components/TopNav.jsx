@@ -41,7 +41,7 @@ const TopNav = ({ onHome, onContact, onGuidelines, onFAQ, onPrivacy, onAdmin, ac
       <div className="topnav-inner" data-testid="topnav-inner">
         {/* logo: prefers /tarkVtark_Logo.jpg in public, falls back to bundled asset */}
         <img
-          src="/tarkVtark_Logo.png"
+          src="/tarkVtark_Logo.gif"
           alt="tarkVtark logo"
           className="nav-logo"
           data-testid="nav-logo"
