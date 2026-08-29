@@ -326,15 +326,22 @@ body {
   }
 
   .add-topic-form {
+    display: flex;
     flex-direction: row;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: nowrap;
   }
 
   .topic-input {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
   }
 
   .add-btn {
-    width: 100%;
+    flex: none;
+    width: auto;
+    padding: 8px 12px;
   }
 
   .contact-form input,
