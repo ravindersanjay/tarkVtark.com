@@ -24,12 +24,24 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
   const { isAuthenticated, showLoginModal } = useAuth();
 
   // Load topics from backend API
+  const [newTopic, setNewTopic] = useState('');
+  const [similarTopics, setSimilarTopics] = useState([]);
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [newTopic, setNewTopic] = useState('');
+
 
   // Fetch topics from backend on mount
+  // Compute similar topics based on user input
+  useEffect(() => {
+    if (!newTopic) {
+      setSimilarTopics([]);
+      return;
+    }
+    const term = newTopic.trim().toLowerCase();
+    const matches = topics.filter(t => t.topic.toLowerCase().includes(term) && t.topic.toLowerCase() !== term);
+    setSimilarTopics(matches);
+  }, [newTopic, topics]);
   useEffect(() => {
     loadTopics();
   }, []);
@@ -136,8 +148,22 @@ const DebateTopics = ({ onSelectTopic, onContact }) => {
                 }}
                 className="topic-input"
               />
-              <button className="add-btn" data-testid="add-topic-button" onClick={addTopic}>Add Topic</button>
+              <div style={{ marginTop: '8px' }}>
+                <button className="add-btn" data-testid="add-topic-button" onClick={addTopic}>Add Topic</button>
+              </div>
             </div>
+
+            {/* Show similar topics suggestions */}
+            {similarTopics.length > 0 && (
+              <div className="similar-topics" data-testid="similar-topics" style={{ marginBottom: '16px', padding: '8px', border: '1px solid #e5e7eb', borderRadius: '4px', color: '#6b7280' }}>
+                <strong>Similar topics found:</strong>
+                <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
+                  {similarTopics.map(st => (
+                    <li key={st.id}>{st.topic}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Show loading/error states */}
             {loading && <p data-testid="topics-loading">Loading topics...</p>}
