@@ -1380,6 +1380,8 @@ const App = ({ topic, timestamp }) => {
                  </div>
 
                 {/* Arrow indicator in the center */}
+                {/* Mobile vertical arrow (visible only on small screens) */}
+                <div className="thread-row-mobile-arrow">{parent.node.side === 'left' ? '↓' : '↑'}</div>
                  <div data-testid={`thread-row-arrow-${parent.node.id}-${child.node.id}`} style={{
                   position: 'absolute',
                   left: '50%',

@@ -1,0 +1,5 @@
+-- find all debate topics which are soft deleted:
+-- select * from debate_topics dt where dt.is_active = false
+
+--perminant delete all soft deleted debate topics:
+--DELETE FROM public.debate_topics dt WHERE dt.is_active = false
